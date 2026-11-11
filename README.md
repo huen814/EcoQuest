@@ -2,7 +2,7 @@
 
 A 2D waste-sorting game built with Java, JavaFX and FXGL. Walk around a tile-based city, pick up litter, sort it into the right bins, row a boat to clean the river, and plant saplings to restore the area.
 
-> **Status:** Prototype/proposal by Huen for group *codevibers*. Not yet approved as the group's final project.
+> **Status:** Finals group project by group *codevibers* for Object Oriented Programming. Work in progress.
 
 ## Requirements
 - JDK 21
