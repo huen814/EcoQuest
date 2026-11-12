@@ -1,0 +1,6 @@
+target/
+.idea/
+*.iml
+.vscode/
+ecoquest-fxgl/logs/
+ecoquest-fxgl/system/
