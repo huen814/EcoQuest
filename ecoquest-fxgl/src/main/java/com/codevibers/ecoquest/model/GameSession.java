@@ -49,6 +49,8 @@ public final class GameSession {
     private boolean missionDone, ended, won, offerPending;
     private boolean truckActive;
     private double truckCol;
+    private boolean truckHit;
+    private double truckWarnT;
     private double lowBridgeT;
 
     public GameSession(LevelConfig cfg, int levelIndex, Save save, Random rng) {
@@ -103,7 +105,10 @@ public final class GameSession {
     public boolean hasScanner() { return save.up[2] > 0; }
     public boolean truckActive() { return truckActive; }
     public double truckCol() { return truckCol; }
-    public int truckRow() { return 3; }
+    /** Top row of the truck sprite; it is two tiles tall and covers both road rows. */
+    public int truckRow() { return TileMap.ROAD_TOP; }
+    /** True during the short warning before a truck enters its lane. */
+    public boolean truckWarning() { return truckWarnT > 0; }
 
     /** Seconds one tile step takes right now (view uses it to glide the sprite). */
     public double moveSeconds() {
@@ -481,24 +486,55 @@ public final class GameSession {
         }
     }
 
+    private static final int TRUCK_PENALTY = 10;
+    private static final double TRUCK_WARNING_SECONDS = 1.5;
+    /** Truck sprite is 3 tiles wide and 2 tall (whole road); the hitbox is trimmed a little so near misses feel fair. */
+    private static final double TRUCK_WIDTH = 3, TRUCK_HIT_TRIM = .25;
+
     private void updateTruck(double dt) {
         if (cfg.spawn >= 2.5) return;
         if (!truckActive) {
+            if (truckWarnT > 0) {
+                if ((truckWarnT -= dt) <= 0) {
+                    truckWarnT = 0;
+                    truckActive = true;
+                    truckCol = -TRUCK_WIDTH;
+                    truckDropT = 0;
+                    truckHit = false;
+                }
+                return;
+            }
             if ((truckT -= dt) < 0) {
                 truckT = 18 + rng.nextDouble() * 10;
-                truckActive = true;
-                truckCol = -2;
-                truckDropT = 0;
+                truckWarnT = TRUCK_WARNING_SECONDS;
+                toast("Truck coming!", "Stay off the road until it passes.", false, 2.5);
+                listener.onSound(Sfx.HONK);
             }
             return;
         }
         truckCol += 140.0 / TILE_PX * dt;
+        checkTruckHit();
         if ((truckDropT -= dt) < 0) {
             truckDropT = .5;
-            int c = (int) Math.floor(truckCol + 1);
+            int c = (int) Math.floor(truckCol + TRUCK_WIDTH / 2);
             if (c >= 0 && c < TileMap.COLS) spawnWaste(true, c);
         }
         if (truckCol > TileMap.COLS + 1) truckActive = false;
+    }
+
+    /** The truck hits the Guardian at most once per pass. */
+    private void checkTruckHit() {
+        if (truckHit || player.onBoat || (player.row != TileMap.ROAD_TOP && player.row != TileMap.ROAD_BOTTOM)) return;
+        boolean overlap = player.col + 1 > truckCol + TRUCK_HIT_TRIM
+                && player.col < truckCol + TRUCK_WIDTH - TRUCK_HIT_TRIM;
+        if (!overlap) return;
+        truckHit = true;
+        score -= TRUCK_PENALTY;
+        combo = 0;
+        listener.onShake(.4);
+        listener.onFloatText(player.col, player.row, "-" + TRUCK_PENALTY, 0xff6b6b);
+        toast("Hit by the truck! -" + TRUCK_PENALTY + " Score", "Watch the road before you cross.", false, 3.5);
+        listener.onSound(Sfx.DUMP);
     }
 
     private void updateDrone(double dt) {
@@ -544,7 +580,10 @@ public final class GameSession {
         }
         boolean river = forcedCol < 0 && cfg.hasRiver() && rng.nextDouble() < .55;
         int[] t;
-        if (forcedCol >= 0) t = anyItemAt(forcedCol, TileMap.ROAD_TOP) ? null : new int[]{forcedCol, TileMap.ROAD_TOP};
+        if (forcedCol >= 0) {
+            int dropRow = TileMap.ROAD_TOP + rng.nextInt(2);
+            t = anyItemAt(forcedCol, dropRow) ? null : new int[]{forcedCol, dropRow};
+        }
         else t = freeTile(river);
         if (t == null) return;
         WasteItem w = new WasteItem(WASTE[rng.nextInt(WASTE.length)], t[0], t[1]);

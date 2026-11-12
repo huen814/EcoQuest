@@ -349,7 +349,7 @@ public final class PlayScreen extends Screen implements SessionListener {
             }
             double y = session.truckRow() * PX;
             truckEntity.setPosition(session.truckCol() * PX, y);
-            truckEntity.setZIndex((int) (y + PX + 2));
+            truckEntity.setZIndex((int) (y + 2 * PX + 2));   // 2 tiles tall: draw above the player on both road rows
         } else if (truckEntity != null) {
             truckEntity.removeFromWorld();
             truckEntity = null;

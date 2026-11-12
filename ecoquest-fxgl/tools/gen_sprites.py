@@ -165,12 +165,20 @@ def world_sprites():
     bubbles(d, 8, 6, 6.2)
     save("world/tree.png", im)
 
-    im, d = canvas(32, 16)  # truck
-    d.ellipse([2, 14, 30, 15], fill=(60, 40, 90, 50))
-    rect(d, 1, 3, 19, 12, hx("#f0eef8"), hx("#8a84a0"))
-    d.polygon([(19, 6), (26, 6), (30, 10), (30, 12), (19, 12)], fill=hx("#f08a9a"), outline=hx("#8a3a4a")); rect(d, 22, 7, 25, 9, hx("#d4f0ff"), None)
-    for x in (6, 24): d.ellipse([x - 3, 10, x + 3, 15], fill=hx("#3a3550"), outline=INK); d.point((x, 12), fill=hx("#aaa6c0"))
-    d.line([(3, 6), (17, 6)], fill=hx("#b8b4d0"))
+    im, d = canvas(48, 32)  # truck: 3 tiles wide x 2 tall, covers the whole road (both lanes)
+    d.ellipse([3, 29, 46, 31], fill=(60, 40, 90, 50))
+    rect(d, 1, 3, 31, 25, hx("#f0eef8"), hx("#8a84a0"))            # cargo box
+    rect(d, 1, 17, 31, 20, hx("#86dba6"), None)                      # green stripe
+    d.ellipse([11, 6, 21, 15], fill=hx("#86dba6"), outline=hx("#3f8f66"))  # leaf badge
+    d.line([(16, 14), (16, 8)], fill=hx("#3f8f66")); d.line([(16, 10), (19, 8)], fill=hx("#3f8f66"))
+    d.line([(4, 7), (8, 7)], fill=hx("#b8b4d0")); d.line([(4, 10), (8, 10)], fill=hx("#b8b4d0"))
+    d.polygon([(31, 9), (40, 9), (46, 17), (46, 25), (31, 25)], fill=hx("#f08a9a"), outline=hx("#8a3a4a"))  # cab
+    rect(d, 34, 11, 40, 17, hx("#d4f0ff"), None)                     # window
+    d.line([(35, 12), (37, 12)], fill=(255, 255, 255, 255))
+    rect(d, 44, 20, 46, 22, hx("#ffe9a8"), None)                     # headlight
+    rect(d, 1, 25, 46, 26, hx("#8a84a0"), None)                      # bumper / chassis
+    for x in (9, 22, 38):
+        d.ellipse([x - 4, 22, x + 4, 30], fill=hx("#3a3550"), outline=INK); d.ellipse([x - 1, 25, x + 1, 27], fill=hx("#aaa6c0"))
     save("world/truck.png", im)
 
     im, d = canvas()  # boat
