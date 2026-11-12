@@ -10,6 +10,7 @@ A 2D waste-sorting game built with Java, JavaFX and FXGL. Walk around a tile-bas
 
 ## Run
 ```bash
+cd ecoquest-fxgl
 mvn javafx:run
 ```
 Optional: `python3 tools/gen_sprites.py` regenerates all the art. You only need this if you want to change the textures.
