@@ -189,7 +189,10 @@ def world_sprites():
     save("world/boat.png", im)
 
 
-# ----------------------------------------------------------------------------- Guardian (player)
+# ----------------------------------------------------------------------------- Guardians (the two siblings)
+#
+# Both siblings share the exact same 16x24 frame layout, so animation, hitbox and gameplay are identical.
+# Each sibling has a clean look (the one you play as) and a dirty look (the sibling you did not pick, for the story).
 
 SKIN = hx("#fde4d2")
 HAIR = hx("#2d2a4a")
@@ -198,60 +201,133 @@ SHORTS = hx("#e8e4f8")
 SHOE = hx("#ffffff")
 PACK = hx("#f4b6d0")
 BLUSH = hx("#f5a5b5")
+MUD = (122, 90, 60, 255)
+MUD_DARK = (92, 66, 44, 255)
 
 
-def player_frame(direction, step, boat):
-    """One 16x24 frame, chibi proportions (big head, dark bob, mint hoodie). step 0..3 (0,2 stand; 1,3 stride)."""
+def blend(c, t, to=MUD):
+    """Mix colour c towards `to` by t (0..1): used to turn clean clothes into grimy ones."""
+    return tuple(int(c[i] * (1 - t) + to[i] * t) for i in range(3)) + (255,)
+
+
+def _look(base, dirty):
+    """Clean looks use the colours as given; dirty looks fade and stain every garment and mess up the hair."""
+    L = dict(base, dirty=dirty)
+    if dirty:
+        for k, t in (("hood", .38), ("shorts", .40), ("shoe", .55), ("pack", .35), ("trim", .35)):
+            L[k] = blend(L[k], t)
+    return L
+
+
+# Omori-inspired: pale skin, near-black hair, soft off-white clothes (not copies of any existing character).
+_SISTER = dict(skin=hx("#fdf0e6"), hair=hx("#2b2838"), hood=hx("#f7ecf1"), shorts=hx("#f7ecf1"), shoe=hx("#ffffff"),
+               pack=hx("#d8c4d0"), trim=hx("#e0a8b8"), style="long", skirt=True, clip=hx("#b9a6e8"), blush=hx("#f5c0cc"))
+_BROTHER = dict(skin=hx("#fdf0e6"), hair=hx("#2b2838"), hood=hx("#f4f4f8"), shorts=hx("#3a3552"), shoe=hx("#ffffff"),
+                pack=hx("#4a4668"), trim=hx("#b8b4d0"), style="short", skirt=False, clip=None, blush=None)
+
+# Both siblings start out clean. The one the player picks stays clean, the OTHER one ends up dirty (story).
+LOOKS = {
+    "sister": _look(_SISTER, False),
+    "brother": _look(_BROTHER, False),
+    "sister_dirty": _look(_SISTER, True),
+    "brother_dirty": _look(_BROTHER, True),
+}
+
+
+def player_frame(direction, step, boat, who="sister"):
+    """One 16x24 frame, chibi proportions (big head). step 0..3 (0,2 stand; 1,3 stride)."""
+    L = LOOKS[who]
+    skin, hair, hood, shorts, shoe, pack = L["skin"], L["hair"], L["hood"], L["shorts"], L["shoe"], L["pack"]
+    short = L["style"] == "short"
+    long_ = L["style"] == "long"
+    skirt = L["skirt"]
+    trim = L["trim"]
+    sx0, sx1 = (4, 11) if skirt else (5, 10)
     im, d = canvas(16, 24)
     dy = 2 if boat else 0
     bob = 1 if step in (1, 3) and not boat else 0
     d.ellipse([3, 21, 12, 23], fill=(60, 40, 90, 55))
     hy = 2 + dy + bob          # head top
     ty = hy + 9                # torso top
-    dark = shade(HOOD, 0.62)
+    dark = shade(hood, 0.62)
 
     if not boat:  # legs + shoes
         l_off = {0: 0, 1: -1, 2: 0, 3: 1}[step]
         r_off = {0: 0, 1: 1, 2: 0, 3: -1}[step]
         if direction in ("down", "up"):
-            rect(d, 5, ty + 6, 10, ty + 7, SHORTS, None)
-            rect(d, 5, min(19, ty + 8 + max(0, l_off)), 6, 19, SKIN, None); rect(d, 9, min(19, ty + 8 + max(0, r_off)), 10, 19, SKIN, None)
-            rect(d, 4, 20 + min(0, l_off), 7, 21 + min(0, l_off), SHOE); rect(d, 8, 20 + min(0, r_off), 11, 21 + min(0, r_off), SHOE)
+            rect(d, sx0, ty + 6, sx1, ty + 7, shorts, None)
+            rect(d, 5, min(19, ty + 8 + max(0, l_off)), 6, 19, skin, None); rect(d, 9, min(19, ty + 8 + max(0, r_off)), 10, 19, skin, None)
+            rect(d, 4, 20 + min(0, l_off), 7, 21 + min(0, l_off), shoe); rect(d, 8, 20 + min(0, r_off), 11, 21 + min(0, r_off), shoe)
         else:
             sx = 1 if direction == "right" else -1
-            rect(d, 6, ty + 6, 9, ty + 7, SHORTS, None); rect(d, 7, min(19, ty + 8), 8, 19, SKIN, None)
+            rect(d, sx0 + 1, ty + 6, sx1 - 1, ty + 7, shorts, None); rect(d, 7, min(19, ty + 8), 8, 19, skin, None)
             fx = 7 + sx * {0: 0, 1: 2, 2: 0, 3: -2}[step]
-            rect(d, fx - 1, 20, fx + 2, 21, SHOE)
+            rect(d, fx - 1, 20, fx + 2, 21, shoe)
 
     # torso (hoodie)
-    rect(d, 5, ty, 10, ty + 5, HOOD, dark)
+    rect(d, 5, ty, 10, ty + 5, hood, dark)
     if direction == "up":
-        rect(d, 5, ty + 1, 10, ty + 5, PACK, shade(PACK, 0.6))
+        rect(d, 5, ty + 1, 10, ty + 5, pack, shade(pack, 0.6))
     elif direction == "down":
-        d.point((7, ty + 1), fill=hx("#ffffff")); d.point((8, ty + 1), fill=hx("#ffffff")); d.point((8, ty + 3), fill=hx("#3aa58a"))
+        d.point((7, ty + 1), fill=trim); d.point((8, ty + 1), fill=trim); d.point((8, ty + 3), fill=shade(trim, 0.75))
     else:
         bx = 4 if direction == "right" else 11
-        rect(d, bx - 1, ty + 1, bx + 1, ty + 5, PACK, shade(PACK, 0.6))
+        rect(d, bx - 1, ty + 1, bx + 1, ty + 5, pack, shade(pack, 0.6))
     if direction in ("down", "up"):
         a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
-        rect(d, 3, ty + 1 + max(0, a), 4, ty + 4 + max(0, a), HOOD, dark); rect(d, 11, ty + 1 + max(0, -a), 12, ty + 4 + max(0, -a), HOOD, dark)
+        rect(d, 3, ty + 1 + max(0, a), 4, ty + 4 + max(0, a), hood, dark); rect(d, 11, ty + 1 + max(0, -a), 12, ty + 4 + max(0, -a), hood, dark)
 
-    # head: big round bob haircut
-    rect(d, 3, hy, 12, hy + 8, SKIN, INK)
+    # head
+    rect(d, 3, hy, 12, hy + 8, skin, INK)
     if direction == "up":
-        rect(d, 3, hy, 12, hy + 8, HAIR, INK)
+        if short: rect(d, 4, hy + 1, 11, hy + 5, hair, None)
+        else: rect(d, 3, hy, 12, hy + 8, hair, INK)
+        if long_: rect(d, 4, hy + 9, 11, hy + 11, hair, None)
     elif direction == "down":
-        rect(d, 3, hy, 12, hy + 3, HAIR, INK); rect(d, 3, hy, 4, hy + 6, HAIR, None); rect(d, 11, hy, 12, hy + 6, HAIR, None)
+        if short:
+            rect(d, 4, hy + 1, 11, hy + 2, hair, None); rect(d, 3, hy + 1, 4, hy + 3, hair, None); rect(d, 11, hy + 1, 12, hy + 3, hair, None)
+        else:
+            side = 9 if long_ else 6
+            rect(d, 3, hy, 12, hy + 3, hair, INK); rect(d, 3, hy, 4, hy + side, hair, None); rect(d, 11, hy, 12, hy + side, hair, None)
         d.point((6, hy + 5), fill=INK); d.point((9, hy + 5), fill=INK)
-        d.point((5, hy + 6), fill=BLUSH); d.point((10, hy + 6), fill=BLUSH)
+        if L["blush"]:
+            d.point((5, hy + 6), fill=L["blush"]); d.point((10, hy + 6), fill=L["blush"])
     else:
         left = direction == "left"
-        rect(d, 3, hy, 12, hy + 3, HAIR, INK)
-        if left: rect(d, 8, hy, 12, hy + 6, HAIR, INK)
-        else: rect(d, 3, hy, 7, hy + 6, HAIR, INK)
+        if short:
+            rect(d, 4, hy + 1, 11, hy + 2, hair, None)
+            if left: rect(d, 8, hy + 1, 11, hy + 4, hair, None)
+            else: rect(d, 4, hy + 1, 7, hy + 4, hair, None)
+        else:
+            rect(d, 3, hy, 12, hy + 3, hair, INK)
+            if left: rect(d, 8, hy, 12, hy + 6, hair, INK)
+            else: rect(d, 3, hy, 7, hy + 6, hair, INK)
+            if long_:
+                if left: rect(d, 8, hy + 7, 12, hy + 10, hair, None)
+                else: rect(d, 3, hy + 7, 7, hy + 10, hair, None)
         ex = 5 if left else 10
-        d.point((ex, hy + 5), fill=INK); d.point((ex + (-1 if left else 1), hy + 6), fill=BLUSH)
-    d.point((7, hy + 1), fill=hx("#9fe0cf")); d.point((8, hy + 1), fill=hx("#9fe0cf"))  # hair clip
+        d.point((ex, hy + 5), fill=INK)
+        if L["blush"]: d.point((ex + (-1 if left else 1), hy + 6), fill=L["blush"])
+    if L["clip"]:
+        d.point((7, hy + 1), fill=L["clip"]); d.point((8, hy + 1), fill=L["clip"])  # hair clip
+
+    if L["dirty"]:
+        for x in (5, 8, 10):                       # messy hair tufts sticking up
+            d.point((x, hy - 1), fill=hair)
+        if direction == "down":                    # smudged face
+            d.point((4, hy + 7), fill=MUD); d.point((5, hy + 8), fill=MUD_DARK); d.point((11, hy + 7), fill=MUD); d.point((8, hy + 4), fill=MUD)
+        elif direction != "up":
+            d.point((6, hy + 7), fill=MUD); d.point((9, hy + 8), fill=MUD_DARK); d.point((8, hy + 4), fill=MUD)
+        if direction != "up":                      # stains on the hoodie, shorts and legs
+            for pt in ((6, ty + 4), (7, ty + 4), (9, ty + 2), (5, ty + 5)):
+                d.point(pt, fill=MUD)
+            d.point((10, ty + 5), fill=MUD_DARK)
+        else:
+            for pt in ((6, ty + 3), (9, ty + 4), (7, ty + 5)):
+                d.point(pt, fill=MUD)
+        if not boat:
+            d.point((5, ty + 7), fill=MUD); d.point((9, ty + 7), fill=MUD_DARK)
+            d.point((5 if direction != "right" else 8, 18), fill=MUD)
 
     if boat:  # hull + oars over the legs
         d.polygon([(0, 17), (15, 17), (13, 23), (2, 23)], fill=hx("#e0b088"), outline=hx("#6a4a3a"))
@@ -262,13 +338,18 @@ def player_frame(direction, step, boat):
 
 
 def player_sheets():
+    """player_<sibling>.png + player_<sibling>_boat.png (clean, playable) and player_<sibling>_dirty.png (story).
+    Each sheet is 4 columns x 4 rows of 16x24 frames, scaled x3."""
     order = ["down", "left", "right", "up"]
-    for boat, name in ((False, "player.png"), (True, "player_boat.png")):
-        sheet = Image.new("RGBA", (16 * 4, 24 * 4), (0, 0, 0, 0))
-        for r, dr in enumerate(order):
-            for c in range(4):
-                sheet.paste(player_frame(dr, c, boat), (c * 16, r * 24))
-        save(name, sheet)
+    for who in LOOKS:
+        variants = ((False, "player_%s_dirty.png" % who[:-6]),) if who.endswith("_dirty") else \
+                   ((False, "player_%s.png" % who), (True, "player_%s_boat.png" % who))
+        for boat, name in variants:
+            sheet = Image.new("RGBA", (16 * 4, 24 * 4), (0, 0, 0, 0))
+            for r, dr in enumerate(order):
+                for c in range(4):
+                    sheet.paste(player_frame(dr, c, boat, who), (c * 16, r * 24))
+            save(name, sheet)
 
 
 # ----------------------------------------------------------------------------- scenes
