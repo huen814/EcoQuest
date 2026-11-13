@@ -638,6 +638,8 @@ public final class GameSession {
             stars = pollution <= 25 && mistakes.size() <= 2 ? 3 : pollution <= 50 ? 2 : 1;
             save.stars[levelIndex] = Math.max(save.stars[levelIndex], stars);
             if (levelIndex < Levels.CAMPAIGN.size() - 1 && levelIndex + 1 > save.unlocked) save.unlocked = levelIndex + 1;
+            save.completed = Math.max(save.completed, levelIndex);
+            save.started = true;
             listener.onSound(Sfx.WIN);
         }
         save.store();

@@ -11,6 +11,9 @@ import javafx.scene.image.ImageView;
 
 /** Title screen: sky, skyline, the five bins bobbing at the bottom, and the start menu. */
 public final class MainMenuScreen extends Screen {
+    private static final int CONTINUE = 2;
+    private static final int SOUND = 5;
+
     private final MenuBox menu;
     private final ImageView[] bins = new ImageView[5];
     private final Ui.Label wallet;
@@ -37,13 +40,16 @@ public final class MainMenuScreen extends Screen {
         wallet.setLayoutY(Ui.H - 100);
 
         menu = new MenuBox(null, List.of(
-                new MenuBox.Entry("CAMPAIGN", app::continueCampaign),
-                new MenuBox.Entry("LEVEL SELECT", app::showLevelSelect),
-                new MenuBox.Entry("GAME MODES", app::showModes),
-                new MenuBox.Entry("UPGRADE SHOP", app::showShop),
+                new MenuBox.Entry("START GAME", app::showLevelSelect),
+                new MenuBox.Entry("NEW GAME", app::newGame),
+                new MenuBox.Entry("CONTINUE", app::continueGame),
                 new MenuBox.Entry("HOW TO PLAY", app::showHowTo),
+                new MenuBox.Entry("UPGRADE SHOP", app::showShop),
                 new MenuBox.Entry("SOUND: " + (app.save().muted ? "OFF" : "ON"), this::toggleSound),
                 new MenuBox.Entry("QUIT", () -> System.exit(0))), 300);
+        boolean canContinue = app.save().hasPlaythrough();
+        menu.setEnabled(CONTINUE, canContinue);
+        menu.setIndex(canContinue ? CONTINUE : 0);
         menu.setLayoutX((Ui.W - 300) / 2.0);
         menu.setLayoutY(118);
         root.getChildren().addAll(title, sub, menu);
@@ -51,7 +57,7 @@ public final class MainMenuScreen extends Screen {
 
     private void toggleSound() {
         app.toggleMute();
-        menu.setLabel(5, "SOUND: " + (app.save().muted ? "OFF" : "ON"));
+        menu.setLabel(SOUND, "SOUND: " + (app.save().muted ? "OFF" : "ON"));
     }
 
     @Override
@@ -71,7 +77,7 @@ public final class MainMenuScreen extends Screen {
 
     @Override
     public void onConfirm() {
-        app.sfx(Sfx.SELECT);
+        app.sfx(menu.isEnabled(menu.index()) ? Sfx.SELECT : Sfx.DENY);
         menu.confirm();
     }
 }

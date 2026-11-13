@@ -24,6 +24,7 @@ import com.codevibers.ecoquest.model.PlantingSpot;
 import com.codevibers.ecoquest.model.Player;
 import com.codevibers.ecoquest.model.SessionListener;
 import com.codevibers.ecoquest.model.Sfx;
+import com.codevibers.ecoquest.model.Sibling;
 import com.codevibers.ecoquest.model.WasteItem;
 
 import javafx.geometry.VPos;
@@ -209,7 +210,8 @@ public final class PlayScreen extends Screen implements SessionListener {
     }
 
     private void buildPlayer() {
-        Image[] sheets = {Sprites.get("player.png"), Sprites.get("player_boat.png")};
+        Sibling sibling = app.save().sibling();
+        Image[] sheets = {Sprites.get(sibling.sheet(false)), Sprites.get(sibling.sheet(true))};
         for (int b = 0; b < 2; b++) {
             for (int r = 0; r < 4; r++) {
                 channels[b][r][0] = new AnimationChannel(sheets[b], 4, PX, PLAYER_H, Duration.seconds(1), r * 4, r * 4);

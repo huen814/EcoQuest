@@ -15,6 +15,7 @@ public final class MenuBox extends Group {
 
     private final List<Entry> entries;
     private final List<Ui.Label> labels = new ArrayList<>();
+    private final boolean[] disabled;
     private final Polygon cursor = new Polygon(0, 0, 10, 6, 0, 12);
     private final double height;
     private int index;
@@ -23,6 +24,7 @@ public final class MenuBox extends Group {
     /** title may be null. */
     public MenuBox(String title, List<Entry> entries, double width) {
         this.entries = entries;
+        this.disabled = new boolean[entries.size()];
         double top = PAD;
         Ui.Label head = null;
         if (title != null) {
@@ -55,13 +57,27 @@ public final class MenuBox extends Group {
 
     public void setLabel(int i, String text) { labels.get(i).setText(text); }
 
+    /** Greyed-out entries can still be highlighted, but confirm() does nothing for them. */
+    public void setEnabled(int i, boolean on) {
+        disabled[i] = !on;
+        labels.get(i).setFill(on ? Ui.INK : javafx.scene.paint.Color.web("#9a9a98"));
+    }
+
+    public boolean isEnabled(int i) { return !disabled[i]; }
+
+    public void setIndex(int i) {
+        index = Math.floorMod(i, entries.size());
+        t = 0;
+        place();
+    }
+
     public void move(int delta) {
         index = Math.floorMod(index + delta, entries.size());
         t = 0;
         place();
     }
 
-    public void confirm() { entries.get(index).action().run(); }
+    public void confirm() { if (!disabled[index]) entries.get(index).action().run(); }
 
     public void update(double tpf) {
         t += tpf;

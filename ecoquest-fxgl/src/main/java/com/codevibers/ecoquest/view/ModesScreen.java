@@ -25,6 +25,9 @@ public final class ModesScreen extends ListScreen {
         return m.difficulty.toUpperCase() + "\n" + m.story[1];
     }
 
+    @Override
+    public void onCancel() { app.showLevelSelect(); }
+
     @Override void pick(int i) {
         app.sfx(Sfx.SELECT);
         app.startLevel(Levels.MODES.get(i), -1);
