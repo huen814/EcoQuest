@@ -28,9 +28,9 @@ Optional: `python3 tools/gen_sprites.py` regenerates all the art. You only need 
 
 ## Project Layout
 - `model/`: pure Java game rules on a 15x10 tile grid (no JavaFX). `GameSession` holds the whole game state.
-- `view/`: FXGL/JavaFX screens: `PlayScreen` (main gameplay), `MapView`, `Hud`, `DialogBox`, `MenuBox`, and the menus (`MainMenuScreen`, `LevelSelectScreen`, `ModesScreen`, `ShopScreen`, `HowToScreen`).
+- `view/`: FXGL/JavaFX screens: `PlayScreen` (main gameplay), `MapView`, `Hud`, `DialogBox`, `MenuBox`, and the menus (`MainMenuScreen`, `LevelSelectScreen`, `ModesScreen`, `ShopScreen`, `HowToScreen`, `CharacterSelectScreen`, `ConfirmNewGameScreen`).
 - `EcoQuestApp` + `InputState`: window setup, screen switching, keyboard input.
-- `tools/gen_sprites.py`: generates every texture (player sheets, items, bins, tiles, backdrops). You can swap in hand-made PNGs with the same name and size.
+- `tools/gen_sprites.py`: generates every texture (clean and dirty sprite sheets for both siblings, items, bins, tiles, backdrops). You can swap in hand-made PNGs with the same name and size.
 
 ## Optional: Pixel Font
 Drop `PressStart2P.ttf` into `src/main/resources/assets/ui/fonts/` for a more retro look. Without it the game uses bold monospace.
