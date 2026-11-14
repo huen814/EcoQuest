@@ -1,9 +1,15 @@
 package com.codevibers.ecoquest.model;
 
 import java.io.*;
+import java.util.EnumMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
-/** Progress, wallet, upgrades and best scores, stored in ~/.ecoquest.properties. */
+import com.codevibers.ecoquest.model.Cosmetic.Slot;
+
+/** Progress, coins, owned cosmetics and best scores, stored in ~/.ecoquest.properties. */
 public final class Save {
     private static final File FILE = new File(System.getProperty("user.home"), ".ecoquest.properties");
 
@@ -15,11 +21,19 @@ public final class Save {
     public boolean started;
     /** Chosen sibling (index into Sibling.values()), -1 until the player picks one for this playthrough. */
     public int sibling = -1;
+    /** Coins. Earned by playing, spent in the cosmetics shop. Kept across New Game. */
     public int wallet;
     public final int[] stars = new int[10];
     public final int[] high = new int[5];
-    /** Upgrade levels (0-3): boots, gloves, scanner, boat, drone, clover. */
+    /**
+     * Gameplay upgrade levels (0-3): boots, gloves, scanner, boat, drone, clover.
+     * There is no longer a shop to buy these; the field stays so old saves load and so the attribute system can reuse it.
+     */
     public final int[] up = new int[6];
+    /** Ids (e.g. "outfit_mint") of the cosmetics bought so far. The free defaults are always owned. Kept across New Game. */
+    private final Set<String> owned = new LinkedHashSet<>();
+    /** The cosmetic worn in each slot; a missing entry means the slot's default. Kept across New Game. */
+    private final Map<Slot, String> worn = new EnumMap<>(Slot.class);
     public boolean muted;
 
     public static Save load() {
@@ -33,6 +47,16 @@ public final class Save {
             parse(p.getProperty("hs"), s.high);
             parse(p.getProperty("u"), s.up);
             s.muted = "1".equals(p.getProperty("muted"));
+            // Cosmetics (absent in older saves, which simply start with none). Unknown ids are dropped.
+            String own = p.getProperty("own", "");
+            for (String raw : own.split(",")) {
+                final String id = raw.trim();
+                if (!id.isEmpty() && Cosmetics.ALL.stream().anyMatch(c -> c.id().equals(id) && !c.isDefault())) s.owned.add(id);
+            }
+            for (Slot slot : Slot.values()) {
+                Cosmetic c = Cosmetics.find(slot, p.getProperty("eq_" + slot.name().toLowerCase(), Cosmetic.DEFAULT_ID));
+                if (c != null && s.owns(c)) s.worn.put(slot, c.id());   // (not filtered by sibling here: sibling is read later)
+            }
             // Newer keys. Saves from older versions don't have them, so work them out from the old data.
             int highestStar = -1;
             for (int i = 0; i < s.stars.length; i++) if (s.stars[i] > 0) highestStar = i;
@@ -54,6 +78,8 @@ public final class Save {
             p.setProperty("hs", csv(high));
             p.setProperty("u", csv(up));
             p.setProperty("muted", muted ? "1" : "0");
+            p.setProperty("own", String.join(",", owned));
+            for (Slot slot : Slot.values()) p.setProperty("eq_" + slot.name().toLowerCase(), worn.getOrDefault(slot, Cosmetic.DEFAULT_ID));
             p.setProperty("lc", "" + completed);
             p.setProperty("started", started ? "1" : "0");
             p.setProperty("sib", "" + sibling);
@@ -74,9 +100,39 @@ public final class Save {
     /** True when a previous campaign playthrough exists to continue. */
     public boolean hasPlaythrough() { return started || completed >= 0; }
 
+    // ------------------------------------------------------------------ cosmetics
+
+    public boolean owns(Cosmetic c) { return c.isDefault() || owned.contains(c.id()); }
+
+    /** What is worn in a slot right now (the slot's default when nothing is equipped). */
+    public Cosmetic worn(Slot slot) {
+        Cosmetic c = Cosmetics.find(slot, worn.getOrDefault(slot, Cosmetic.DEFAULT_ID));
+        // A design made for the other sibling is simply not shown on this one (it stays remembered in the save).
+        return c != null && c.fits(sibling()) ? c : Cosmetics.defaultFor(slot);
+    }
+
+    public boolean isWorn(Cosmetic c) { return worn(c.slot()).equals(c); }
+
+    /** Buys a cosmetic with coins. False (nothing changes) if it is already owned or the player cannot afford it. */
+    public boolean buy(Cosmetic c) {
+        if (owns(c) || wallet < c.cost()) return false;
+        wallet -= c.cost();
+        owned.add(c.id());
+        store();
+        return true;
+    }
+
+    /** Wears an owned cosmetic. False if it is not owned. */
+    public boolean wear(Cosmetic c) {
+        if (!owns(c) || !c.fits(sibling())) return false;
+        worn.put(c.slot(), c.id());
+        store();
+        return true;
+    }
+
     /**
      * Wipes the story progress and the attributes (upgrades) for a fresh playthrough.
-     * Wallet, mode high scores and the sound setting are kept (the wallet is the coin balance for cosmetics later).
+     * Coins, owned and worn cosmetics, mode high scores and the sound setting are kept.
      */
     public void newGame() {
         unlocked = 0;
@@ -87,8 +143,6 @@ public final class Save {
         java.util.Arrays.fill(up, 0);
         store();
     }
-
-    public static int upgradeCost(int level) { return 80 + level * 80; }
 
     private static String csv(int[] a) {
         StringBuilder sb = new StringBuilder();

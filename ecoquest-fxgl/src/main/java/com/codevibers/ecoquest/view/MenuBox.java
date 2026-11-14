@@ -6,7 +6,7 @@ import java.util.List;
 import javafx.scene.Group;
 import javafx.scene.shape.Polygon;
 
-/** Vertical choice list with a blinking arrow cursor (Emerald start-menu look). */
+
 public final class MenuBox extends Group {
     public record Entry(String label, Runnable action) { }
 
@@ -21,7 +21,7 @@ public final class MenuBox extends Group {
     private int index;
     private double t;
 
-    /** title may be null. */
+
     public MenuBox(String title, List<Entry> entries, double width) {
         this.entries = entries;
         this.disabled = new boolean[entries.size()];

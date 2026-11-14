@@ -41,9 +41,5 @@ public final class Levels {
             new LevelConfig("Zen Garden", "No pressure, just recycling", "Sprout: Breathe. Sort. Enjoy the view.", "Pollution never rises. Pause (P) to finish.")
                     .mode(Mode.ZEN, 4).rate(2.2, 7, 0, INF).hz(0, 0, 0, 0, 1).scene("park").tint(255, 170, 90, .12).tip("Row the boat (B) and enjoy the sunset."));
 
-    public static final String[][] UPGRADES = {
-            {"Speed Boots", "Walk faster"}, {"Big Gloves", "Carry 1 more item per level"}, {"Eco Scanner", "Longer reach + bin hints"},
-            {"Turbo Boat", "Row faster on the river"}, {"Eco Drone", "Auto-cleans litter every few seconds"}, {"Lucky Clover", "More and longer Eco Boosts"}};
-
     private Levels() { }
 }

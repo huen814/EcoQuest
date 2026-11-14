@@ -234,9 +234,196 @@ LOOKS = {
 }
 
 
-def player_frame(direction, step, boat, who="sister"):
-    """One 16x24 frame, chibi proportions (big head). step 0..3 (0,2 stand; 1,3 stride)."""
+# ----------------------------------------------------------------------------- shop outfits (new designs)
+#
+# Drawn on the same 16x24 frame as the plain looks. Hair strokes use the exact HAIR colour so the shop's hair
+# colours still apply on top of them, and the boat hull is drawn by player_frame as usual.
+
+WITCH_BLACK = hx("#2b2040")
+WITCH_PURPLE = hx("#9b3fe8")
+WITCH_PURPLE_DK = hx("#5b22a8")
+GOLD = hx("#f2b43c")
+
+
+def draw_witch(d, direction, step, boat, L, hy, ty):
+    """Pointed hat with a purple band and gold buckle, a purple collar, and a flared black dress with a purple frill."""
+    if direction == "down":
+        d.point((7, ty), fill=WITCH_PURPLE); d.point((8, ty), fill=WITCH_PURPLE)
+        d.point((6, ty + 1), fill=WITCH_PURPLE); d.point((9, ty + 1), fill=WITCH_PURPLE)
+    if not boat:
+        rect(d, 3, ty + 6, 12, ty + 6, WITCH_BLACK, None)           # flared skirt
+        rect(d, 2, ty + 7, 13, ty + 7, WITCH_PURPLE, None)          # purple frill
+        d.point((2, ty + 7), fill=WITCH_PURPLE_DK); d.point((13, ty + 7), fill=WITCH_PURPLE_DK)
+    # hat: cone, band, brim
+    b = hy + 2
+    rect(d, 4, hy + 1, 11, b - 1, WITCH_BLACK, None)
+    rect(d, 5, hy, 10, hy, WITCH_BLACK, None)
+    rect(d, 6, hy - 1, 9, hy - 1, WITCH_BLACK, None)
+    rect(d, 7, hy - 2, 8, hy - 2, WITCH_BLACK, None)
+    d.point((9, hy - 2), fill=WITCH_PURPLE_DK); d.point((10, hy - 3 if hy - 3 >= 0 else 0), fill=WITCH_PURPLE_DK)  # bent tip
+    rect(d, 4, hy + 1, 11, hy + 1, WITCH_PURPLE, None)               # band
+    if direction == "down":
+        d.point((7, hy + 1), fill=GOLD); d.point((8, hy + 1), fill=GOLD)  # buckle
+    rect(d, 0, b, 15, b + 1, WITCH_PURPLE, WITCH_PURPLE_DK)         # brim
+    rect(d, 1, b + 1, 14, b + 1, WITCH_PURPLE_DK, None)
+
+
+IDOL_RED = hx("#cf2c45")
+IDOL_RED_DK = hx("#7e1426")
+IDOL_BLACK = hx("#26222c")
+
+
+def draw_idol(d, direction, step, boat, L, hy, ty):
+    """Twin tails with red ties, a black choker, white puff sleeves under a red strapped vest, and a black skirt."""
+    hair = HAIR_SRC
+    # twin tails (one is hidden behind the head from the side)
+    tails = []
+    if direction in ("down", "up"):
+        tails = [(1, 2), (13, 14)]
+    elif direction == "left":
+        tails = [(12, 14)]
+    else:
+        tails = [(1, 3)]
+    for x0, x1 in tails:
+        out = x0 < 8                                                  # True for the tail on the left of the sprite
+        rect(d, x0, hy + 4, x1, hy + 8, hair, None)                   # hangs down beside the head...
+        if out:
+            rect(d, x0 - 1, hy + 9, x1 - 1, hy + 11, hair, None)      # ...and curls outwards at the tip
+        else:
+            rect(d, x0 + 1, hy + 9, x1 + 1, hy + 11, hair, None)
+        rect(d, x0, hy + 3, x1, hy + 3, IDOL_RED, None)               # red hair tie
+    # choker + vest over the torso (white blouse underneath, so the arms read as puff sleeves)
+    if direction != "up":
+        rect(d, 5, ty + 1, 10, ty + 5, IDOL_RED, IDOL_RED_DK)
+        if direction == "down":
+            d.point((7, ty), fill=IDOL_BLACK); d.point((8, ty), fill=IDOL_BLACK)  # choker
+            d.line([(6, ty + 1), (6, ty + 3)], fill=IDOL_BLACK); d.line([(9, ty + 1), (9, ty + 3)], fill=IDOL_BLACK)  # straps
+            d.point((7, ty + 1), fill=hx("#f6c0cc")); d.point((8, ty + 1), fill=hx("#f6c0cc"))
+    else:
+        rect(d, 5, ty + 1, 10, ty + 5, IDOL_RED, IDOL_RED_DK)
+        d.line([(6, ty + 1), (6, ty + 4)], fill=IDOL_BLACK); d.line([(9, ty + 1), (9, ty + 4)], fill=IDOL_BLACK)
+    if direction in ("down", "up"):
+        sw = hx("#ffffff"); sw_line = hx("#d6cfe2")                   # white puff sleeves, redrawn so they stay white
+        a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
+        rect(d, 2, ty + 1 + max(0, a), 4, ty + 3 + max(0, a), sw, sw_line)
+        rect(d, 11, ty + 1 + max(0, -a), 13, ty + 3 + max(0, -a), sw, sw_line)
+    if not boat:
+        rect(d, 3, ty + 6, 12, ty + 7, IDOL_BLACK, None)            # skirt
+        rect(d, 3, ty + 7, 12, ty + 7, hx("#3a3446"), None)
+
+
+HAIR_SRC = hx("#2b2838")
+
+REAPER_CLOAK = hx("#343a58")
+REAPER_DARK = hx("#1e2238")
+REAPER_LIGHT = hx("#4a5278")
+BONE = hx("#ece6d4")
+EYE_GLOW = hx("#7cc8f4")
+ROPE = hx("#7a5230")
+
+
+def draw_reaper(d, direction, step, boat, L, hy, ty):
+    """Big dark hood with a skull face and glowing blue eyes, a rope belt, bony hands and a ragged cloak hem."""
+    rect(d, 5, hy - 2, 10, hy - 2, REAPER_DARK, None)                   # hood peak
+    rect(d, 3, hy - 1, 12, hy - 1, REAPER_CLOAK, REAPER_DARK)
+    rect(d, 2, hy, 13, hy + 8, REAPER_CLOAK, REAPER_DARK)               # hood, a little wider than the head
+    d.point((4, hy)); d.point((4, hy), fill=REAPER_LIGHT); d.point((5, hy), fill=REAPER_LIGHT)
+    if direction == "down":
+        rect(d, 4, hy + 2, 11, hy + 8, REAPER_DARK, None)               # shadow inside the hood
+        rect(d, 5, hy + 3, 10, hy + 8, BONE, None)                      # skull
+        rect(d, 5, hy + 4, 6, hy + 5, EYE_GLOW, None); rect(d, 9, hy + 4, 10, hy + 5, EYE_GLOW, None)
+        d.point((6, hy + 5), fill=REAPER_DARK); d.point((9, hy + 5), fill=REAPER_DARK)   # pupils
+        d.point((7, hy + 6), fill=REAPER_DARK); d.point((8, hy + 6), fill=REAPER_DARK)   # nose
+        for x in (6, 8): d.point((x, hy + 8), fill=REAPER_DARK)                           # teeth gaps
+    elif direction in ("left", "right"):
+        left = direction == "left"
+        x0, x1 = (3, 8) if left else (7, 12)
+        rect(d, x0, hy + 2, x1, hy + 8, REAPER_DARK, None)
+        rect(d, x0 + 1, hy + 3, x1, hy + 8, BONE, None) if left else rect(d, x0, hy + 3, x1 - 1, hy + 8, BONE, None)
+        ex = 5 if left else 9
+        rect(d, ex, hy + 4, ex + 1, hy + 5, EYE_GLOW, None)
+        d.point((ex if left else ex + 1, hy + 5), fill=REAPER_DARK)
+        d.point((x0 + 1 if left else x1 - 1, hy + 6), fill=REAPER_DARK)       # nose hole
+        d.point((x0 + 3 if left else x1 - 3, hy + 8), fill=REAPER_DARK)
+    else:
+        rect(d, 6, hy + 2, 9, hy + 2, REAPER_LIGHT, None)               # fold in the hood
+    # rope belt and bony hands
+    rect(d, 5, ty + 3, 10, ty + 3, ROPE, None)
+    if direction == "down":
+        d.point((8, ty + 4), fill=ROPE)
+    if direction in ("down", "up"):
+        a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
+        d.point((3, ty + 4 + max(0, a)), fill=BONE); d.point((4, ty + 4 + max(0, a)), fill=BONE)
+        d.point((11, ty + 4 + max(0, -a)), fill=BONE); d.point((12, ty + 4 + max(0, -a)), fill=BONE)
+    if not boat:
+        rect(d, 3, ty + 6, 12, ty + 7, REAPER_CLOAK, None)               # cloak hem
+        for x in (3, 5, 7, 9, 11):                                       # ragged edge
+            d.point((x, ty + 7), fill=(0, 0, 0, 0))
+        rect(d, 3, ty + 6, 12, ty + 6, REAPER_LIGHT, None)
+
+
+STAGE_BLUE = hx("#7fc4ee")
+STAGE_WHITE = hx("#f6f2ff")
+STAGE_GOLD = hx("#f4c542")
+STAGE_PINK = hx("#f58cb8")
+
+
+def draw_stage(d, direction, step, boat, L, hy, ty):
+    """Boy-idol stage look: sky-blue jacket with white lapels, gold buttons and epaulettes, a pink bow tie,
+    white cuffs, a gold star hair clip and a headset mic."""
+    # star clip + headset mic
+    d.point((10, hy + 2), fill=STAGE_GOLD); d.point((11, hy + 3), fill=STAGE_GOLD); d.point((9, hy + 3), fill=STAGE_GOLD)
+    d.point((10, hy + 3), fill=hx("#fff2a8")); d.point((10, hy + 4), fill=STAGE_GOLD)
+    if direction == "down":
+        d.point((12, hy + 5), fill=hx("#4a4668")); d.point((12, hy + 6), fill=hx("#4a4668")); d.point((11, hy + 7), fill=hx("#4a4668"))
+        d.point((10, hy + 7), fill=STAGE_PINK)
+    elif direction == "left":
+        d.point((10, hy + 5), fill=hx("#4a4668")); d.point((9, hy + 7), fill=hx("#4a4668")); d.point((8, hy + 7), fill=STAGE_PINK)
+    elif direction == "right":
+        d.point((5, hy + 5), fill=hx("#4a4668")); d.point((6, hy + 7), fill=hx("#4a4668")); d.point((7, hy + 7), fill=STAGE_PINK)
+    # jacket
+    if direction == "down":
+        d.line([(6, ty + 1), (7, ty + 3)], fill=STAGE_WHITE); d.line([(9, ty + 1), (8, ty + 3)], fill=STAGE_WHITE)   # lapels
+        d.point((7, ty), fill=STAGE_PINK); d.point((8, ty), fill=STAGE_PINK)                                          # bow tie
+        d.point((6, ty), fill=hx("#d96a98")); d.point((9, ty), fill=hx("#d96a98"))
+        d.point((7, ty + 4), fill=STAGE_GOLD); d.point((8, ty + 4), fill=STAGE_GOLD)                                  # buttons
+        d.point((7, ty + 5), fill=STAGE_GOLD)
+    elif direction in ("left", "right"):
+        bx = 5 if direction == "left" else 10
+        d.point((bx, ty + 2), fill=STAGE_GOLD); d.point((bx, ty + 4), fill=STAGE_GOLD)
+    if direction in ("down", "up"):
+        a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
+        for x in (3, 4):
+            d.point((x, ty + 1 + max(0, a)), fill=STAGE_GOLD)                                                         # epaulettes
+            d.point((x, ty + 4 + max(0, a)), fill=STAGE_WHITE)                                                        # cuffs
+        for x in (11, 12):
+            d.point((x, ty + 1 + max(0, -a)), fill=STAGE_GOLD)
+            d.point((x, ty + 4 + max(0, -a)), fill=STAGE_WHITE)
+    if direction == "up":
+        d.line([(5, ty + 5), (10, ty + 5)], fill=STAGE_GOLD)                                                          # back sash
+    if not boat:
+        rect(d, 4, ty + 6, 11, ty + 6, STAGE_BLUE, None)                                                              # short jacket tails
+        d.point((4, ty + 6), fill=STAGE_WHITE); d.point((11, ty + 6), fill=STAGE_WHITE)
+
+
+OUTFITS = {
+    "witch": {"who": ("sister",), "look": dict(hood=WITCH_BLACK, shorts=WITCH_BLACK, shoe=hx("#2a2038"), pack=WITCH_BLACK,
+                           trim=WITCH_PURPLE, skirt=True, clip=None), "draw": draw_witch},
+    "idol": {"who": ("sister",), "look": dict(hood=hx("#fbf4f8"), shorts=IDOL_BLACK, shoe=hx("#2a2630"), pack=IDOL_BLACK,
+                          trim=IDOL_BLACK, skirt=True, clip=hx("#ffffff")), "draw": draw_idol},
+    "reaper": {"who": ("brother",), "look": dict(hood=REAPER_CLOAK, shorts=hx("#2a2e48"), shoe=hx("#20243a"), pack=REAPER_CLOAK,
+                                                 trim=REAPER_CLOAK, skirt=True, clip=None, blush=None), "draw": draw_reaper},
+    "stage": {"who": ("brother",), "look": dict(hood=STAGE_BLUE, shorts=STAGE_WHITE, shoe=hx("#ffffff"), pack=STAGE_BLUE,
+                                                trim=STAGE_WHITE, skirt=False, clip=None, blush=None), "draw": draw_stage},
+}
+
+
+def player_frame(direction, step, boat, who="sister", outfit=None):
+    """One 16x24 frame, chibi proportions (big head). step 0..3 (0,2 stand; 1,3 stride).
+    `outfit` is a shop outfit design ("witch", "idol"): it restyles the same frame, so animation and hitbox never change."""
     L = LOOKS[who]
+    if outfit:
+        L = dict(L, **OUTFITS[outfit]["look"])
     skin, hair, hood, shorts, shoe, pack = L["skin"], L["hair"], L["hood"], L["shorts"], L["shoe"], L["pack"]
     short = L["style"] == "short"
     long_ = L["style"] == "long"
@@ -329,6 +516,9 @@ def player_frame(direction, step, boat, who="sister"):
             d.point((5, ty + 7), fill=MUD); d.point((9, ty + 7), fill=MUD_DARK)
             d.point((5 if direction != "right" else 8, 18), fill=MUD)
 
+    if outfit:
+        OUTFITS[outfit]["draw"](d, direction, step, boat, L, hy, ty)
+
     if boat:  # hull + oars over the legs
         d.polygon([(0, 17), (15, 17), (13, 23), (2, 23)], fill=hx("#e0b088"), outline=hx("#6a4a3a"))
         d.line([(2, 19), (13, 19)], fill=hx("#f0cca6"))
@@ -350,6 +540,21 @@ def player_sheets():
                 for c in range(4):
                     sheet.paste(player_frame(dr, c, boat, who), (c * 16, r * 24))
             save(name, sheet)
+
+
+def outfit_sheets():
+    """player_<sibling>_<outfit>.png and ..._boat.png for each shop outfit design, for the sibling it was drawn for."""
+    order = ["down", "left", "right", "up"]
+    for who in ("sister", "brother"):
+        for outfit, spec in OUTFITS.items():
+            if who not in spec["who"]:   # each design is drawn for one sibling only
+                continue
+            for boat in (False, True):
+                sheet = Image.new("RGBA", (16 * 4, 24 * 4), (0, 0, 0, 0))
+                for r, dr in enumerate(order):
+                    for c in range(4):
+                        sheet.paste(player_frame(dr, c, boat, who, outfit), (c * 16, r * 24))
+                save("player_%s_%s%s.png" % (who, outfit, "_boat" if boat else ""), sheet)
 
 
 # ----------------------------------------------------------------------------- scenes
@@ -561,7 +766,7 @@ def backdrop_sprites():
 
 
 def main():
-    item_sprites(); bin_sprites(); world_sprites(); player_sheets(); tile_sprites(); backdrop_sprites()
+    item_sprites(); bin_sprites(); world_sprites(); player_sheets(); outfit_sheets(); tile_sprites(); backdrop_sprites()
     n = sum(len(f) for _, _, f in os.walk(OUT))
     print("wrote %d textures to %s" % (n, os.path.normpath(OUT)))
 

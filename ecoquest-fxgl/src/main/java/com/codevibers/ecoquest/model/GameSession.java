@@ -402,7 +402,7 @@ public final class GameSession {
             money += 100;
             pollution += 15;
             score -= 10;
-            toast("Accepted the factory deal", "+PHP 100, but Pollution +15 and Score -10.", false, 3.5);
+            toast("Accepted the factory deal", "+100 coins, but Pollution +15 and Score -10.", false, 3.5);
         } else {
             score += 10;
             toast("Rejected the factory deal! +10 Score", "Integrity keeps the city clean.", true, 3.5);
@@ -608,7 +608,7 @@ public final class GameSession {
             missionDone = true;
             score += 100;
             money += 50;
-            toast("Mission complete! +100 Score, PHP 50", score >= cfg.target ? "Target reached!" : "Now reach the target score of " + cfg.target + ".", true, 4);
+            toast("Mission complete! +100 Score, +50 coins", score >= cfg.target ? "Target reached!" : "Now reach the target score of " + cfg.target + ".", true, 4);
             listener.onSound(Sfx.MISSION);
         }
         if (missionDone && score >= cfg.target) endRun(true);

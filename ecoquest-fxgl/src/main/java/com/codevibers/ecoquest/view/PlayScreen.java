@@ -46,7 +46,6 @@ import javafx.util.Duration;
 /**
  * The gameplay screen. The rules live in {@link GameSession}; this class turns that state into
  * FXGL entities (tiles, items, bins, trees, the Guardian), handles grid walking with smooth
- * tile-to-tile movement, and shows the story / offer / result overlays in the Emerald dialog style.
  */
 public final class PlayScreen extends Screen implements SessionListener {
     private enum State { BRIEF, PLAY, PAUSED, OFFER, RESULT }
@@ -211,7 +210,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     private void buildPlayer() {
         Sibling sibling = app.save().sibling();
-        Image[] sheets = {Sprites.get(sibling.sheet(false)), Sprites.get(sibling.sheet(true))};
+        Image[] sheets = {Wardrobe.sheet(app.save(), sibling, false), Wardrobe.sheet(app.save(), sibling, true)};
         for (int b = 0; b < 2; b++) {
             for (int r = 0; r < 4; r++) {
                 channels[b][r][0] = new AnimationChannel(sheets[b], 4, PX, PLAYER_H, Duration.seconds(1), r * 4, r * 4);
@@ -631,7 +630,7 @@ public final class PlayScreen extends Screen implements SessionListener {
     @Override
     public void onFactoryOffer() {
         state = State.OFFER;
-        dialog.show(List.of("A shady factory boss offers you PHP 100 to look the other way. "
+        dialog.show(List.of("A shady factory boss offers you 100 coins to look the other way. "
                 + "It would pollute the city. What do you do?"));
         menu = new MenuBox(null, List.of(
                 new MenuBox.Entry("ACCEPT THE MONEY", () -> answerOffer(true)),
@@ -683,7 +682,7 @@ public final class PlayScreen extends Screen implements SessionListener {
             default -> "POLLUTION " + (int) Math.min(100, session.pollution()) + "%";
         };
         Ui.Label stats = new Ui.Label("SCORE " + session.score() + "   SORTED " + session.sorted()
-                + "\nBEST COMBO " + session.bestCombo() + "   PHP EARNED " + session.money()
+                + "\nBEST COMBO " + session.bestCombo() + "   COINS EARNED " + session.money()
                 + "\n" + extra, 12, Ui.INK);
         stats.setLayoutX(78);
         stats.setLayoutY(y);
@@ -704,7 +703,7 @@ public final class PlayScreen extends Screen implements SessionListener {
             entries.add(new MenuBox.Entry("NEXT LEVEL", () -> app.startLevel(Levels.CAMPAIGN.get(levelIndex + 1), levelIndex + 1)));
         }
         entries.add(new MenuBox.Entry("RETRY", () -> app.startLevel(cfg, levelIndex)));
-        entries.add(new MenuBox.Entry("UPGRADE SHOP", app::showShop));
+        entries.add(new MenuBox.Entry("COSMETICS SHOP", app::showShop));
         entries.add(new MenuBox.Entry(cfg.isCampaign() ? "LEVEL SELECT" : "GAME MODES",
                 cfg.isCampaign() ? app::showLevelSelect : app::showModes));
         entries.add(new MenuBox.Entry("MAIN MENU", app::showMainMenu));

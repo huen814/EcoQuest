@@ -35,7 +35,7 @@ public final class MainMenuScreen extends Screen {
         Ui.Label sub = new Ui.Label("GUARDIANS OF THE GREEN CITY", 11, Ui.WHITE);
         sub.setLayoutX((Ui.W - sub.textWidth()) / 2);
         sub.setLayoutY(74);
-        wallet = new Ui.Label("PHP " + app.save().wallet, 11, Ui.INK);
+        wallet = new Ui.Label("COINS " + app.save().wallet, 11, Ui.INK);
         wallet.setLayoutX(26);
         wallet.setLayoutY(Ui.H - 100);
 
@@ -44,7 +44,7 @@ public final class MainMenuScreen extends Screen {
                 new MenuBox.Entry("NEW GAME", app::newGame),
                 new MenuBox.Entry("CONTINUE", app::continueGame),
                 new MenuBox.Entry("HOW TO PLAY", app::showHowTo),
-                new MenuBox.Entry("UPGRADE SHOP", app::showShop),
+                new MenuBox.Entry("COSMETICS SHOP", app::showShop),
                 new MenuBox.Entry("SOUND: " + (app.save().muted ? "OFF" : "ON"), this::toggleSound),
                 new MenuBox.Entry("QUIT", () -> System.exit(0))), 300);
         boolean canContinue = app.save().hasPlaythrough();

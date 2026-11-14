@@ -26,6 +26,9 @@ public enum Sibling {
     /** Clean playable sheet (walking, or rowing the boat). */
     public String sheet(boolean boat) { return "player_" + id + (boat ? "_boat" : "") + ".png"; }
 
+    /** Sheet for a drawn shop outfit design (e.g. "witch"): player_sister_witch.png, or player_sister_witch_boat.png. */
+    public String artSheet(String art, boolean boat) { return "player_" + id + "_" + art + (boat ? "_boat" : "") + ".png"; }
+
     /** Dirty walking sheet, for when this sibling is the one that was not picked (cutscenes). */
     public String dirtySheet() { return "player_" + id + "_dirty.png"; }
 }

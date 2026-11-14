@@ -8,7 +8,7 @@ import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
-/** Two Emerald-style panels across the top: level / mission / score, and the pollution meter. */
+
 public final class Hud extends Group {
     private static final double LEFT_W = 440;
     private static final double RIGHT_W = Ui.W - LEFT_W - 18;
@@ -104,7 +104,7 @@ public final class Hud extends Group {
         if (s.combo() > 0) st.append("COMBO x").append(s.combo()).append("  ");
         st.append("CARRY ").append(s.player().carried().size()).append('/').append(s.carryCapacity());
         if (s.boostSeconds() > 0) st.append("  BOOST ").append((int) Math.ceil(s.boostSeconds())).append('S');
-        st.append("  PHP ").append(s.money());
+        st.append("  COINS ").append(s.money());
         set(2, status, st.toString());
 
         set(3, polValue, pol + "%");
