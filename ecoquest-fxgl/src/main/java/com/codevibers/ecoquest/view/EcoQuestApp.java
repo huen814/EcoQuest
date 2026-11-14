@@ -6,9 +6,12 @@ import com.almasb.fxgl.dsl.FXGL;
 import com.codevibers.ecoquest.model.Direction;
 import com.codevibers.ecoquest.model.LevelConfig;
 import com.codevibers.ecoquest.model.Levels;
+import com.codevibers.ecoquest.model.Progression;
 import com.codevibers.ecoquest.model.Save;
 import com.codevibers.ecoquest.model.Sfx;
 import com.codevibers.ecoquest.view.Audio;
+import com.codevibers.ecoquest.view.AttributeChoiceScreen;
+import com.codevibers.ecoquest.view.AttributesScreen;
 import com.codevibers.ecoquest.view.HowToScreen;
 import com.codevibers.ecoquest.view.LevelSelectScreen;
 import com.codevibers.ecoquest.view.CharacterSelectScreen;
@@ -89,6 +92,10 @@ public class EcoQuestApp extends GameApplication {
     }
 
     public void startLevel(LevelConfig cfg, int index) {
+        if (cfg.isCampaign() && Progression.hasOffer(save)) {
+            showAttributeChoice(() -> startLevel(cfg, index));
+            return;
+        }
         if (cfg.isCampaign() && !save.hasChosenSibling()) {
             // First campaign level of a playthrough: pick a sibling, then carry on to this level.
             pending = new CharacterSelectScreen(this, () -> startLevel(cfg, index));
@@ -101,10 +108,16 @@ public class EcoQuestApp extends GameApplication {
         pending = new PlayScreen(this, cfg, index);
     }
     public void showMainMenu() { pending = new MainMenuScreen(this); }
-    public void showLevelSelect() { pending = new LevelSelectScreen(this); }
+    public void showLevelSelect() {
+        if (Progression.hasOffer(save)) showAttributeChoice(this::showLevelSelect);
+        else pending = new LevelSelectScreen(this);
+    }
+    public void showAttributeChoice(Runnable next) { pending = new AttributeChoiceScreen(this, next); }
     public void showModes() { pending = new ModesScreen(this); }
     public void showShop() { pending = new ShopScreen(this); }
     public void showHowTo() { pending = new HowToScreen(this); }
+    public void showAttributes() { pending = new AttributesScreen(this, this::showLevelSelect); }
+    public void showAttributesFromMenu() { pending = new AttributesScreen(this, this::showMainMenu); }
 
     public void showConfirmNewGame() { pending = new ConfirmNewGameScreen(this); }
 

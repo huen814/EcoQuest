@@ -9,6 +9,16 @@ public final class LevelSelectScreen extends ListScreen {
     public LevelSelectScreen(EcoQuestApp app) {
         super(app, "SELECT LEVEL");
         index = Math.min(app.save().unlocked, Levels.CAMPAIGN.size() - 1);
+        Ui.Label hint = new Ui.Label("LV " + app.save().level + "  SPACE: ATTRIBUTES", 10, Ui.FRAME_IN);
+        hint.setLayoutX(Ui.W - 36 - hint.textWidth());
+        hint.setLayoutY(26);
+        root.getChildren().add(hint);
+    }
+
+    @Override
+    public void onAction2() {
+        app.sfx(Sfx.SELECT);
+        app.showAttributes();
     }
 
     /** The extra row after the 10 levels opens the game modes. */

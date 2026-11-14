@@ -52,12 +52,21 @@ public final class GameSession {
     private boolean truckHit;
     private double truckWarnT;
     private double lowBridgeT;
+    private double xpAcc;
+    private final double xpScale;
+    private final boolean firstClear;
+    private Progression.Result progress;
 
     public GameSession(LevelConfig cfg, int levelIndex, Save save, Random rng) {
         this.cfg = cfg;
         this.levelIndex = levelIndex;
         this.save = save;
         this.rng = rng;
+        boolean cleared = levelIndex >= 0 && levelIndex < save.stars.length && save.stars[levelIndex] > 0;
+        this.firstClear = cfg.isCampaign() && !cleared;
+        this.xpScale = !cfg.isCampaign() ? 0
+                : (cleared ? Progression.REPLAY_SCALE : 1.0)
+                  * (1 + Progression.QUICK_LEARNER_PER_LEVEL * save.attr(Attribute.QUICK_LEARNER));
         this.map = new TileMap(cfg.hasRiver());
         this.spawnRate = cfg.spawn;
         this.pollutionRate = cfg.pp;
@@ -98,6 +107,10 @@ public final class GameSession {
     public double timeLeft() { return timeLeft; }
     public double boostSeconds() { return Math.max(0, boost); }
     public boolean missionDone() { return missionDone; }
+    public int xpEarned() { return (int) Math.round(xpAcc); }
+    public boolean earnsXp() { return xpScale > 0; }
+    /** Null until a campaign run has ended. */
+    public Progression.Result progression() { return progress; }
     public boolean ended() { return ended; }
     public boolean won() { return won; }
     public int binCapacity() { return cfg.cap > 0 ? cfg.cap : 10; }
@@ -288,6 +301,7 @@ public final class GameSession {
         player.carried.add(g);
         if (g.river) {
             cleaned++;
+            gainXp(Progression.XP_FISH);
             score += 25;
             pollution = Math.max(0, pollution - 10);
             g.river = false;
@@ -322,11 +336,13 @@ public final class GameSession {
                 player.carried.remove(item);
                 spot.plant();
                 planted++;
-                score += 20 * (boost > 0 ? 2 : 1);
+                gainXp(Progression.XP_PLANT);
+                int treePts = 20 + 5 * save.attr(Attribute.GREEN_THUMB);
+                score += treePts * (boost > 0 ? 2 : 1);
                 pollution = Math.max(0, pollution - 3);
-                toast("Tree planted! +20 Score", "Pollution -3. Trees clean the air.", true, 3.5);
+                toast("Tree planted! +" + treePts + " Score", "Pollution -3. Trees clean the air.", true, 3.5);
                 listener.onBurst(spot.col(), spot.row(), 0x5cd16a, 16);
-                listener.onFloatText(spot.col(), spot.row() - 1, "+20", 0x9be37a);
+                listener.onFloatText(spot.col(), spot.row() - 1, "+" + treePts, 0x9be37a);
                 listener.onSound(Sfx.PLANT);
                 checkMission();
             } else {
@@ -351,20 +367,23 @@ public final class GameSession {
             int mult = Math.min(4, 1 + combo / 3) * (boost > 0 ? 2 : 1);
             int pts = 10 * mult;
             score += pts;
-            money += 3;
-            pollution = Math.max(0, pollution - 5);
+            money += 3 + save.attr(Attribute.COIN_PURSE);
+            gainXp(Progression.XP_SORT);
+            int clean = 5 + save.attr(Attribute.FRESH_AIR);
+            pollution = Math.max(0, pollution - clean);
             listener.onBinLid(bin);
-            toast("Correct! +" + pts + " Score   Pollution -5", w.bin().explanation, true, 3.5);
+            toast("Correct! +" + pts + " Score   Pollution -" + clean, w.bin().explanation, true, 3.5);
             listener.onFloatText(bin.col(), bin.row() - 1, "+" + pts + (mult > 1 ? " x" + mult : ""), 0xfff48a);
             listener.onBurst(bin.col(), bin.row(), bin.type().rgb, 14);
             listener.onSound(Sfx.CORRECT);
         } else {
-            score -= 5;
+            int penalty = 5 - save.attr(Attribute.STEADY_HANDS);
+            score -= penalty;
             combo = 0;
             listener.onShake(.3);
             mistakes.add(w.type().label + " is not " + bin.type().label.toLowerCase() + " waste - it belongs in " + w.bin().label.toUpperCase());
-            toast("Wrong bin! -5 Score", w.bin().explanation, false, 3.5);
-            listener.onFloatText(bin.col(), bin.row() - 1, "-5", 0xff6a5e);
+            toast("Wrong bin! -" + penalty + " Score", w.bin().explanation, false, 3.5);
+            listener.onFloatText(bin.col(), bin.row() - 1, "-" + penalty, 0xff6a5e);
             listener.onBurst(bin.col(), bin.row(), 0x666666, 10);
             listener.onSound(Sfx.WRONG);
         }
@@ -408,6 +427,8 @@ public final class GameSession {
             toast("Rejected the factory deal! +10 Score", "Integrity keeps the city clean.", true, 3.5);
         }
     }
+
+    private void gainXp(double base) { xpAcc += base * xpScale; }
 
     private void toast(String a, String b, boolean ok, double secs) { listener.onToast(a, b, ok, secs); }
 
@@ -606,6 +627,7 @@ public final class GameSession {
     private void checkMission() {
         if (cfg.isCampaign() && !missionDone && sorted >= cfg.missionSort && planted >= cfg.missionPlant && cleaned >= cfg.missionClean) {
             missionDone = true;
+            gainXp(Progression.XP_MISSION);
             score += 100;
             money += 50;
             toast("Mission complete! +100 Score, +50 coins", score >= cfg.target ? "Target reached!" : "Now reach the target score of " + cfg.target + ".", true, 4);
@@ -636,12 +658,14 @@ public final class GameSession {
         won = win;
         if (win) {
             stars = pollution <= 25 && mistakes.size() <= 2 ? 3 : pollution <= 50 ? 2 : 1;
+            gainXp(Progression.clearBonus(levelIndex, stars));
             save.stars[levelIndex] = Math.max(save.stars[levelIndex], stars);
             if (levelIndex < Levels.CAMPAIGN.size() - 1 && levelIndex + 1 > save.unlocked) save.unlocked = levelIndex + 1;
             save.completed = Math.max(save.completed, levelIndex);
             save.started = true;
             listener.onSound(Sfx.WIN);
         }
+        progress = Progression.apply(save, xpEarned(), won && firstClear, rng);
         save.store();
     }
 

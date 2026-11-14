@@ -22,6 +22,7 @@ import com.codevibers.ecoquest.model.Levels;
 import com.codevibers.ecoquest.model.Pickup;
 import com.codevibers.ecoquest.model.PlantingSpot;
 import com.codevibers.ecoquest.model.Player;
+import com.codevibers.ecoquest.model.Progression;
 import com.codevibers.ecoquest.model.SessionListener;
 import com.codevibers.ecoquest.model.Sfx;
 import com.codevibers.ecoquest.model.Sibling;
@@ -46,6 +47,7 @@ import javafx.util.Duration;
 /**
  * The gameplay screen. The rules live in {@link GameSession}; this class turns that state into
  * FXGL entities (tiles, items, bins, trees, the Guardian), handles grid walking with smooth
+ * tile-to-tile movement, and shows the story / offer / result overlays in the Emerald dialog style.
  */
 public final class PlayScreen extends Screen implements SessionListener {
     private enum State { BRIEF, PLAY, PAUSED, OFFER, RESULT }
@@ -59,6 +61,7 @@ public final class PlayScreen extends Screen implements SessionListener {
     private final GameSession session;
     private final Random rng = new Random();
     private State state = State.BRIEF;
+    private boolean attributesOpen;
 
     // world
     private MapView mapView;
@@ -455,6 +458,10 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     @Override
     public void onConfirm() {
+        if (attributesOpen) {
+            closePauseAttributes();
+            return;
+        }
         switch (state) {
             case BRIEF -> {
                 app.sfx(Sfx.SELECT);
@@ -484,6 +491,10 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     @Override
     public void onCancel() {
+        if (attributesOpen) {
+            closePauseAttributes();
+            return;
+        }
         if (state == State.PLAY) openPause();
         else if (state == State.PAUSED) closePause();
         else if (state == State.BRIEF) app.showMainMenu();
@@ -509,6 +520,7 @@ public final class PlayScreen extends Screen implements SessionListener {
         entries.add(new MenuBox.Entry("RESUME", this::closePause));
         entries.add(new MenuBox.Entry("RESTART LEVEL", () -> app.startLevel(cfg, levelIndex)));
         entries.add(new MenuBox.Entry(shownSound, app::toggleMute));   // index 2, label refreshed in update()
+        entries.add(new MenuBox.Entry("ATTRIBUTES", this::openPauseAttributes));
         if (cfg.mode == LevelConfig.Mode.ZEN) {
             entries.add(new MenuBox.Entry("FINISH RUN", () -> {
                 closePause();
@@ -523,7 +535,25 @@ public final class PlayScreen extends Screen implements SessionListener {
         overlay.getChildren().setAll(dim, menu);
     }
 
+    private void openPauseAttributes() {
+        attributesOpen = true;
+        menu = null;
+        app.input().clear();
+        AttributesPanel panel = new AttributesPanel(app.save());
+        panel.setLayoutX((Ui.W - AttributesPanel.WIDTH) / 2.0);
+        panel.setLayoutY((Ui.H - panel.height()) / 2.0);
+        Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.rgb(30, 20, 60, 0.55));
+        overlay.getChildren().setAll(dim, panel);
+    }
+
+    private void closePauseAttributes() {
+        attributesOpen = false;
+        app.sfx(Sfx.SELECT);
+        openPause();
+    }
+
     private void closePause() {
+        attributesOpen = false;
         overlay.getChildren().clear();
         menu = null;
         state = State.PLAY;
@@ -688,6 +718,15 @@ public final class PlayScreen extends Screen implements SessionListener {
         stats.setLayoutY(y);
         overlay.getChildren().add(stats);
         y += 82;
+
+        Progression.Result pr = session.progression();
+        if (pr != null) {
+            Ui.Label xpBox = new Ui.Label(String.join("\n", Progression.summary(app.save(), pr)), 10, pr.leveledUp() ? Ui.GOOD : Ui.INK);
+            xpBox.setWrap(190);
+            xpBox.setLayoutX(430);
+            xpBox.setLayoutY(82);
+            overlay.getChildren().add(xpBox);
+        }
 
         String lesson = !session.mistakes().isEmpty()
                 ? "REMEMBER: " + session.mistakes().get(session.mistakes().size() - 1) + "."

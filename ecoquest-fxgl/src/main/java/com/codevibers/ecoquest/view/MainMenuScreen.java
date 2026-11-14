@@ -12,7 +12,7 @@ import javafx.scene.image.ImageView;
 /** Title screen: sky, skyline, the five bins bobbing at the bottom, and the start menu. */
 public final class MainMenuScreen extends Screen {
     private static final int CONTINUE = 2;
-    private static final int SOUND = 5;
+    private static final int SOUND = 6;
 
     private final MenuBox menu;
     private final ImageView[] bins = new ImageView[5];
@@ -45,13 +45,14 @@ public final class MainMenuScreen extends Screen {
                 new MenuBox.Entry("CONTINUE", app::continueGame),
                 new MenuBox.Entry("HOW TO PLAY", app::showHowTo),
                 new MenuBox.Entry("COSMETICS SHOP", app::showShop),
+                new MenuBox.Entry("ATTRIBUTES", app::showAttributesFromMenu),
                 new MenuBox.Entry("SOUND: " + (app.save().muted ? "OFF" : "ON"), this::toggleSound),
                 new MenuBox.Entry("QUIT", () -> System.exit(0))), 300);
         boolean canContinue = app.save().hasPlaythrough();
         menu.setEnabled(CONTINUE, canContinue);
         menu.setIndex(canContinue ? CONTINUE : 0);
         menu.setLayoutX((Ui.W - 300) / 2.0);
-        menu.setLayoutY(118);
+        menu.setLayoutY(108);
         root.getChildren().addAll(title, sub, menu);
     }
 

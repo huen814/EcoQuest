@@ -26,10 +26,14 @@ public final class Save {
     public final int[] stars = new int[10];
     public final int[] high = new int[5];
     /**
-     * Gameplay upgrade levels (0-3): boots, gloves, scanner, boat, drone, clover.
-     * There is no longer a shop to buy these; the field stays so old saves load and so the attribute system can reuse it.
+     * Attribute levels, one slot per {@link Attribute} (the first six are the old shop upgrades: boots, gloves, scanner,
+     * boat, drone, clover). They are now earned by levelling up; old saves keep what they bought.
      */
-    public final int[] up = new int[6];
+    public final int[] up = new int[Attribute.COUNT];
+    public int xp;
+    public int level = 1;
+    /** Attribute choices earned but not picked yet, oldest first. Saved so quitting cannot skip or re-roll them. */
+    public final java.util.List<java.util.List<Attribute>> offers = new java.util.ArrayList<>();
     /** Ids (e.g. "outfit_mint") of the cosmetics bought so far. The free defaults are always owned. Kept across New Game. */
     private final Set<String> owned = new LinkedHashSet<>();
     /** The cosmetic worn in each slot; a missing entry means the slot's default. Kept across New Game. */
@@ -46,6 +50,7 @@ public final class Save {
             parse(p.getProperty("st"), s.stars);
             parse(p.getProperty("hs"), s.high);
             parse(p.getProperty("u"), s.up);
+            for (Attribute a : Attribute.values()) s.up[a.slot] = Math.max(0, Math.min(a.max, s.up[a.slot]));
             s.muted = "1".equals(p.getProperty("muted"));
             // Cosmetics (absent in older saves, which simply start with none). Unknown ids are dropped.
             String own = p.getProperty("own", "");
@@ -64,6 +69,11 @@ public final class Save {
             s.started = p.containsKey("started") ? "1".equals(p.getProperty("started")) : s.completed >= 0;
             // Saves from before character select: anyone mid-playthrough keeps the original (sister) look.
             s.sibling = Integer.parseInt(p.getProperty("sib", s.hasPlaythrough() ? "0" : "-1"));
+            // Progression. Saves from before XP existed start at a level that matches how far they got.
+            s.xp = Math.max(0, Integer.parseInt(p.getProperty("xp", "0")));
+            s.level = Integer.parseInt(p.getProperty("lv", "" + (1 + Math.max(0, s.completed + 1))));
+            s.level = Math.max(1, Math.min(Progression.MAX_LEVEL, s.level));
+            parseOffers(p.getProperty("pend", ""), s.offers);
             if (s.sibling < 0 || s.sibling >= Sibling.values().length) s.sibling = -1;
         } catch (Exception ignored) { }
         return s;
@@ -83,9 +93,37 @@ public final class Save {
             p.setProperty("lc", "" + completed);
             p.setProperty("started", started ? "1" : "0");
             p.setProperty("sib", "" + sibling);
+            p.setProperty("xp", "" + xp);
+            p.setProperty("lv", "" + level);
+            p.setProperty("pend", offersToString());
             p.store(out, "EcoQuest save");
         } catch (Exception ignored) { }
     }
+
+    private String offersToString() {
+        StringBuilder sb = new StringBuilder();
+        for (java.util.List<Attribute> o : offers) {
+            if (sb.length() > 0) sb.append(';');
+            for (int i = 0; i < o.size(); i++) sb.append(i > 0 ? "." : "").append(o.get(i).slot);
+        }
+        return sb.toString();
+    }
+
+    private static void parseOffers(String csv, java.util.List<java.util.List<Attribute>> out) {
+        if (csv == null || csv.isBlank()) return;
+        for (String group : csv.split(";")) {
+            java.util.List<Attribute> offer = new java.util.ArrayList<>();
+            for (String tok : group.split("\\.")) {
+                try {
+                    int slot = Integer.parseInt(tok.trim());
+                    for (Attribute a : Attribute.values()) if (a.slot == slot && !offer.contains(a)) offer.add(a);
+                } catch (NumberFormatException ignored) { }
+            }
+            if (!offer.isEmpty()) out.add(offer);
+        }
+    }
+
+    public int attr(Attribute a) { return up[a.slot]; }
 
     public boolean hasChosenSibling() { return sibling >= 0; }
 
@@ -141,6 +179,9 @@ public final class Save {
         sibling = -1;   // the sibling is part of the story, so it is picked again on a new game
         java.util.Arrays.fill(stars, 0);
         java.util.Arrays.fill(up, 0);
+        xp = 0;
+        level = 1;
+        offers.clear();
         store();
     }
 
