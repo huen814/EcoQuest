@@ -16,7 +16,7 @@ public record Cosmetic(Slot slot, String id, String name, int cost, int rgb, Str
         this(slot, id, name, cost, rgb, blurb, null, null);
     }
 
-    /** A drawn design with its own sprite sheets, made for one sibling. */
+    /** A drawn design with its own sprite sheets, made for one sibling, or for both when {@code only} is null. */
     public static Cosmetic design(Slot slot, String id, String name, int cost, int rgb, String blurb, String art, Sibling only) {
         return new Cosmetic(slot, id, name, cost, rgb, blurb, art, only);
     }

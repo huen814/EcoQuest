@@ -142,7 +142,7 @@ public final class ShopScreen extends Screen {
         }
 
         Cosmetic c = selected();
-        detail.setText(c.blurb().toUpperCase() + "\nLOOKS ONLY: NEVER CHANGES GAMEPLAY.  CONFIRM: "
+        detail.setText((c.blurb().isEmpty() ? "" : c.blurb().toUpperCase() + "\n") + "LOOKS ONLY: NEVER CHANGES GAMEPLAY.  CONFIRM: "
                 + (s.owns(c) ? "WEAR" : "BUY") + "   LEFT/RIGHT: TAB");
         updatePreview();
     }

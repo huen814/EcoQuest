@@ -25,7 +25,7 @@ public final class Wardrobe {
 
     public static Image sheet(Sibling who, boolean boat, Cosmetic outfit, Cosmetic hair, Cosmetic paint) {
         Image base = Sprites.get(outfit.hasArt() ? who.artSheet(outfit.art(), boat) : who.sheet(boat));
-        Map<Integer, Integer> swaps = PlayerPalette.swaps(who, boat, outfit, hair, paint);
+        Map<Integer, Integer> swaps = PlayerPalette.swaps(boat, hair, paint);
         if (swaps.isEmpty()) return base;
         String key = who.id + boat + outfit.id() + hair.id() + (boat ? paint.id() : "");
         return CACHE.computeIfAbsent(key, k -> {

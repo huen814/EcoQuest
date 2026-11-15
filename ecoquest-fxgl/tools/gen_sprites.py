@@ -406,15 +406,225 @@ def draw_stage(d, direction, step, boat, L, hy, ty):
         d.point((4, ty + 6), fill=STAGE_WHITE); d.point((11, ty + 6), fill=STAGE_WHITE)
 
 
+def paint_arms(d, step, ty, r0, r1, color):
+    """Paints torso rows r0..r1 of both swinging arms (front and back views): short sleeves, cuffs."""
+    a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
+    rect(d, 3, ty + r0 + max(0, a), 4, ty + r1 + max(0, a), color, None)
+    rect(d, 11, ty + r0 + max(0, -a), 12, ty + r1 + max(0, -a), color, None)
+
+
+FUR = hx("#fbf8f2")
+XMAS_RED = hx("#d63a3a")
+BELT = hx("#26222c")
+
+
+def santa_hat(d, direction, hy):
+    """Red hat with a fur brim and a pom-pom that droops to the back of the head."""
+    flip = direction == "right"
+    for x0, x1, y, c in ((6, 9, hy - 2, XMAS_RED), (4, 11, hy - 1, XMAS_RED), (3, 12, hy, XMAS_RED),
+                         (10, 11, hy - 2, FUR), (10, 11, hy - 1, FUR), (2, 13, hy + 1, FUR)):
+        rect(d, 15 - x1 if flip else x0, y, 15 - x0 if flip else x1, y, c, None)
+
+
+def draw_santa(d, direction, step, boat, L, hy, ty):
+    """Beardless Santa: hat, red coat with fur collar, cuffs and hem, black belt with a gold buckle, red trousers."""
+    santa_hat(d, direction, hy)
+    rect(d, 5, ty, 10, ty, FUR, None)
+    rect(d, 5, ty + 5, 10, ty + 5, FUR, None)
+    if direction == "down":
+        rect(d, 7, ty + 1, 8, ty + 4, FUR, None)
+    if direction != "up":
+        rect(d, 5, ty + 3, 10, ty + 3, BELT, None)
+    if direction == "down":
+        d.point((7, ty + 3), fill=GOLD); d.point((8, ty + 3), fill=GOLD)
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 4, 4, FUR)
+    if not boat:
+        rect(d, 5, ty + 7, 10, ty + 7, FUR, None)
+
+
+def draw_santa_girl(d, direction, step, boat, L, hy, ty):
+    """Santa hat, red top with a fur collar and cuffs, and a red miniskirt with a fur hem."""
+    santa_hat(d, direction, hy)
+    rect(d, 5, ty, 10, ty, FUR, None)
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 4, 4, FUR)
+    if not boat:
+        rect(d, 3, ty + 6, 12, ty + 6, XMAS_RED, None)
+        rect(d, 3, ty + 7, 12, ty + 7, FUR, None)
+
+
+SHIRT_BLUE = hx("#3aaed0")
+FLOWER_PINK = hx("#ff8fb3")
+FLOWER_YELLOW = hx("#ffe066")
+LENS = hx("#e6a23c")
+FRAME = hx("#2b2735")
+ORANGE = hx("#f2893a")
+CREAM = hx("#f6efe2")
+TEE = hx("#f1eee8")
+
+
+def tee_arms(d, direction, step, ty, skin):
+    """White collar row and light short sleeves, so a white top is not drawn as a grey one."""
+    rect(d, 5, ty, 10, ty, TEE, None)
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 1, 2, TEE)
+        paint_arms(d, step, ty, 3, 4, skin)
+
+
+def draw_summer_boy(d, direction, step, boat, L, hy, ty):
+    """Open-collar floral shirt with short sleeves, and tinted sunglasses."""
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 3, 4, L["skin"])
+    for x, y, c in ((6, 2, FLOWER_PINK), (9, 4, FLOWER_PINK), (8, 1, FLOWER_YELLOW), (6, 4, FLOWER_YELLOW),
+                    (7, 3, FUR), (9, 2, FUR)):
+        d.point((x, ty + y), fill=c)
+    if direction == "down":
+        d.point((7, ty), fill=L["skin"]); d.point((8, ty), fill=L["skin"])
+    if direction != "up":
+        rect(d, 4, hy + 4, 11, hy + 4, FRAME, None)
+        for x0, x1 in {"down": ((4, 6), (9, 11)), "left": ((4, 7),), "right": ((8, 11),)}[direction]:
+            rect(d, x0, hy + 5, x1, hy + 6, LENS, None)
+            d.point((x0, hy + 5), fill=hx("#f6cf86"))
+
+
+def draw_summer_girl(d, direction, step, boat, L, hy, ty):
+    """Bucket hat, sheer white crop top over an orange bra, orange high-waist shorts with black straps."""
+    tee_arms(d, direction, step, ty, L["skin"])
+    rect(d, 5, ty + 4, 10, ty + 4, L["skin"], None)
+    rect(d, 5, ty + 5, 10, ty + 5, ORANGE, None)
+    if direction == "down":
+        rect(d, 6, ty + 1, 9, ty + 2, ORANGE, None)
+        for x in (6, 9):
+            d.line([(x, ty + 4), (x, ty + 6)], fill=BELT)
+    rect(d, 4, hy - 1, 11, hy, CREAM, None)
+    rect(d, 4, hy, 11, hy, ORANGE, None)
+    rect(d, 2, hy + 1, 13, hy + 1, CREAM, None)
+    rect(d, 3, hy + 2, 12, hy + 2, shade(CREAM, 0.85), None)
+
+
+SWEATER_PINK = hx("#f4a6bd")
+NAVY = hx("#2c3a66")
+NAVY_LT = hx("#46588c")
+UNI_RED = hx("#d9473a")
+
+
+def uniform_top(d, direction, step, ty):
+    """Pink sweater sleeves, a white collar and a v-neck showing the shirt."""
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 1, 3, SWEATER_PINK)
+    rect(d, 5, ty, 10, ty, FUR, None)
+    if direction == "down":
+        rect(d, 7, ty + 1, 8, ty + 1, FUR, None)
+
+
+def draw_uniform_girl(d, direction, step, boat, L, hy, ty):
+    """Pink knit v-neck over a white collar, loose red bow, black choker with a green charm, short pleated navy skirt."""
+    uniform_top(d, direction, step, ty)
+    if direction == "down":
+        d.point((7, ty), fill=BELT); d.point((8, ty), fill=hx("#4cc98a"))
+        rect(d, 6, ty + 2, 9, ty + 2, UNI_RED, None)
+        d.point((8, ty + 3), fill=UNI_RED)
+    if not boat:
+        rect(d, 3, ty + 6, 12, ty + 7, NAVY, None)
+        for x in (4, 6, 8, 10):
+            d.point((x, ty + 7), fill=NAVY_LT)
+
+
+PANTS = hx("#23212b")
+
+
+def long_legs(d, direction, color):
+    """Pulls trousers down over the legs to the shoes."""
+    for x in (5, 9) if direction in ("down", "up") else (7,):
+        rect(d, x, 19, x + 1, 19, color, None)
+
+
+def draw_uniform_boy(d, direction, step, boat, L, hy, ty):
+    """White polo with a button placket, black pants and black shoes."""
+    tee_arms(d, direction, step, ty, L["skin"])
+    if direction == "down":
+        rect(d, 7, ty, 8, ty + 2, hx("#cfd2da"), None)
+    if not boat:
+        long_legs(d, direction, PANTS)
+
+
+BLOUSE = hx("#f4eee3")
+PERI = hx("#98a4e8")
+PERI_LT = hx("#c9d0f5")
+
+
+def draw_casual_girl(d, direction, step, boat, L, hy, ty):
+    """Ruffled off-white sailor blouse with a navy bow, and a high-waisted ruffled periwinkle suspender skirt."""
+    rect(d, 5, ty, 10, ty + 2, BLOUSE, shade(BLOUSE, 0.88))
+    for x in range(5, 11):
+        d.point((x, ty), fill=BLOUSE if x % 2 else PERI_LT)
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 1, 2, BLOUSE)
+        paint_arms(d, step, ty, 3, 3, shade(BLOUSE, 0.88))
+        paint_arms(d, step, ty, 4, 4, L["skin"])
+    rect(d, 5, ty + 3, 10, ty + 5, PERI, shade(PERI, 0.8))
+    for x in (6, 9):
+        d.line([(x, ty + 1), (x, ty + 2)], fill=PERI)
+    if direction == "down":
+        rect(d, 6, ty, 9, ty, NAVY, None)
+        rect(d, 7, ty + 1, 8, ty + 2, NAVY, None)
+    if not boat:
+        rect(d, 3, ty + 6, 12, ty + 6, PERI, None)
+        for x in range(3, 13):
+            d.point((x, ty + 7), fill=PERI_LT if x % 2 else PERI)
+
+
+JACKET = hx("#1f1d27")
+FUR_TRIM = hx("#d4d1da")
+HUSSAR_SHIRT = hx("#4d7fd0")
+
+
+def draw_casual_boy(d, direction, step, boat, L, hy, ty):
+    """Black fur-trimmed hussar jacket with gold frogs, worn open over a blue shirt with a white collar."""
+    rect(d, 5, ty, 10, ty, FUR_TRIM, None)
+    rect(d, 5, ty + 5, 10, ty + 5, FUR_TRIM, None)
+    if direction in ("down", "up"):
+        paint_arms(d, step, ty, 4, 4, FUR_TRIM)
+    if direction == "down":
+        rect(d, 7, ty + 2, 8, ty + 5, HUSSAR_SHIRT, None)
+        rect(d, 7, ty, 8, ty + 1, FUR, None)
+        for y in (ty + 2, ty + 4):
+            rect(d, 5, y, 6, y, GOLD, None); rect(d, 9, y, 10, y, GOLD, None)
+    if not boat:
+        long_legs(d, direction, PANTS)
+
+
+# Each outfit holds a (look overrides, draw function) pair per sibling it was drawn for.
 OUTFITS = {
-    "witch": {"who": ("sister",), "look": dict(hood=WITCH_BLACK, shorts=WITCH_BLACK, shoe=hx("#2a2038"), pack=WITCH_BLACK,
-                           trim=WITCH_PURPLE, skirt=True, clip=None), "draw": draw_witch},
-    "idol": {"who": ("sister",), "look": dict(hood=hx("#fbf4f8"), shorts=IDOL_BLACK, shoe=hx("#2a2630"), pack=IDOL_BLACK,
-                          trim=IDOL_BLACK, skirt=True, clip=hx("#ffffff")), "draw": draw_idol},
-    "reaper": {"who": ("brother",), "look": dict(hood=REAPER_CLOAK, shorts=hx("#2a2e48"), shoe=hx("#20243a"), pack=REAPER_CLOAK,
-                                                 trim=REAPER_CLOAK, skirt=True, clip=None, blush=None), "draw": draw_reaper},
-    "stage": {"who": ("brother",), "look": dict(hood=STAGE_BLUE, shorts=STAGE_WHITE, shoe=hx("#ffffff"), pack=STAGE_BLUE,
-                                                trim=STAGE_WHITE, skirt=False, clip=None, blush=None), "draw": draw_stage},
+    "witch": {"sister": (dict(hood=WITCH_BLACK, shorts=WITCH_BLACK, shoe=hx("#2a2038"), pack=WITCH_BLACK,
+                              trim=WITCH_PURPLE, skirt=True, clip=None), draw_witch)},
+    "idol": {"sister": (dict(hood=hx("#fbf4f8"), shorts=IDOL_BLACK, shoe=hx("#2a2630"), pack=IDOL_BLACK,
+                             trim=IDOL_BLACK, skirt=True, clip=hx("#ffffff")), draw_idol)},
+    "reaper": {"brother": (dict(hood=REAPER_CLOAK, shorts=hx("#2a2e48"), shoe=hx("#20243a"), pack=REAPER_CLOAK,
+                                trim=REAPER_CLOAK, skirt=True, clip=None, blush=None), draw_reaper)},
+    "stage": {"brother": (dict(hood=STAGE_BLUE, shorts=STAGE_WHITE, shoe=hx("#ffffff"), pack=STAGE_BLUE,
+                               trim=STAGE_WHITE, skirt=False, clip=None, blush=None), draw_stage)},
+    "christmas": {
+        "sister": (dict(hood=XMAS_RED, shorts=XMAS_RED, shoe=hx("#3a2a2a"), pack=XMAS_RED, trim=XMAS_RED,
+                        skirt=True, clip=None), draw_santa_girl),
+        "brother": (dict(hood=XMAS_RED, shorts=XMAS_RED, shoe=BELT, pack=hx("#8a5a3a"), trim=FUR,
+                         skirt=False), draw_santa)},
+    "summer": {
+        "sister": (dict(hood=hx("#f7f4ee"), shorts=ORANGE, shoe=hx("#c98a5a"), pack=hx("#f7f4ee"),
+                        trim=hx("#f7f4ee"), skirt=False, clip=None), draw_summer_girl),
+        "brother": (dict(hood=SHIRT_BLUE, shorts=hx("#fafafa"), shoe=FRAME, pack=SHIRT_BLUE, trim=SHIRT_BLUE,
+                         skirt=False), draw_summer_boy)},
+    "uniform": {
+        "sister": (dict(hood=SWEATER_PINK, shorts=NAVY, shoe=hx("#f4f1f8"), pack=SWEATER_PINK, trim=SWEATER_PINK,
+                        skirt=True, clip=None), draw_uniform_girl),
+        "brother": (dict(hood=hx("#f6f6f8"), shorts=PANTS, shoe=PANTS, pack=hx("#f6f6f8"), trim=hx("#f6f6f8"),
+                         skirt=False), draw_uniform_boy)},
+    "casual": {
+        "sister": (dict(hood=BLOUSE, shorts=PERI, shoe=hx("#fffdf5"), pack=BLOUSE, trim=BLOUSE,
+                        skirt=True), draw_casual_girl),
+        "brother": (dict(hood=JACKET, shorts=PANTS, shoe=PANTS, pack=JACKET, trim=JACKET,
+                         skirt=False), draw_casual_boy)},
 }
 
 
@@ -423,7 +633,8 @@ def player_frame(direction, step, boat, who="sister", outfit=None):
     `outfit` is a shop outfit design ("witch", "idol"): it restyles the same frame, so animation and hitbox never change."""
     L = LOOKS[who]
     if outfit:
-        L = dict(L, **OUTFITS[outfit]["look"])
+        look, draw = OUTFITS[outfit][who]
+        L = dict(L, **look)
     skin, hair, hood, shorts, shoe, pack = L["skin"], L["hair"], L["hood"], L["shorts"], L["shoe"], L["pack"]
     short = L["style"] == "short"
     long_ = L["style"] == "long"
@@ -517,7 +728,7 @@ def player_frame(direction, step, boat, who="sister", outfit=None):
             d.point((5 if direction != "right" else 8, 18), fill=MUD)
 
     if outfit:
-        OUTFITS[outfit]["draw"](d, direction, step, boat, L, hy, ty)
+        draw(d, direction, step, boat, L, hy, ty)
 
     if boat:  # hull + oars over the legs
         d.polygon([(0, 17), (15, 17), (13, 23), (2, 23)], fill=hx("#e0b088"), outline=hx("#6a4a3a"))
@@ -546,8 +757,8 @@ def outfit_sheets():
     """player_<sibling>_<outfit>.png and ..._boat.png for each shop outfit design, for the sibling it was drawn for."""
     order = ["down", "left", "right", "up"]
     for who in ("sister", "brother"):
-        for outfit, spec in OUTFITS.items():
-            if who not in spec["who"]:   # each design is drawn for one sibling only
+        for outfit, drawn_for in OUTFITS.items():
+            if who not in drawn_for:
                 continue
             for boat in (False, True):
                 sheet = Image.new("RGBA", (16 * 4, 24 * 4), (0, 0, 0, 0))
