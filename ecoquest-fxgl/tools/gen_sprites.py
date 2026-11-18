@@ -976,8 +976,262 @@ def backdrop_sprites():
     save("backdrop/title.png", pastel(im, 0.1))
 
 
+# ----------------------------------------------------------------------------- story mode art
+
+def person_frame(direction, step, boat, p):
+    """Same chibi body as player_frame, but palette / hair style / messiness come from dict p."""
+    im, d = canvas(16, 24)
+    SKIN_, HAIR_, TOP_, SHORTS_, SHOE_, PACK_ = p["skin"], p["hair"], p["top"], p["shorts"], p["shoe"], p["pack"]
+    dy = 2 if boat else 0
+    bob = 1 if step in (1, 3) and not boat else 0
+    d.ellipse([3, 21, 12, 23], fill=(60, 40, 90, 55))
+    hy = 2 + dy + bob
+    ty = hy + 9
+    dark = shade(TOP_, 0.62)
+    short = p["style"] == "short"
+
+    if not boat:
+        l_off = {0: 0, 1: -1, 2: 0, 3: 1}[step]
+        r_off = {0: 0, 1: 1, 2: 0, 3: -1}[step]
+        if direction in ("down", "up"):
+            rect(d, 5, ty + 6, 10, ty + 7, SHORTS_, None)
+            rect(d, 5, min(19, ty + 8 + max(0, l_off)), 6, 19, SKIN_, None); rect(d, 9, min(19, ty + 8 + max(0, r_off)), 10, 19, SKIN_, None)
+            rect(d, 4, 20 + min(0, l_off), 7, 21 + min(0, l_off), SHOE_); rect(d, 8, 20 + min(0, r_off), 11, 21 + min(0, r_off), SHOE_)
+        else:
+            sx = 1 if direction == "right" else -1
+            rect(d, 6, ty + 6, 9, ty + 7, SHORTS_, None); rect(d, 7, min(19, ty + 8), 8, 19, SKIN_, None)
+            fx = 7 + sx * {0: 0, 1: 2, 2: 0, 3: -2}[step]
+            rect(d, fx - 1, 20, fx + 2, 21, SHOE_)
+
+    rect(d, 5, ty, 10, ty + 5, TOP_, dark)
+    if direction == "up":
+        rect(d, 5, ty + 1, 10, ty + 5, PACK_, shade(PACK_, 0.6))
+    elif direction == "down":
+        d.point((7, ty + 1), fill=hx("#ffffff")); d.point((8, ty + 1), fill=hx("#ffffff")); d.point((8, ty + 3), fill=shade(TOP_, 0.8))
+    else:
+        bx = 4 if direction == "right" else 11
+        rect(d, bx - 1, ty + 1, bx + 1, ty + 5, PACK_, shade(PACK_, 0.6))
+    if direction in ("down", "up"):
+        a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
+        rect(d, 3, ty + 1 + max(0, a), 4, ty + 4 + max(0, a), TOP_, dark); rect(d, 11, ty + 1 + max(0, -a), 12, ty + 4 + max(0, -a), TOP_, dark)
+
+    # head
+    rect(d, 3, hy, 12, hy + 8, SKIN_, INK)
+    if direction == "up":
+        if short:
+            rect(d, 3, hy, 12, hy + 5, HAIR_, INK)
+        else:
+            rect(d, 3, hy, 12, hy + 8, HAIR_, INK)
+    elif direction == "down":
+        if short:
+            rect(d, 3, hy, 12, hy + 2, HAIR_, INK); d.point((3, hy + 3), fill=HAIR_); d.point((12, hy + 3), fill=HAIR_)
+            for sx_ in (5, 8, 10): d.point((sx_, hy - 1), fill=HAIR_)
+        else:
+            rect(d, 3, hy, 12, hy + 3, HAIR_, INK); rect(d, 3, hy, 4, hy + 6, HAIR_, None); rect(d, 11, hy, 12, hy + 6, HAIR_, None)
+        d.point((6, hy + 5), fill=INK); d.point((9, hy + 5), fill=INK)
+        d.point((5, hy + 6), fill=BLUSH); d.point((10, hy + 6), fill=BLUSH)
+    else:
+        left = direction == "left"
+        rect(d, 3, hy, 12, hy + (2 if short else 3), HAIR_, INK)
+        if left: rect(d, 8, hy, 12, hy + (4 if short else 6), HAIR_, INK)
+        else: rect(d, 3, hy, 7, hy + (4 if short else 6), HAIR_, INK)
+        ex = 5 if left else 10
+        d.point((ex, hy + 5), fill=INK); d.point((ex + (-1 if left else 1), hy + 6), fill=BLUSH)
+        if short:
+            for sx_ in (5, 8): d.point((sx_, hy - 1), fill=HAIR_)
+    if not short:
+        d.point((7, hy + 1), fill=p["clip"]); d.point((8, hy + 1), fill=p["clip"])
+
+    if p.get("messy"):
+        for (x, y) in ((6, ty + 1), (9, ty + 3), (7, ty + 4), (5, ty + 5)): d.point((x, y), fill=hx("#8a7a4a"))
+        d.point((10, ty + 1), fill=hx("#5e7a4a")); d.point((6, ty + 3), fill=hx("#5e7a4a"))
+        if direction == "down": d.point((10, hy + 7), fill=hx("#b49a80")); d.point((5, hy + 4), fill=hx("#b49a80"))
+        for x in (4, 7, 10, 12): d.point((x, hy - 1), fill=HAIR_)
+        d.point((6, hy - 2), fill=HAIR_); d.point((11, hy - 2), fill=HAIR_)
+
+    if boat:
+        d.polygon([(0, 17), (15, 17), (13, 23), (2, 23)], fill=hx("#e0b088"), outline=hx("#6a4a3a"))
+        d.line([(2, 19), (13, 19)], fill=hx("#f0cca6"))
+        o = 2 if step in (1, 3) else 0
+        d.line([(1, 13 + o), (3, 19)], fill=hx("#6a4a3a")); d.line([(14, 13 + o), (12, 19)], fill=hx("#6a4a3a"))
+    return im
+
+
+NPCS = [  # villagers, one per campaign level (front-facing, single frame)
+    dict(skin="#e8c4a0", hair="#9a9aa8", top="#e89ab0", shorts="#7a6a9a", style="bob", clip="#ffffff"),    # Aling Nena
+    dict(skin="#d9a87c", hair="#6a6a70", top="#6aa86a", shorts="#5a4a3a", style="short", clip="#ffffff"),  # Mang Ben
+    dict(skin="#c8956a", hair="#2a2a30", top="#6a8ac8", shorts="#4a5a6a", style="short", clip="#ffffff"),  # Tatay Ramon
+    dict(skin="#e8c4a0", hair="#4a2a20", top="#e0a040", shorts="#4a4a5a", style="bob", clip="#e0a040"),    # Ate Rosa
+    dict(skin="#d9a87c", hair="#b0b0b8", top="#d9566f", shorts="#7a5a4a", style="bob", clip="#ffffff"),    # Lola Remy
+    dict(skin="#c8956a", hair="#1a1a20", top="#e85a4a", shorts="#2a6a9a", style="short", clip="#ffffff"),  # Kuya Jun
+    dict(skin="#b8855a", hair="#5a5a60", top="#8a8a50", shorts="#5a5a4a", style="short", clip="#ffffff"),  # Mang Dodoy
+    dict(skin="#f0d0b8", hair="#e8e8f0", top="#9fd8f0", shorts="#5a7a9a", style="bob", clip="#4a8ac0"),    # Dr. Frost
+    dict(skin="#c8956a", hair="#3a2a20", top="#3a8a5a", shorts="#6a5a3a", style="short", clip="#ffffff"),  # Ka Tomas
+    dict(skin="#e8c4a0", hair="#2a2a3a", top="#8a6ac8", shorts="#3a3a5a", style="bob", clip="#f0d060"),    # Mayor Cruz
+]
+
+
+def npc_sprites():
+    for i, n in enumerate(NPCS):
+        p = dict(skin=hx(n["skin"]), hair=hx(n["hair"]), top=hx(n["top"]), shorts=hx(n["shorts"]), shoe=hx("#ffffff"),
+                 pack=hx("#f4d8a0"), style=n["style"], clip=hx(n["clip"]))
+        save("npc/npc_%d.png" % i, person_frame("down", 0, False, p))
+
+
+def queen_muck(rage=False):
+    """Queen Muck: a trash-queen diva drawn after Sweetheart (Omori): long pink twin-tails, a big polka-dot bow,
+    a ruffled pink princess dress with a broken-heart brooch, a hand over the mouth for her 'ho ho ho' laugh, and a
+    scepter with a spiked heart flail. All made of garbage: bag-pink bow, can-ring ties, bottle-cap polka dots,
+    doily lace, a crushed-can flail (40x40 art, drawn at 4x)."""
+    im, d = canvas(40, 40)
+    rnd = random.Random(21)
+    skin = hx("#d8a07a")
+    hair = hx("#f08fbe") if not rage else hx("#e0507f")
+    hair_hi = shade(hair, 1.12); hair_d = shade(hair, 0.72)
+    pink = hx("#f0608f") if not rage else hx("#c8405a")
+    pink_d = shade(pink, 0.75)
+    hot = hx("#e0507f"); white = hx("#fdf6e0"); caps = ["#7fb2f2", "#f7d88a", "#86dba6", "#c9cdd4", "#ffffff"]
+    metal = hx("#b8bcc4")
+
+    d.ellipse([4, 36, 36, 39], fill=(40, 30, 60, 80))
+
+    # twin-tails sweeping out behind the dress, tied with can rings and ends wrapped in bag plastic
+    d.polygon([(16, 8), (8, 11), (3, 20), (0, 31), (2, 38), (7, 36), (8, 28), (11, 21), (16, 16)], fill=hair, outline=INK)
+    d.polygon([(24, 8), (32, 11), (37, 20), (39, 31), (37, 38), (32, 36), (31, 28), (28, 21), (24, 16)], fill=hair, outline=INK)
+    d.line([(10, 14), (5, 24), (3, 33)], fill=hair_hi); d.line([(30, 14), (35, 24), (37, 33)], fill=hair_hi)
+    d.line([(14, 12), (10, 20), (7, 30)], fill=hair_d); d.line([(26, 12), (30, 20), (33, 30)], fill=hair_d)
+    for tx, ty in ((7, 14), (33, 14)):                      # can-tab / six-pack ring hair ties
+        d.ellipse([tx - 2, ty - 2, tx + 2, ty + 2], outline=metal, fill=None)
+    for tx, ty in ((2, 33), (36, 34)):
+        d.rectangle([tx - 1, ty - 1, tx + 3, ty + 2], fill=white, outline=INK)
+
+    # big ruffled skirt: pink bag-plastic, bottle-cap polka dots, doily lace petticoat
+    d.polygon([(14, 27), (26, 27), (38, 38), (2, 38)], fill=pink, outline=INK)
+    d.line([(17, 29), (8, 37)], fill=hx("#ff9ab8")); d.line([(23, 29), (32, 37)], fill=hx("#ff9ab8"))
+    for _ in range(14):
+        x, y = rnd.randrange(5, 35), rnd.randrange(30, 35)
+        if 14 - (y - 27) * 1.1 < x < 26 + (y - 27) * 1.1:
+            d.point((x, y), fill=hx(rnd.choice(caps)))
+    for gx in range(1, 38, 4):                              # scalloped lace hem
+        d.ellipse([gx, 34, gx + 5, 39], fill=white, outline=INK)
+        d.point((gx + 2, 36), fill=hx("#c9b48a"))
+    d.point((9, 31), fill=hx("#86a04a")); d.point((30, 32), fill=hx("#86a04a"))   # mould spots
+
+    # bodice, belt with a bottle-cap heart, puff sleeves
+    d.polygon([(15, 18), (25, 18), (26, 27), (14, 27)], fill=pink, outline=INK)
+    d.line([(14, 26), (26, 26)], fill=hot)
+    d.ellipse([19, 25, 21, 28], fill=hx("#e0507f"), outline=INK)
+    heart = [(20, 25), (18, 22), (17, 22), (16, 23), (16, 24), (20, 28), (24, 24), (24, 23), (23, 22), (22, 22)]
+    d.polygon(heart, fill=hx("#ff8fb0"), outline=INK)
+    d.line([(20, 23), (19, 25), (21, 26)], fill=INK)        # broken heart crack
+    d.ellipse([10, 17, 16, 23], fill=white, outline=INK)    # puff sleeves
+    d.ellipse([24, 17, 30, 23], fill=white, outline=INK)
+
+    # scepter: pole, glass-shard crystal, chain and a crushed-can spiked heart flail
+    d.line([(30, 19), (34, 4)], fill=INK, width=3); d.line([(30, 19), (34, 4)], fill=hx("#f27aa4"), width=1)
+    d.polygon([(34, 0), (36, 3), (34, 6), (32, 3)], fill=hx("#9fe0cf"), outline=INK)
+    for cy in (6, 8, 10):
+        d.point((36, cy), fill=metal)
+    fh = [(36, 19), (32, 15), (32, 13), (34, 12), (36, 13), (38, 12), (40 - 1, 13), (39, 15)]
+    d.polygon(fh, fill=hx("#c8405a"), outline=INK)
+    for sx, sy in ((31, 14), (36, 20), (39, 11), (33, 11), (38, 17), (34, 18)):
+        d.point((sx, sy), fill=metal)
+    d.point((35, 14), fill=hx("#ff8fb0"))
+    d.ellipse([28, 16, 33, 21], fill=skin, outline=INK)     # hand on the scepter
+
+    # head
+    d.ellipse([12, 5, 28, 21], fill=skin, outline=INK)
+    d.ellipse([11, 3, 29, 12], fill=hair, outline=INK)      # bangs
+    d.line([(14, 9), (17, 6)], fill=hair_hi); d.line([(26, 9), (23, 6)], fill=hair_d)
+    for ex in (14, 22):                                      # cheeks
+        d.ellipse([ex - 1, 14, ex + 3, 16], fill=hx("#f06a9a"))
+    if rage:
+        for ex in (14, 21):
+            d.ellipse([ex, 11, ex + 4, 15], fill=white, outline=INK)
+            d.ellipse([ex + 1, 12, ex + 3, 14], fill=hx("#e03030"))
+        d.line([(13, 10), (18, 11)], fill=INK, width=1); d.line([(27, 10), (22, 11)], fill=INK, width=1)
+        d.ellipse([16, 16, 24, 21], fill=hx("#2a1a2a"), outline=INK)             # screaming mouth
+        for tx in (17, 19, 21):
+            d.polygon([(tx, 17), (tx + 2, 17), (tx + 1, 19)], fill=white)
+    else:
+        for ex in (14, 22):                                  # closed, laughing ^ ^ eyes with lashes
+            d.line([(ex, 14), (ex + 1, 12), (ex + 3, 12), (ex + 4, 14)], fill=INK)
+        d.line([(13, 12), (12, 11)], fill=INK); d.line([(27, 12), (28, 11)], fill=INK)
+        d.ellipse([16, 15, 24, 21], fill=skin, outline=INK)                      # hand over the mouth: "ho ho ho"
+        for fx in (17, 19, 21):
+            d.line([(fx, 15), (fx, 17)], fill=shade(skin, 0.7))
+        d.rectangle([14, 20, 19, 22], fill=white, outline=INK)                    # lace cuff
+        d.point((26, 17), fill=hx("#d9406f"))
+
+    # polka-dot bow (a shopping bag tied up), bottle-cap dots
+    d.polygon([(9, 1), (18, 3), (18, 8), (9, 9)], fill=hot, outline=INK)
+    d.polygon([(18, 3), (27, 1), (27, 9), (18, 8)], fill=hot, outline=INK)
+    d.rectangle([17, 3, 20, 8], fill=pink_d, outline=INK)
+    for dx, dy in ((11, 4), (13, 7), (23, 3), (25, 6), (15, 4)):
+        d.point((dx, dy), fill=white)
+
+    # flies and glitter
+    for fx, fy in ((3, 3), (37, 4)):
+        d.point((fx, fy), fill=INK); d.point((fx + 1, fy - 1), fill=hx("#ffffff"))
+    for gx, gy in ((4, 8), (35, 36)):
+        for ox, oy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
+            d.point((gx + ox, gy + oy), fill=hx("#fff6a0"))
+    return im
+
+
+def imp_sprite():
+    im, d = canvas(16, 16)
+    bagc = hx("#4a4a58")
+    d.ellipse([3, 12, 12, 15], fill=(40, 30, 60, 70))
+    d.polygon([(4, 4), (7, 1), (9, 1), (12, 4), (13, 12), (3, 12)], fill=bagc, outline=INK)
+    d.polygon([(7, 1), (6, 0), (8, 2)], fill=bagc, outline=INK); d.polygon([(9, 1), (10, 0), (8, 2)], fill=bagc, outline=INK)
+    for ex in (5, 9):
+        rect(d, ex, 6, ex + 2, 8, hx("#ffe060"), INK); d.point((ex + 1, 7), fill=hx("#d02020"))
+    d.line([(5, 10), (11, 10)], fill=INK)
+    for tx in (6, 8, 10): d.point((tx, 10), fill=hx("#ffffff"))
+    d.point((2, 8), fill=INK); d.point((13, 8), fill=INK)
+    return im
+
+
+def weapon_sprites():
+    im, d = canvas(16, 16)  # the Spirit Bottle
+    glass = hx("#86dba6"); liquid = hx("#d8f6ff")
+    rect(d, 6, 0, 9, 2, hx("#c29a5a"), INK)
+    rect(d, 6, 3, 9, 6, shade(glass, 1.1), INK)
+    d.polygon([(6, 6), (9, 6), (12, 8), (12, 14), (11, 15), (4, 15), (3, 14), (3, 8)], fill=glass, outline=INK)
+    rect(d, 5, 8, 10, 14, liquid, None)
+    rect(d, 4, 9, 11, 12, hx("#ffffff"), shade(glass, 0.5))
+    d.point((7, 10), fill=hx("#d9566f")); d.point((8, 10), fill=hx("#d9566f")); d.point((7, 11), fill=hx("#d9566f")); d.point((8, 11), fill=hx("#d9566f"))
+    d.point((6, 10), fill=hx("#d9566f")); d.point((9, 10), fill=hx("#d9566f"))
+    d.point((4, 7), fill=hx("#ffffff")); d.point((4, 8), fill=hx("#ffffff"))
+    save("weapon/bottle.png", im)
+
+    im, d = canvas(8, 8)  # droplet
+    d.ellipse([1, 1, 6, 6], fill=hx("#e8fbff"), outline=hx("#3aa5ae"))
+    d.point((3, 2), fill=hx("#ffffff")); d.point((2, 3), fill=hx("#ffffff"))
+    save("weapon/drop.png", im)
+
+    for name, fill, out in (("heart", "#e0506a", "#7a2438"), ("heart_empty", "#e6e0f2", "#9a8fd6")):
+        im, d = canvas(9, 8)
+        pix = ["012340210", "123334320"]
+        rows = [".11...11.", "1221.1221", "122211221", "122222221", ".1222221.", "..12221..", "...121...", "....1...."]
+        for y, row in enumerate(rows):
+            for x, ch in enumerate(row):
+                if ch == "1": d.point((x, y), fill=hx(out))
+                elif ch == "2": d.point((x, y), fill=hx(fill))
+        if name == "heart": d.point((2, 2), fill=hx("#ffffff"))
+        save("weapon/%s.png" % name, im)
+
+
+def story_sprites():
+    npc_sprites(); weapon_sprites()
+    save("boss/queen_muck.png", queen_muck(False), 4)
+    save("boss/queen_muck_rage.png", queen_muck(True), 4)
+    save("boss/imp.png", imp_sprite())
+
+
 def main():
-    item_sprites(); bin_sprites(); world_sprites(); player_sheets(); outfit_sheets(); tile_sprites(); backdrop_sprites()
+    item_sprites(); bin_sprites(); world_sprites(); player_sheets(); outfit_sheets(); tile_sprites(); backdrop_sprites(); story_sprites()
     n = sum(len(f) for _, _, f in os.walk(OUT))
     print("wrote %d textures to %s" % (n, os.path.normpath(OUT)))
 

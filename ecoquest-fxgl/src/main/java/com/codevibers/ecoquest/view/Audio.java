@@ -49,6 +49,20 @@ public final class Audio {
     public static void setMuted(boolean m) { muted = m; }
     public static boolean muted() { return muted; }
 
+    /** Queen Muck's "ho ho ho": three falling notes. Runs on its own thread so it never blocks other sounds. */
+    public static void laugh() {
+        if (muted) return;
+        Thread t = new Thread(() -> {
+            try {
+                play(Sfx.HO1); Thread.sleep(170);
+                play(Sfx.HO2); Thread.sleep(170);
+                play(Sfx.HO3);
+            } catch (InterruptedException ignored) { }
+        }, "laugh");
+        t.setDaemon(true);
+        t.start();
+    }
+
     public static void play(Sfx sfx) {
         if (muted) return;
         POOL.submit(() -> {

@@ -738,8 +738,10 @@ public final class PlayScreen extends Screen implements SessionListener {
         overlay.getChildren().add(tip);
 
         List<MenuBox.Entry> entries = new ArrayList<>();
-        if (cfg.isCampaign() && win && levelIndex < Levels.CAMPAIGN.size() - 1) {
-            entries.add(new MenuBox.Entry("NEXT LEVEL", () -> app.startLevel(Levels.CAMPAIGN.get(levelIndex + 1), levelIndex + 1)));
+        if (cfg.isCampaign() && win) {
+            // Through the villager reward; after the last level it leads to the boss fight.
+            entries.add(new MenuBox.Entry(levelIndex < Levels.CAMPAIGN.size() - 1 ? "NEXT LEVEL" : "BOSS FIGHT!",
+                    () -> app.showVillagerReward(levelIndex)));
         }
         entries.add(new MenuBox.Entry("RETRY", () -> app.startLevel(cfg, levelIndex)));
         entries.add(new MenuBox.Entry("COSMETICS SHOP", app::showShop));

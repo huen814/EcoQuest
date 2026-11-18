@@ -9,20 +9,8 @@ import com.codevibers.ecoquest.model.Levels;
 import com.codevibers.ecoquest.model.Progression;
 import com.codevibers.ecoquest.model.Save;
 import com.codevibers.ecoquest.model.Sfx;
-import com.codevibers.ecoquest.view.Audio;
-import com.codevibers.ecoquest.view.AttributeChoiceScreen;
-import com.codevibers.ecoquest.view.AttributesScreen;
-import com.codevibers.ecoquest.view.HowToScreen;
-import com.codevibers.ecoquest.view.LevelSelectScreen;
-import com.codevibers.ecoquest.view.CharacterSelectScreen;
-import com.codevibers.ecoquest.view.ConfirmNewGameScreen;
-import com.codevibers.ecoquest.view.MainMenuScreen;
-import com.codevibers.ecoquest.view.ModesScreen;
-import com.codevibers.ecoquest.view.PlayScreen;
-import com.codevibers.ecoquest.view.Screen;
-import com.codevibers.ecoquest.view.ShopScreen;
-import com.codevibers.ecoquest.view.Ui;
 
+import com.codevibers.ecoquest.view.*;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 
@@ -84,6 +72,8 @@ public class EcoQuestApp extends GameApplication {
     public Save save() { return save; }
     public InputState input() { return input; }
     public void sfx(Sfx s) { Audio.play(s); }
+    /** Queen Muck's "ho ho ho". */
+    public void laugh() { Audio.laugh(); }
 
     public void toggleMute() {
         save.muted = !save.muted;
@@ -97,8 +87,9 @@ public class EcoQuestApp extends GameApplication {
             return;
         }
         if (cfg.isCampaign() && !save.hasChosenSibling()) {
-            // First campaign level of a playthrough: pick a sibling, then carry on to this level.
-            pending = new CharacterSelectScreen(this, () -> startLevel(cfg, index));
+            // First campaign level of a playthrough: pick a sibling, story intro for that pick, kidnap cutscene, then this level.
+            Runnable play = () -> startLevel(cfg, index);
+            pending = new CharacterSelectScreen(this, () -> pending = new IntroScreen(this, () -> showKidnapCutscene(play)));
             return;
         }
         if (cfg.isCampaign() && !save.started) {
@@ -118,6 +109,14 @@ public class EcoQuestApp extends GameApplication {
     public void showHowTo() { pending = new HowToScreen(this); }
     public void showAttributes() { pending = new AttributesScreen(this, this::showLevelSelect); }
     public void showAttributesFromMenu() { pending = new AttributesScreen(this, this::showMainMenu); }
+
+    // ------------------------------------------------------------------ story
+
+    public void showKidnapCutscene(Runnable next) { pending = new KidnapCutsceneScreen(this, next); }
+    /** After each campaign level: villager thank-you and Spirit Bottle charge (the last one leads to the boss fight). */
+    public void showVillagerReward(int levelIndex) { pending = new VillagerRewardScreen(this, levelIndex); }
+    public void showBossFight() { pending = new BossFightScreen(this); }
+    public void showVictory() { pending = new VictoryScreen(this); }
 
     public void showConfirmNewGame() { pending = new ConfirmNewGameScreen(this); }
 
