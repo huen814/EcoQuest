@@ -30,7 +30,7 @@ public final class BossFightScreen extends Screen {
     // -- layout constants ------------------------------------------------------
     private static final int PX   = Sprites.PX;
     private static final int SH   = 72;
-    private static final int BOSS_W = 160, BOSS_H = 160;
+    private static final int BOSS_W = 144, BOSS_H = 216;   // her 48x72 sprite at 3x
     private static final double ARENA_X1 = 32, ARENA_X2 = Ui.W - 32;
     private static final double ARENA_Y1 = 80, ARENA_Y2 = Ui.H - 100;
     private static final double PLAYER_SPEED = 180;
@@ -126,6 +126,9 @@ public final class BossFightScreen extends Screen {
         // Arena background
         Rectangle bg = new Rectangle(Ui.W, Ui.H, Color.web("#0d1a0f"));
         root.getChildren().add(bg);
+        root.getChildren().add(Sprites.view("backdrop/palace.png"));      // her palace in the polluted outskirts, dimmed
+        Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.web("#0d1a0f", 0.62));
+        root.getChildren().add(dim);
 
         // Floor grid pattern
         for (int gx = 32; gx < Ui.W; gx += 32) {
@@ -258,7 +261,7 @@ public final class BossFightScreen extends Screen {
         showLaugh();
     }
 
-    /** Queen Muck laughs: floating text plus the three-note sound. */
+    /** Queen Muck laughs: floating text plus the laugh sound. */
     private void showLaugh() {
         laughTimer = 1.6;
         app.laugh();
@@ -268,6 +271,7 @@ public final class BossFightScreen extends Screen {
     @Override
     public void update(double tpf) {
         if (laughTimer > 0) laughTimer -= tpf;
+        bossNormal.setImage(Sprites.get(laughTimer > 0 ? "boss/queen_muck_laugh.png" : "boss/queen_muck.png"));
         laughLabel.setOpacity(Math.max(0, Math.min(1, laughTimer * 2)));
         if (phase == Phase.DEAD) { updateDeathSequence(tpf); return; }
         if (retryActive) { blinkRetry(tpf); return; }
@@ -291,7 +295,7 @@ public final class BossFightScreen extends Screen {
         // -- boss drift --
         double bossSpeed = phase == Phase.RAGE ? 100 : 70;
         double targetX = (ARENA_X1 + ARENA_X2) / 2.0 + Math.sin(System.nanoTime() * 1e-9 * 0.6) * 100;
-        double targetY = (ARENA_Y1 + ARENA_Y2) / 2.0 + Math.cos(System.nanoTime() * 1e-9 * 0.4) * 60;
+        double targetY = (ARENA_Y1 + ARENA_Y2) / 2.0 + Math.cos(System.nanoTime() * 1e-9 * 0.4) * 30;
         bossCenterX += (targetX - bossCenterX) * bossSpeed * tpf * 0.025;
         bossCenterY += (targetY - bossCenterY) * bossSpeed * tpf * 0.025;
         bossShakeX   = phase == Phase.RAGE ? (rng.nextDouble() - 0.5) * 4 : 0;
@@ -430,7 +434,7 @@ public final class BossFightScreen extends Screen {
     }
 
     private void checkCollisions() {
-        double bossDist = BOSS_W * 0.4;
+        double bossDist = BOSS_H * 0.3;
         Iterator<Bullet> bi = playerBullets.iterator();
         while (bi.hasNext()) {
             Bullet b = bi.next();

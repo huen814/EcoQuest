@@ -7,8 +7,8 @@ public enum Sfx {
     SWAP(220, .20, 2, .05), DUMP(110, .40, 3, .05), MISSION(880, .40, 0, .05), WIN(784, .50, 0, .05),
     BUY(700, .20, 0, .05), DENY(140, .20, 2, .05), BOOST(990, .15, 1, .05), BOAT(400, .10, 0, .04),
     HONK(250, .35, 2, .05),
-    // Queen Muck's "ho ho ho" laugh: three falling notes, played in a row by Audio.laugh()
-    HO1(520, .13, 1, .05), HO2(470, .13, 1, .05), HO3(400, .22, 1, .05);
+    // Queen Muck's "ho ho ho": Audio builds it as a voice (only the length is used here)
+    LAUGH(0, 1.2, 0, .05);
 
     public final double hz;
     public final double seconds;

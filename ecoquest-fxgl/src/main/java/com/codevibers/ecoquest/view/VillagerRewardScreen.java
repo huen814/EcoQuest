@@ -8,7 +8,6 @@ import com.codevibers.ecoquest.story.StoryState;
 
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 
 /**
  * Short "thank you" cutscene shown after each campaign level.
@@ -16,8 +15,8 @@ import javafx.scene.shape.Rectangle;
  */
 public final class VillagerRewardScreen extends Screen {
 
-    private static final int PX = Sprites.PX;
-    private static final int SH = 72;
+    private static final double FEET = 318;
+    private static final double BOTTLE_X = 520, BOTTLE_Y = 210;
 
     private final int levelIndex;
     private final boolean isFinal;
@@ -25,6 +24,9 @@ public final class VillagerRewardScreen extends Screen {
     private final DialogBox box;
     private final ImageView npcImg;
     private final ImageView weaponImg;
+    private final javafx.scene.shape.Circle glow;
+    private final StoryFx.Particles fx = new StoryFx.Particles(Ui.W, Ui.H);
+    private final java.util.Random rng = new java.util.Random();
     private double t;
 
     public VillagerRewardScreen(EcoQuestApp app, int levelIndex) {
@@ -32,37 +34,48 @@ public final class VillagerRewardScreen extends Screen {
         this.levelIndex = levelIndex;
         this.isFinal = (levelIndex >= 9);
 
-        root.getChildren().add(Sprites.view("backdrop/" + sceneFor(levelIndex) + ".png"));
-        Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.rgb(0, 0, 0, 0.4));
-        root.getChildren().add(dim);
+        // Full scene for the level just cleaned (skyline + ground + road), warm light, soft vignette.
+        root.getChildren().add(StoryFx.scene(sceneFor(levelIndex)));
+        var sun = StoryFx.glow(220, Color.web("#fff3b0", 0.55));
+        sun.setTranslateX(Ui.W - 110);
+        sun.setTranslateY(36);
+        root.getChildren().addAll(sun, StoryFx.vignette(Color.web("#1e0f30", 0.35)));
 
         npcImg    = Sprites.view(StoryState.npcSprite(levelIndex) + ".png");
         weaponImg = Sprites.view("weapon/bottle.png");
 
-        // NPC - single 48x48 frame (npc sprites are saved as single frames)
-        npcImg.setFitWidth(96); npcImg.setFitHeight(96);
-        npcImg.setPreserveRatio(true);
-        npcImg.setLayoutX(100);
-        npcImg.setLayoutY(180);
-        root.getChildren().add(npcImg);
+        // The villager stands on the road, big enough to read.
+        StoryFx.stand(npcImg, 190, FEET, 2);
+        root.getChildren().addAll(StoryFx.shadow(190, FEET, 90), npcImg);
 
-        // Weapon icon - shown after all 10 levels or growing with each level
-        weaponImg.setOpacity(isFinal ? 1.0 : 0.3 + 0.07 * levelIndex);
-        weaponImg.setFitWidth(96); weaponImg.setFitHeight(96);
+        // Spirit Bottle: floats on the right inside a pulsing glow that grows with every charge.
+        glow = StoryFx.glow(120 + levelIndex * 6, isFinal ? Color.web("#9fe0cf", 0.9) : Color.web("#9fe0cf", 0.55));
+        glow.setTranslateX(BOTTLE_X);
+        glow.setTranslateY(BOTTLE_Y);
+        root.getChildren().add(glow);
+        weaponImg.setOpacity(isFinal ? 1.0 : 0.45 + 0.055 * levelIndex);
+        weaponImg.setFitWidth(110);
+        weaponImg.setFitHeight(110);
         weaponImg.setPreserveRatio(true);
-        weaponImg.setLayoutX(Ui.W - 180);
-        weaponImg.setLayoutY(180);
+        weaponImg.setLayoutX(BOTTLE_X - 55);
+        weaponImg.setLayoutY(BOTTLE_Y - 55);
         root.getChildren().add(weaponImg);
 
-        // Weapon charge label
+        // Sparkles rise around the bottle; more of them the more charged it is.
+        fx.driftIn(8 + levelIndex * 2, () -> StoryFx.sparkle(3, Color.web("#fff6a0", 0.9)),
+                BOTTLE_X - 120, 120, BOTTLE_X + 120, 300, -22, 14);
+        fx.driftIn(10, () -> StoryFx.sparkle(2.5, Color.web("#ffffff", 0.7)), 20, 150, 700, 320, -8, 12);
+        root.getChildren().add(fx);
+
         Ui.Label charge;
         if (isFinal) {
             charge = new Ui.Label("SPIRIT BOTTLE: FULLY CHARGED!", 11, Ui.GOOD);
         } else {
             charge = new Ui.Label("SPIRIT BOTTLE: " + (levelIndex + 1) + " / 10 CHARGES", 11, Ui.ACCENT);
         }
-        charge.setLayoutX((Ui.W - charge.textWidth()) / 2.0);
-        charge.setLayoutY(300);
+        charge.setLayoutX(BOTTLE_X - charge.textWidth() / 2.0);
+        charge.setLayoutY(BOTTLE_Y + 78);
+        charge.shadow(Color.web("#ffffff", 0.85));
         root.getChildren().add(charge);
 
         box = new DialogBox(6, Ui.H - 134, Ui.W - 12, 128);
@@ -105,14 +118,22 @@ public final class VillagerRewardScreen extends Screen {
         t = 0;
         box.show(buildPages());
         app.sfx(Sfx.MISSION);
+        // thank-you hearts over the villager and a flash of light into the bottle
+        fx.burst(190, FEET - 150, 10, () -> StoryFx.heart(5, Color.web("#ff8fb8")), 90, 1.4, -40);
+        fx.burst(BOTTLE_X, BOTTLE_Y, isFinal ? 40 : 16, () -> StoryFx.sparkle(4, Color.web("#9fe0cf")), isFinal ? 320 : 180, 1.1, 0);
+        fx.converge(10, () -> StoryFx.sparkle(3, Color.web("#86dba6")), BOTTLE_X, BOTTLE_Y, 0.9, 50);
     }
 
     @Override
     public void update(double tpf) {
         t += tpf;
         box.update(tpf);
-        npcImg.setTranslateY(Math.round(Math.sin(t * 2.2) * 2));
-        weaponImg.setTranslateY(Math.round(Math.sin(t * 2.5 + 1) * 3));
+        fx.update(tpf);
+        npcImg.setTranslateY(-Math.round(Math.abs(Math.sin(t * 2.4)) * 5));   // happy little hops
+        weaponImg.setTranslateY(Math.round(Math.sin(t * 2.5 + 1) * 4));
+        double pulse = 1 + 0.08 * Math.sin(t * 3);
+        glow.setScaleX(pulse);
+        glow.setScaleY(pulse);
     }
 
     @Override

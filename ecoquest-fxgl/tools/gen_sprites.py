@@ -1078,104 +1078,72 @@ def npc_sprites():
         save("npc/npc_%d.png" % i, person_frame("down", 0, False, p))
 
 
-def queen_muck(rage=False):
-    """Queen Muck: a trash-queen diva drawn after Sweetheart (Omori): long pink twin-tails, a big polka-dot bow,
-    a ruffled pink princess dress with a broken-heart brooch, a hand over the mouth for her 'ho ho ho' laugh, and a
-    scepter with a spiked heart flail. All made of garbage: bag-pink bow, can-ring ties, bottle-cap polka dots,
-    doily lace, a crushed-can flail (40x40 art, drawn at 4x)."""
-    im, d = canvas(40, 40)
-    rnd = random.Random(21)
+def queen_muck(mode="normal"):
+    """Queen Muck, on the same 16x24 chibi grid as the siblings and villagers (scaled x3, same square head, dot-style
+    face, blush, 1 px ink outlines) but with her own look: tan skin, pink twin-tails tied with can rings, a big polka-dot
+    bow, a ruffled garbage-bag gown with bottle-cap polka dots and a doily hem, a broken-heart brooch, puff sleeves, a hand
+    over her mouth for the 'ho ho ho' laugh (rage: open screaming mouth) and a heart scepter.
+    mode: "normal" (open eyes, little smile), "laugh" (closed ^ ^ eyes, big open mouth) or "rage" (red eyes, screaming)."""
+    rage = mode == "rage"
+    im, d = canvas(16, 24)
     skin = hx("#d8a07a")
     hair = hx("#f08fbe") if not rage else hx("#e0507f")
-    hair_hi = shade(hair, 1.12); hair_d = shade(hair, 0.72)
-    pink = hx("#f0608f") if not rage else hx("#c8405a")
-    pink_d = shade(pink, 0.75)
-    hot = hx("#e0507f"); white = hx("#fdf6e0"); caps = ["#7fb2f2", "#f7d88a", "#86dba6", "#c9cdd4", "#ffffff"]
-    metal = hx("#b8bcc4")
+    hair_hi = shade(hair, 1.15)
+    gown = hx("#f0608f") if not rage else hx("#c8405a")
+    hot = hx("#e0507f") if not rage else hx("#b83050")
+    white = hx("#fdf6e0")
+    caps = ("#7fb2f2", "#f7d88a", "#86dba6", "#c9cdd4")
+    d.ellipse([2, 21, 13, 23], fill=(60, 40, 90, 55))
 
-    d.ellipse([4, 36, 36, 39], fill=(40, 30, 60, 80))
+    # scepter: pole and a little heart on top
+    d.line([(15, 5), (15, 15)], fill=INK)
+    for x, y in ((13, 2), (15, 2), (13, 3), (14, 3), (15, 3), (14, 4)):
+        d.point((x, y), fill=hx("#e0506a"))
 
-    # twin-tails sweeping out behind the dress, tied with can rings and ends wrapped in bag plastic
-    d.polygon([(16, 8), (8, 11), (3, 20), (0, 31), (2, 38), (7, 36), (8, 28), (11, 21), (16, 16)], fill=hair, outline=INK)
-    d.polygon([(24, 8), (32, 11), (37, 20), (39, 31), (37, 38), (32, 36), (31, 28), (28, 21), (24, 16)], fill=hair, outline=INK)
-    d.line([(10, 14), (5, 24), (3, 33)], fill=hair_hi); d.line([(30, 14), (35, 24), (37, 33)], fill=hair_hi)
-    d.line([(14, 12), (10, 20), (7, 30)], fill=hair_d); d.line([(26, 12), (30, 20), (33, 30)], fill=hair_d)
-    for tx, ty in ((7, 14), (33, 14)):                      # can-tab / six-pack ring hair ties
-        d.ellipse([tx - 2, ty - 2, tx + 2, ty + 2], outline=metal, fill=None)
-    for tx, ty in ((2, 33), (36, 34)):
-        d.rectangle([tx - 1, ty - 1, tx + 3, ty + 2], fill=white, outline=INK)
+    # twin-tails: ink on the outside edge, pink inside, can-ring ties, bag-plastic ends
+    for x0, x1, edge in ((0, 2, 0), (13, 15, 15)):
+        rect(d, x0, 6, x1, 16, hair, None)
+        d.line([(edge, 6), (edge, 16)], fill=INK)
+        d.line([(x0, 6), (x1, 6)], fill=INK); d.line([(x0, 16), (x1, 16)], fill=INK)
+        d.point((1 if edge == 0 else 14, 9), fill=hair_hi); d.point((1 if edge == 0 else 14, 12), fill=hair_hi)
+        d.point((1 if edge == 0 else 14, 7), fill=hx("#b8bcc4")); d.point((1 if edge == 0 else 14, 15), fill=white)
+    d.line([(15, 5), (15, 15)], fill=INK)                                # scepter stays in front of the right tail
 
-    # big ruffled skirt: pink bag-plastic, bottle-cap polka dots, doily lace petticoat
-    d.polygon([(14, 27), (26, 27), (38, 38), (2, 38)], fill=pink, outline=INK)
-    d.line([(17, 29), (8, 37)], fill=hx("#ff9ab8")); d.line([(23, 29), (32, 37)], fill=hx("#ff9ab8"))
-    for _ in range(14):
-        x, y = rnd.randrange(5, 35), rnd.randrange(30, 35)
-        if 14 - (y - 27) * 1.1 < x < 26 + (y - 27) * 1.1:
-            d.point((x, y), fill=hx(rnd.choice(caps)))
-    for gx in range(1, 38, 4):                              # scalloped lace hem
-        d.ellipse([gx, 34, gx + 5, 39], fill=white, outline=INK)
-        d.point((gx + 2, 36), fill=hx("#c9b48a"))
-    d.point((9, 31), fill=hx("#86a04a")); d.point((30, 32), fill=hx("#86a04a"))   # mould spots
+    # gown: wide ruffled skirt, bottle-cap polka dots, scalloped doily hem
+    d.polygon([(4, 14), (11, 14), (14, 21), (1, 21)], fill=gown, outline=INK)
+    for i, (x, y) in enumerate(((5, 18), (8, 16), (10, 19), (3, 20), (12, 20), (7, 19))):
+        d.point((x, y), fill=hx(caps[i % 4]))
+    for x in range(1, 14, 3):
+        d.point((x, 21), fill=white); d.point((x + 1, 21), fill=white)
+    rect(d, 5, 11, 10, 14, gown, INK)                                   # bodice
+    d.point((7, 12), fill=hx("#ff8fb0")); d.point((8, 12), fill=hx("#ff8fb0")); d.point((7, 13), fill=hx("#ff8fb0"))
+    for x0 in (3, 11):                                                  # puff sleeves
+        rect(d, x0, 11, x0 + 1, 13, white, None); d.line([(x0, 14), (x0 + 1, 14)], fill=INK)
+    rect(d, 14, 12, 15, 14, skin, INK)                                  # hand on the scepter
 
-    # bodice, belt with a bottle-cap heart, puff sleeves
-    d.polygon([(15, 18), (25, 18), (26, 27), (14, 27)], fill=pink, outline=INK)
-    d.line([(14, 26), (26, 26)], fill=hot)
-    d.ellipse([19, 25, 21, 28], fill=hx("#e0507f"), outline=INK)
-    heart = [(20, 25), (18, 22), (17, 22), (16, 23), (16, 24), (20, 28), (24, 24), (24, 23), (23, 22), (22, 22)]
-    d.polygon(heart, fill=hx("#ff8fb0"), outline=INK)
-    d.line([(20, 23), (19, 25), (21, 26)], fill=INK)        # broken heart crack
-    d.ellipse([10, 17, 16, 23], fill=white, outline=INK)    # puff sleeves
-    d.ellipse([24, 17, 30, 23], fill=white, outline=INK)
-
-    # scepter: pole, glass-shard crystal, chain and a crushed-can spiked heart flail
-    d.line([(30, 19), (34, 4)], fill=INK, width=3); d.line([(30, 19), (34, 4)], fill=hx("#f27aa4"), width=1)
-    d.polygon([(34, 0), (36, 3), (34, 6), (32, 3)], fill=hx("#9fe0cf"), outline=INK)
-    for cy in (6, 8, 10):
-        d.point((36, cy), fill=metal)
-    fh = [(36, 19), (32, 15), (32, 13), (34, 12), (36, 13), (38, 12), (40 - 1, 13), (39, 15)]
-    d.polygon(fh, fill=hx("#c8405a"), outline=INK)
-    for sx, sy in ((31, 14), (36, 20), (39, 11), (33, 11), (38, 17), (34, 18)):
-        d.point((sx, sy), fill=metal)
-    d.point((35, 14), fill=hx("#ff8fb0"))
-    d.ellipse([28, 16, 33, 21], fill=skin, outline=INK)     # hand on the scepter
-
-    # head
-    d.ellipse([12, 5, 28, 21], fill=skin, outline=INK)
-    d.ellipse([11, 3, 29, 12], fill=hair, outline=INK)      # bangs
-    d.line([(14, 9), (17, 6)], fill=hair_hi); d.line([(26, 9), (23, 6)], fill=hair_d)
-    for ex in (14, 22):                                      # cheeks
-        d.ellipse([ex - 1, 14, ex + 3, 16], fill=hx("#f06a9a"))
+    # head (the same square head as the siblings), pink hair, big polka-dot bow
+    rect(d, 3, 2, 12, 10, skin, INK)
+    rect(d, 4, 3, 11, 5, hair, None); rect(d, 4, 3, 4, 6, hair, None); rect(d, 11, 3, 11, 6, hair, None)
+    d.line([(5, 5), (7, 4)], fill=hair_hi)
+    rect(d, 3, 0, 6, 3, hot, INK); rect(d, 9, 0, 12, 3, hot, INK); rect(d, 7, 1, 8, 2, shade(hot, 0.7), INK)
+    for x, y in ((4, 1), (10, 1), (5, 2), (11, 2)):
+        d.point((x, y), fill=white)
+    d.point((5, 9), fill=BLUSH); d.point((10, 9), fill=BLUSH)
     if rage:
-        for ex in (14, 21):
-            d.ellipse([ex, 11, ex + 4, 15], fill=white, outline=INK)
-            d.ellipse([ex + 1, 12, ex + 3, 14], fill=hx("#e03030"))
-        d.line([(13, 10), (18, 11)], fill=INK, width=1); d.line([(27, 10), (22, 11)], fill=INK, width=1)
-        d.ellipse([16, 16, 24, 21], fill=hx("#2a1a2a"), outline=INK)             # screaming mouth
-        for tx in (17, 19, 21):
-            d.polygon([(tx, 17), (tx + 2, 17), (tx + 1, 19)], fill=white)
+        for x in (6, 9):
+            d.point((x, 7), fill=hx("#e03030")); d.point((x, 6), fill=INK)
+        rect(d, 6, 9, 9, 10, hx("#2a1a2a"), INK); d.point((7, 9), fill=white); d.point((8, 9), fill=white)
+    elif mode == "laugh":
+        for x in (4, 9):                                                 # closed ^ ^ eyes
+            d.point((x, 7), fill=INK); d.point((x + 1, 6), fill=INK); d.point((x + 2, 7), fill=INK)
+        d.line([(6, 8), (9, 8)], fill=white)                             # a big open laughing mouth
+        d.point((5, 8), fill=INK); d.point((10, 8), fill=INK)
+        d.point((6, 9), fill=hx("#8a2a46")); d.point((9, 9), fill=hx("#8a2a46"))
+        d.point((7, 9), fill=hx("#f08090")); d.point((8, 9), fill=hx("#f08090"))
     else:
-        for ex in (14, 22):                                  # closed, laughing ^ ^ eyes with lashes
-            d.line([(ex, 14), (ex + 1, 12), (ex + 3, 12), (ex + 4, 14)], fill=INK)
-        d.line([(13, 12), (12, 11)], fill=INK); d.line([(27, 12), (28, 11)], fill=INK)
-        d.ellipse([16, 15, 24, 21], fill=skin, outline=INK)                      # hand over the mouth: "ho ho ho"
-        for fx in (17, 19, 21):
-            d.line([(fx, 15), (fx, 17)], fill=shade(skin, 0.7))
-        d.rectangle([14, 20, 19, 22], fill=white, outline=INK)                    # lace cuff
-        d.point((26, 17), fill=hx("#d9406f"))
-
-    # polka-dot bow (a shopping bag tied up), bottle-cap dots
-    d.polygon([(9, 1), (18, 3), (18, 8), (9, 9)], fill=hot, outline=INK)
-    d.polygon([(18, 3), (27, 1), (27, 9), (18, 8)], fill=hot, outline=INK)
-    d.rectangle([17, 3, 20, 8], fill=pink_d, outline=INK)
-    for dx, dy in ((11, 4), (13, 7), (23, 3), (25, 6), (15, 4)):
-        d.point((dx, dy), fill=white)
-
-    # flies and glitter
-    for fx, fy in ((3, 3), (37, 4)):
-        d.point((fx, fy), fill=INK); d.point((fx + 1, fy - 1), fill=hx("#ffffff"))
-    for gx, gy in ((4, 8), (35, 36)):
-        for ox, oy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
-            d.point((gx + ox, gy + oy), fill=hx("#fff6a0"))
+        for x in (5, 10):                                                # open eyes and a little smile
+            d.point((x, 7), fill=INK); d.point((x, 8), fill=INK)
+        d.point((6, 9), fill=INK); d.point((9, 9), fill=INK)
     return im
 
 
@@ -1223,10 +1191,265 @@ def weapon_sprites():
         save("weapon/%s.png" % name, im)
 
 
+# ----------------------------------------------------------------------------- story scenery (full 720x480 backdrops)
+
+def _junk(d, x, y, kind):
+    """One piece of garbage (about 6 px): bottle, box, banana peel, can or bag."""
+    if kind == 0:
+        rect(d, x, y + 1, x + 2, y + 6, hx("#a9d2f7"), INK); rect(d, x, y, x + 2, y + 1, hx("#2f6fd6"), INK)
+    elif kind == 1:
+        rect(d, x, y, x + 7, y + 5, hx("#d9b887"), INK); d.line([(x + 3, y), (x + 3, y + 5)], fill=hx("#b08a5a"))
+    elif kind == 2:
+        d.polygon([(x, y + 4), (x + 3, y), (x + 7, y + 4), (x + 3, y + 3)], fill=hx("#f2d64a"), outline=INK)
+    elif kind == 3:
+        rect(d, x, y, x + 3, y + 5, hx("#c9cdd4"), INK); d.point((x + 1, y + 2), fill=hx("#d9566f"))
+    else:
+        d.ellipse([x, y, x + 6, y + 6], fill=hx("#f4f4fa"), outline=INK)
+
+
+def _heap(d, cx, base, half_w, height, seed):
+    """A heap of garbage that can be piled right up to the ceiling."""
+    rnd = random.Random(seed)
+    d.polygon([(cx - half_w, base), (cx - half_w * 0.55, base - height * 0.55), (cx - half_w * 0.2, base - height),
+               (cx + half_w * 0.25, base - height * 0.9), (cx + half_w * 0.6, base - height * 0.5), (cx + half_w, base)],
+              fill=hx("#6b5d43"), outline=INK)
+    for _ in range(int(half_w * height / 14)):
+        y = base - rnd.random() * height * 0.92
+        span = half_w * (1 - (base - y) / height * 0.75)
+        x = cx + (rnd.random() * 2 - 1) * span * 0.85
+        _junk(d, int(x) - 3, int(y) - 3, rnd.randrange(5))
+
+
+def room_scene(hole=False):
+    """The messy sibling's bedroom, buried in garbage (or, with hole=True, after Queen Muck smashed out through the wall)."""
+    W, H = 240, 160
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(5)
+
+    def wash(box, rgba, kind="ellipse"):                      # translucent shapes must be blended, not drawn over the pixels
+        layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        getattr(ImageDraw.Draw(layer), kind)(box, fill=rgba)
+        im.alpha_composite(layer)
+
+    # wallpaper with grime, floor boards
+    d.rectangle([0, 0, W, 86], fill=hx("#d8cfe8"))
+    for x in range(0, W, 12):
+        d.rectangle([x, 0, x + 5, 86], fill=hx("#d0c6e2"))
+    for _ in range(26):
+        x, y = rnd.randrange(W), rnd.randrange(86)
+        wash([x, y, x + rnd.randrange(4, 12), y + rnd.randrange(3, 9)], (150, 160, 110, 70))
+    d.rectangle([0, 0, W, 5], fill=hx("#b4a8cc"))
+    d.rectangle([0, 86, W, H], fill=hx("#c9a97a"))
+    for y in range(88, H, 9):
+        d.line([(0, y), (W, y)], fill=hx("#a98a5e"))
+        for x in range((y // 9 % 3) * 7, W, 22):
+            d.line([(x, y), (x, min(H, y + 9))], fill=hx("#a98a5e"))
+    noise(d, W, H, hx("#c9a97a"), 8, 140, y0=88)
+    for _ in range(14):
+        x, y = rnd.randrange(W), rnd.randrange(92, H)
+        wash([x, y, x + rnd.randrange(5, 12), y + rnd.randrange(2, 5)], (110, 120, 70, 80))
+    d.rectangle([0, 84, W, 86], fill=hx("#8a7a6a")); d.line([(0, 84), (W, 84)], fill=INK)
+
+    # the doorway on the left (the tidy sibling pushed the door open)
+    rect(d, 10, 18, 40, 86, hx("#fdf6e0"), INK)
+    d.polygon([(40, 18), (50, 24), (50, 84), (40, 86)], fill=hx("#a0764a"), outline=INK)
+    d.point((47, 56), fill=hx("#f7d88a")); d.point((47, 57), fill=hx("#f7d88a"))
+    # a window, with grimy curtains
+    rect(d, 100, 12, 140, 52, hx("#ffffff"), INK)
+    for y in range(14, 50):
+        t = (y - 14) / 36
+        d.line([(102, y), (138, y)], fill=(int(190 + 60 * t), int(215 + 20 * t), int(250 - 5 * t), 255))
+    wash([102, 14, 138, 50], (150, 170, 110, 60), "rectangle")
+    d.line([(120, 12), (120, 52)], fill=INK); d.line([(100, 32), (140, 32)], fill=INK)
+    d.polygon([(96, 10), (110, 10), (104, 52), (96, 52)], fill=hx("#9ec27a"), outline=INK)
+    d.polygon([(144, 10), (130, 10), (136, 52), (144, 52)], fill=hx("#9ec27a"), outline=INK)
+    rect(d, 96, 52, 144, 55, hx("#fdf6e0"), INK)
+    # torn posters
+    rect(d, 62, 22, 78, 44, hx("#f4a8c0"), INK); d.line([(62, 30), (78, 38)], fill=INK)
+    rect(d, 160, 18, 176, 36, hx("#9ad1f2"), INK)
+
+    if hole:
+        # a smashed hole in the right wall, with the polluted outskirts and Queen Muck's palace beyond
+        view = palace_scene().convert("RGBA")
+        mask = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(mask).polygon([(150, 20), (162, 8), (176, 14), (192, 6), (210, 12), (226, 8), (232, 24), (226, 44), (234, 64),
+                                      (226, 86), (150, 86), (156, 66), (148, 46)], fill=255)
+        im.paste(view.crop((66, 4, 174, 104)).resize((82, 80), Image.NEAREST), (150, 6), mask.crop((150, 6, 232, 86)))
+        d = ImageDraw.Draw(im)
+        d.line([(150, 20), (162, 8), (176, 14), (192, 6), (210, 12), (226, 8), (232, 24), (226, 44), (234, 64), (226, 86)], fill=INK)
+        d.line([(150, 20), (148, 46), (156, 66), (150, 86)], fill=INK)
+        for x, y, w in ((146, 80, 8), (152, 84, 6), (230, 82, 8), (220, 88, 7), (170, 92, 6), (200, 94, 8), (160, 100, 5)):
+            rect(d, x, y, x + w, y + 4, hx("#c9a38a"), INK)                      # fallen bricks and rubble
+        for i, (x, y) in enumerate(((176, 96), (190, 102), (206, 98), (222, 106), (168, 110))):
+            _junk(d, x, y, i % 5)
+    else:
+        _heap(d, 188, 100, 46, 82, 3)                                            # the heap she will rise from
+    _heap(d, 70, 94, 30, 56, 9)                                                  # a second pile in the back corner
+    _heap(d, 22, 112, 18, 26, 4)
+    # a bed somewhere under it all
+    rect(d, 112, 78, 150, 90, hx("#e8a0b4"), INK); rect(d, 112, 72, 120, 80, hx("#fdf6e0"), INK)
+    wash([0, 0, W, H], (120, 150, 70, 26), "rectangle")                          # sour, greenish light
+    return pastel(im, 0.08)
+
+
+def palace_scene():
+    """Queen Muck's palace in the polluted outskirts: trash, but elegant, in greys with pink accents. Cardboard-box brickwork,
+    bottle-glass windows, a CD rosette, pink bag-plastic roofs with can spires, a bottle battlement,
+    a pink carpet and a fence."""
+    W, H = 240, 160
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(11)
+    ivory, tan, gold = hx("#e4e4ec"), hx("#c4c4d2"), hx("#f2f2fa")                  # greys with silver trim
+    pink, lilac, hot = hx("#f08fbe"), hx("#f8c0d8"), hx("#e0507f")                    # the pink accents
+    silver = hx("#c9cdd4")
+    glass = ("#8a94b0", "#a6aec8", "#c8cee0", "#7a84a0")
+
+    vgrad(d, W, 104, hx("#8f7fb0"), hx("#f0c0cc"))
+    d.ellipse([150, 42, 178, 70], fill=hx("#f4a8a0"))                            # a dim sun behind the smog
+    for cx, cy, r in ((20, 20, 30), (70, 34, 26), (200, 24, 34), (150, 10, 28), (230, 56, 22), (10, 58, 18)):
+        d.ellipse([cx - r, cy - r // 2, cx + r, cy + r // 2], fill=(110, 96, 128, 200))
+        d.ellipse([cx - r // 2, cy - r // 2 - 6, cx + r, cy + r // 2 - 4], fill=(150, 134, 160, 170))
+    for i, x in enumerate((12, 52, 188, 226)):                                    # far hills of rubbish
+        mound(d, x, 84, i % 3)
+    d.rectangle([0, 100, W, H], fill=hx("#7e8a62"))
+    noise(d, W, H, hx("#7e8a62"), 4, 260, y0=100)
+    for _ in range(9):
+        x, y = rnd.randrange(W), rnd.randrange(108, H - 6)
+        d.ellipse([x, y, x + rnd.randrange(8, 18), y + rnd.randrange(3, 6)], fill=(110, 150, 60, 150))
+    d.polygon([(104, 100), (136, 100), (190, H), (50, H)], fill=hx("#a89a78"))   # a path of trampled rubbish
+    d.polygon([(114, 102), (126, 102), (152, H), (88, H)], fill=hot)               # the pink carpet up to the gate
+    d.line([(114, 102), (88, H)], fill=gold); d.line([(126, 102), (152, H)], fill=gold)
+    for i in range(14):
+        _junk(d, 60 + rnd.randrange(30), 108 + rnd.randrange(46), i % 5)
+        _junk(d, 150 + rnd.randrange(30), 108 + rnd.randrange(46), (i + 2) % 5)
+
+    def bag_roof(cx, base, half, top, c1, c2):                                   # scalloped roof of overlapping plastic bags
+        d.polygon([(cx - half, base), (cx, top), (cx + half, base)], fill=c1, outline=INK)
+        for i, y in enumerate(range(top + 3, base, 3)):
+            w = half * (y - top) / (base - top)
+            for x in range(int(cx - w), int(cx + w) - 2, 4):
+                d.ellipse([x, y - 1, x + 5, y + 3], fill=c1 if i % 2 else c2, outline=INK)
+        rect(d, cx - 1, top - 6, cx + 1, top, silver, INK)                       # a soda can for a spire
+        d.point((cx, top - 7), fill=gold)
+
+    def bricks(x0, y0, x1, y1, seed):                                             # cardboard-box brickwork
+        rect(d, x0, y0, x1, y1, ivory, INK)
+        r = random.Random(seed)
+        for row, y in enumerate(range(y0 + 1, y1, 4)):
+            for x in range(x0 + 1 + (row % 2) * 4, x1, 8):
+                d.rectangle([x, y, min(x + 6, x1 - 1), min(y + 2, y1 - 1)], fill=r.choice((tan, hx("#d0d0dc"), hx("#dcdce6"), hx("#e0c8d4"))))
+
+    def arch_window(cx, top, bottom):                                              # bottle-glass window with a gold frame
+        d.pieslice([cx - 4, top, cx + 4, top + 8], 180, 360, fill=hx(glass[0]), outline=INK)
+        rect(d, cx - 4, top + 4, cx + 4, bottom, hx(glass[0]), INK)
+        for i, y in enumerate(range(top + 5, bottom, 3)):
+            d.line([(cx - 3, y), (cx + 3, y)], fill=hx(glass[(i + 1) % 4]))
+        d.line([(cx, top + 1), (cx, bottom)], fill=gold)
+
+    # the long hall
+    bricks(76, 64, 164, 102, 3)
+    for x in range(76, 166, 5):                                                    # bottle battlement
+        rect(d, x, 58, x + 2, 64, hx(("#a8b0c8", "#c8cede", "#8f98b0")[(x // 5) % 3]), INK); d.point((x + 1, 57), fill=hx("#4a5068"))
+    arch_window(90, 72, 92); arch_window(146, 72, 92)
+    # inner turrets and the keep
+    for x0 in (90, 138):
+        bricks(x0, 46, x0 + 12, 64, x0 + 1)
+        d.line([(x0 + 6, 50), (x0 + 6, 58)], fill=hx(glass[1]))
+        bag_roof(x0 + 6, 46, 9, 32, pink, lilac)
+    bricks(106, 40, 134, 64, 7)
+    bricks(112, 26, 128, 40, 8)
+    bag_roof(120, 26, 12, 8, pink, lilac)
+    d.line([(120, 2), (120, 1)], fill=INK); d.polygon([(121, 1), (129, 3), (121, 5)], fill=hot, outline=INK)
+    d.ellipse([113, 44, 127, 58], fill=hx("#d8d8e4"), outline=gold)                # a CD rosette
+    for i, c in enumerate(("#f4a6c8", "#c9cdd4", "#8f98b0", "#e4e4ec", "#f08fbe", "#a8b0c8")):
+        d.pieslice([114, 45, 126, 57], i * 60, i * 60 + 60, fill=hx(c))
+    d.ellipse([118, 49, 122, 53], fill=hx("#f4f4fa"), outline=INK); d.point((120, 51), fill=INK)
+    arch_window(120, 28, 38)
+    # the gate, with lanterns and a heart
+    d.pieslice([109, 80, 131, 104], 180, 360, fill=hx("#3a3a48"), outline=gold)
+    rect(d, 109, 92, 131, 102, hx("#3a3a48"), gold)
+    d.line([(120, 83), (120, 102)], fill=gold)
+    for x in (105, 135):
+        rect(d, x, 86, x + 2, 90, hx("#ffd0e4"), INK)
+    heart = [(120, 74), (117, 71), (115, 71), (114, 73), (114, 75), (120, 80), (126, 75), (126, 73), (125, 71), (123, 71)]
+    layer = Image.new("RGBA", (16, 14), (0, 0, 0, 0))
+    ImageDraw.Draw(layer).polygon([(x - 112, y - 70) for x, y in heart], fill=hx("#ff8fb0"), outline=gold)
+    crack = [0, 0, -1, 0, 1, 0, -1, 0, 1, 0, 0, 0, 0, 0]               # the zigzag the heart has split along
+    left, right = Image.new("RGBA", (16, 14), (0, 0, 0, 0)), Image.new("RGBA", (16, 14), (0, 0, 0, 0))
+    for yy in range(14):
+        for xx in range(16):
+            px = layer.getpixel((xx, yy))
+            if px[3]:
+                (left if xx < 8 + crack[yy] else right).putpixel((xx, yy), px)
+    im.alpha_composite(left, (112, 70))
+    im.alpha_composite(right, (113, 71))                               # the right half slips down and sideways
+    for yy in range(14):
+        if layer.getpixel((8 + crack[yy], yy))[3]:
+            d.point((112 + 8 + crack[yy], 70 + yy), fill=INK)          # the dark crack between the halves
+    # steps made of boxes and a picket fence
+    d.polygon([(100, 106), (140, 106), (136, 102), (104, 102)], fill=tan, outline=INK)
+    for x0, x1 in ((4, 64), (176, 236)):
+        d.line([(x0, 108), (x1, 108)], fill=INK); d.line([(x0, 112), (x1, 112)], fill=INK)
+        for x in range(x0, x1, 5):
+            d.line([(x, 104), (x, 114)], fill=INK); d.point((x, 103), fill=gold)
+    for bx, by in ((68, 104), (76, 106), (162, 105), (170, 103), (62, 108), (176, 108)):   # knotted garbage bags at the walls
+        d.ellipse([bx, by - 4, bx + 8, by + 3], fill=hx("#3a3a4a"), outline=INK)
+        d.line([(bx + 3, by - 4), (bx + 4, by - 6)], fill=INK); d.point((bx + 2, by - 2), fill=hx("#7a7a90"))
+    for x, y in ((24, 118), (216, 120)):                                         # dead trees
+        d.line([(x, y + 22), (x, y)], fill=INK, width=2)
+        d.line([(x, y + 8), (x - 8, y - 2)], fill=INK); d.line([(x, y + 12), (x + 8, y + 2)], fill=INK)
+    _heap(d, 30, 152, 26, 20, 6)
+    _heap(d, 214, 154, 28, 24, 8)
+    im.putalpha(255)
+    return pastel(im, 0.1)
+
+
+def meadow_scene():
+    """The outskirts, bloomed into meadows overnight: sunny hills, a rainbow, flowers and the village beyond."""
+    W, H = 240, 160
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(2)
+    vgrad(d, W, 96, hx("#bfe3ff"), hx("#fdeef6"))
+    d.ellipse([186, 8, 204, 26], fill=hx("#fff2c8"))
+    for i, c in enumerate(("#ffb8c8", "#ffe0a8", "#fff6b0", "#c8f0c0", "#b8dcff", "#d8c8f8")):
+        d.arc([30 - i, 24 - i, 210 + i, 190 + i], 192, 348, fill=hx(c), width=2)
+    for cx, cy in ((24, 18), (110, 12), (160, 34)):
+        d.ellipse([cx, cy, cx + 20, cy + 8], fill=(255, 255, 255, 235)); d.ellipse([cx + 8, cy - 3, cx + 28, cy + 7], fill=(255, 255, 255, 235))
+    d.rectangle([0, 80, W, H], fill=hx("#cdf0d0"))
+    for x in (10, 60, 110, 160, 205):
+        house(d, x, 66, "#e8808a" if x % 3 else "#7aa8e0")
+    for cx, r in ((20, 40), (95, 50), (180, 56), (235, 36)):
+        d.ellipse([cx - r, 92 - r // 3, cx + r, 92 + r], fill=hx("#bfe8c8"), outline=None)
+    d.rectangle([0, 104, W, H], fill=hx("#d4f2d8"))
+    noise(d, W, H, hx("#d4f2d8"), 3, 220, y0=104)
+    for x in range(-2, W + 12, 17):
+        bubbles(d, x, 90 + (x * 5) % 5, 8, TREE_PAL.get("park", TEAL))
+    for _ in range(150):                                                         # flowers everywhere
+        x, y = rnd.randrange(W), rnd.randrange(100, H)
+        c = hx(rnd.choice(("#ff8fb8", "#fff6a0", "#ffffff", "#b8a0f0", "#ffb070")))
+        d.point((x, y + 1), fill=hx("#5fae6a")); d.point((x, y), fill=c)
+        if rnd.random() < 0.5:
+            d.point((x + 1, y), fill=c); d.point((x - 1, y), fill=c)
+    im.putalpha(255)
+    return pastel(im, 0.08)
+
+
+def story_backdrops():
+    save("backdrop/room.png", room_scene(False))
+    save("backdrop/room_hole.png", room_scene(True))
+    save("backdrop/palace.png", palace_scene())
+    save("backdrop/meadow.png", meadow_scene())
+
+
 def story_sprites():
+    story_backdrops()
     npc_sprites(); weapon_sprites()
-    save("boss/queen_muck.png", queen_muck(False), 4)
-    save("boss/queen_muck_rage.png", queen_muck(True), 4)
+    save("boss/queen_muck.png", queen_muck("normal"))
+    save("boss/queen_muck_laugh.png", queen_muck("laugh"))
+    save("boss/queen_muck_rage.png", queen_muck("rage"))
     save("boss/imp.png", imp_sprite())
 
 

@@ -62,6 +62,9 @@ public final class DialogBox extends Group {
         body.setText("");
     }
 
+    /** Index of the page being shown (0-based). */
+    public int page() { return page; }
+
     /** Skips the typing, or flips the page. Returns true once the last page was dismissed. */
     public boolean advance() {
         if (!isVisible() || !paged) return true;

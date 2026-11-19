@@ -7,27 +7,31 @@ import com.codevibers.ecoquest.model.LevelConfig.Mode;
 public final class Levels {
     private static final int INF = 1_000_000_000;
 
+    /**
+     * The ten story levels. Each one asks for a short run (roughly 1 minute at the start, 3 at the end) so a session never drags:
+     * the mission counts and the target score are what set the length, the spawn and pollution pacing is unchanged.
+     */
     public static final List<LevelConfig> CAMPAIGN = List.of(
             new LevelConfig("Residential Area", "Easy", "Sprout: Maple Street is buried in litter!", "Sort it all before the smog settles in.")
                     .rate(3.4, 6, .12, 150).m(10, 0, 0).hz(0, 0, 0, 0, 0).scene("house").tip("Pick up garbage (A), drop it in the matching bin."),
             new LevelConfig("Public Park", "Medium", "Sprout: The park lost its trees.", "Plant seeds and keep the grounds litter-free.")
-                    .rate(2.8, 8, .2, 350).m(0, 10, 0).hz(0, 0, 0, 1, 0).scene("park").tip("Carry seeds to empty spots. Leftover garbage pollutes faster!"),
+                    .rate(2.8, 8, .2, 260).m(0, 6, 0).hz(0, 0, 0, 1, 0).scene("park").tip("Carry seeds to empty spots. Leftover garbage pollutes faster!"),
             new LevelConfig("River", "Hard", "Sprout: Dumpers are poisoning the river!", "Fish out waste, empty full bins, refuse factory bribes.")
-                    .rate(2.3, 9, .28, 600).m(0, 0, 15).hz(5, 16, 1, 0, 1).scene("river").tint(255, 130, 50, .2).tip("Bins hold 5: press SPACE beside one to empty it."),
+                    .rate(2.3, 9, .28, 400).m(0, 0, 8).hz(5, 16, 1, 0, 1).scene("river").tint(255, 130, 50, .2).tip("Bins hold 5: press SPACE beside one to empty it."),
             new LevelConfig("Industrial Zone", "Expert", "Sprout: The final test. Smog, rain and dumping.", "Use every skill you learned, Guardian.")
-                    .rate(1.5, 11, .4, 900).m(20, 5, 6).hz(4, 9, 1, 1, 1).scene("ind").tint(15, 25, 85, .4).tip("Everything at once, and faster. Chain combos!"),
+                    .rate(1.5, 11, .4, 520).m(10, 3, 4).hz(4, 9, 1, 1, 1).scene("ind").tint(15, 25, 85, .4).tip("Everything at once, and faster. Chain combos!"),
             new LevelConfig("Market Rush", "Hard+", "Sprout: Market day, and the bins keep swapping!", "Stay sharp and read every label.")
-                    .rate(1.4, 11, .34, 1100).m(30, 0, 0).hz(4, 10, 1, 0, 0).shuf(25).scene("market").tip("Bins swap places every 25 seconds."),
+                    .rate(1.4, 11, .34, 600).m(20, 0, 0).hz(4, 10, 1, 0, 0).shuf(25).scene("market").tip("Bins swap places every 25 seconds."),
             new LevelConfig("Sunny Beach", "Expert+", "Sprout: The tide brought in tons of waste.", "Clean the shore and replant the dunes.")
-                    .rate(1.3, 12, .38, 1300).m(0, 6, 20).hz(4, 9, 1, 1, 1).cur(32).scene("beach").tip("Strong currents carry waste along fast."),
+                    .rate(1.3, 12, .38, 700).m(0, 4, 9).hz(4, 9, 1, 1, 1).cur(32).scene("beach").tip("Strong currents carry waste along fast."),
             new LevelConfig("Toxic Landfill", "Insane", "Sprout: The last great cleanup.", "Swaps, currents, rain, bribes. Good luck, Guardian!")
-                    .rate(1, 14, .5, 1700).m(40, 8, 10).hz(3, 7, 1, 1, 1).cur(24).shuf(20).rain().scene("dump").tint(20, 30, 70, .35).tip("Everything is against you. Stay calm."),
+                    .rate(1, 14, .5, 820).m(20, 5, 5).hz(3, 7, 1, 1, 1).cur(24).shuf(20).rain().scene("dump").tint(20, 30, 70, .35).tip("Everything is against you. Stay calm."),
             new LevelConfig("Arctic Outpost", "Brutal", "Sprout: Trash even reached the ice!", "Melting floes carry waste in every direction.")
-                    .rate(.95, 14, .55, 1900).m(35, 6, 12).hz(3, 7, 1, 1, 1).cur(20).shuf(18).scene("arctic").tint(150, 200, 255, .15).tip("Cold, fast and swap-happy. Keep your combo."),
+                    .rate(.95, 14, .55, 900).m(18, 4, 6).hz(3, 7, 1, 1, 1).cur(20).shuf(18).scene("arctic").tint(150, 200, 255, .15).tip("Cold, fast and swap-happy. Keep your combo."),
             new LevelConfig("Jungle Delta", "Nightmare", "Sprout: The delta is choking on plastic.", "Save the rainforest before the rains return.")
-                    .rate(.9, 15, .6, 2200).m(40, 8, 15).hz(3, 6, 1, 1, 1).cur(28).shuf(15).rain().scene("jungle").tip("Dense, wet and relentless."),
+                    .rate(.9, 15, .6, 980).m(20, 5, 7).hz(3, 6, 1, 1, 1).cur(28).shuf(15).rain().scene("jungle").tip("Dense, wet and relentless."),
             new LevelConfig("Mega City", "Legend", "Sprout: One last place: the Mega City.", "Millions of people. Show them how it is done!")
-                    .rate(.8, 16, .7, 2800).m(50, 10, 15).hz(3, 5, 1, 1, 1).cur(30).shuf(12).rain().scene("city").tint(20, 10, 60, .3).tip("The final exam. Everything, all at once."));
+                    .rate(.8, 16, .7, 1100).m(24, 6, 8).hz(3, 5, 1, 1, 1).cur(30).shuf(12).rain().scene("city").tint(20, 10, 60, .3).tip("The final exam. Everything, all at once."));
 
     public static final List<LevelConfig> MODES = List.of(
             new LevelConfig("Time Attack", "90 seconds on the clock", "Sprout: Beat the clock!", "Sort as much as you can in 90 seconds.")
