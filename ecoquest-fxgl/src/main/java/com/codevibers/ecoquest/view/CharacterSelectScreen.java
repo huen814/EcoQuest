@@ -60,7 +60,7 @@ public final class CharacterSelectScreen extends Screen {
             v.setLayoutY(14);
             sprites[i] = v;
 
-            Ui.Label name = new Ui.Label(s.label, 13, Ui.FRAME_OUT);
+            Ui.Label name = new Ui.Label(s.name.toUpperCase(), 13, Ui.FRAME_OUT);
             name.setLayoutX((CARD_W - name.textWidth()) / 2);
             name.setLayoutY(CARD_H - 40);
             card.getChildren().addAll(v, name);
@@ -87,7 +87,7 @@ public final class CharacterSelectScreen extends Screen {
         double cx = cards[index].getLayoutX() + CARD_W / 2 - 9;
         cursor.setLayoutX(cx);
         Sibling pick = siblings[index];
-        info.setText("YOU PLAY AS THE " + pick.label + ". THE " + pick.other().label + " ENDS UP DIRTY IN THE STORY.\n"
+        info.setText("YOU PLAY AS " + pick.name.toUpperCase() + ". " + pick.other().name.toUpperCase() + " ENDS UP DIRTY IN THE STORY.\n"
                 + "BOTH PLAY EXACTLY THE SAME.\n"
                 + "ARROWS: CHOOSE    E / ENTER: CONFIRM    X: BACK");
     }
