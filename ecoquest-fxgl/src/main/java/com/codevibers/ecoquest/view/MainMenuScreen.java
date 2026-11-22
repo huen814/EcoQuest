@@ -81,4 +81,8 @@ public final class MainMenuScreen extends Screen {
         app.sfx(menu.isEnabled(menu.index()) ? Sfx.SELECT : Sfx.DENY);
         menu.confirm();
     }
+
+    /** The title song keeps playing on this screen. */
+    @Override
+    public boolean titleMusic() { return true; }
 }

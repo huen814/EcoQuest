@@ -15,6 +15,8 @@ public abstract class Screen {
     public Group root() { return root; }
 
     public void enter() { }
+    /** True for menu screens: the title song plays while they are up (and continues across them). */
+    public boolean titleMusic() { return false; }
     public void exit() { }
     public void update(double tpf) { }
 

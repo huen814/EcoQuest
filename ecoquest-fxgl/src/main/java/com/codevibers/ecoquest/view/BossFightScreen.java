@@ -352,7 +352,16 @@ public final class BossFightScreen extends Screen {
         refreshHud();
         root.requestFocus();
         showLaugh();
+        String track = switch (def.kind()) {
+            case QUEEN -> "boss_queen.wav";
+            case MOUND -> "boss_mound.wav";
+            default -> null;
+        };
+        if (track != null) Audio.playMusic(track, 0.5);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     /** The boss shouts: floating text plus its sound (Queen Muck's laugh, a gross groan for the others). */
     private void showLaugh() {
@@ -981,6 +990,7 @@ public final class BossFightScreen extends Screen {
         }
         if (bossHP <= 0) {
             phase = Phase.DEAD;
+            Audio.stopMusic();
             bossDeathTimer = 2.5;
             phaseFlash = 1.0;
             flashRect.setFill(Color.WHITE);

@@ -137,7 +137,11 @@ public final class KidnapCutsceneScreen extends Screen {
         holeImg.setOpacity(0);
         shake = 0;
         box.show(List.of(getPage(0), getPage(1), getPage(2)));
+        Audio.playMusic("queen_dialogue.wav", 0.4);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     private String getPage(int i) {
         String tidy = app.save().sibling().name, messy = app.save().sibling().other().name;

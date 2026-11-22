@@ -151,7 +151,11 @@ public final class GroveCutsceneScreen extends Screen {
         box.show(PORTAL_PAGES);
         app.sfx(Sfx.MISSION);
         portalFx.converge(12, () -> StoryFx.sparkle(3, Color.web("#9fe0cf")), 540, 215, 1.1, 60);
+        Audio.playMusic("title.wav", 0.45);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     @Override
     public void update(double tpf) {

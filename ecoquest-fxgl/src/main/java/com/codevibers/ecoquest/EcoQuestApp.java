@@ -62,6 +62,8 @@ public class EcoQuestApp extends GameApplication {
             }
             current = next;
             FXGL.getGameScene().addUINode(current.root());
+            if (current.titleMusic()) Audio.playMusic("title.wav", 0.45);
+            else Audio.stopMusicIf("title.wav");
             current.enter();
         }
         if (current != null) current.update(tpf);

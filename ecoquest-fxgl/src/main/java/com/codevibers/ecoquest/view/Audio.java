@@ -107,9 +107,10 @@ public final class Audio {
         if (file.equals(musicName) && music != null) return;
         stopMusic();
         try {
-            var url = Audio.class.getResource("/assets/music/" + file);
+            String url = musicUrl(file);
             if (url == null) { System.err.println("Missing music: " + file); return; }
-            MediaPlayer p = new MediaPlayer(new Media(url.toExternalForm()));
+            MediaPlayer p = new MediaPlayer(new Media(url));
+            p.setOnError(() -> System.err.println("Music error in " + file + ": " + p.getError()));
             p.setCycleCount(MediaPlayer.INDEFINITE);
             p.setVolume(volume);
             p.setMute(muted);
@@ -119,6 +120,47 @@ public final class Audio {
         } catch (Throwable t) {
             System.err.println("Could not play music " + file + ": " + t);
         }
+    }
+
+    /**
+     * Resolves a music resource. JavaFX can refuse a WAV that carries extra RIFF chunks after the audio (metadata
+     * added by some tools), so if there are any, the file is rewritten with just the fmt and data chunks into a temp file.
+     */
+    private static String musicUrl(String file) throws Exception {
+        var url = Audio.class.getResource("/assets/music/" + file);
+        if (url == null) return null;
+        byte[] d;
+        try (var in = url.openStream()) { d = in.readAllBytes(); }
+        if (d.length > 44 && d[0] == 'R' && d[1] == 'I' && d[2] == 'F' && d[3] == 'F') {
+            int fmtOff = -1, fmtLen = 0, dataOff = -1, dataLen = 0, extra = 0;
+            for (int i = 12; i + 8 <= d.length; ) {
+                int len = (d[i + 4] & 255) | (d[i + 5] & 255) << 8 | (d[i + 6] & 255) << 16 | (d[i + 7] & 255) << 24;
+                String id = new String(d, i, 4, java.nio.charset.StandardCharsets.US_ASCII);
+                int body = i + 8;
+                if (id.equals("fmt ")) { fmtOff = body; fmtLen = len; }
+                else if (id.equals("data")) { dataOff = body; dataLen = Math.min(len, d.length - body); }
+                else extra++;
+                if (len < 0) break;
+                i = body + len + (len & 1);
+            }
+            if (extra > 0 && fmtOff >= 0 && dataOff >= 0) {
+                int riff = 4 + 8 + fmtLen + 8 + dataLen;
+                java.nio.ByteBuffer b = java.nio.ByteBuffer.allocate(8 + riff).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+                b.put("RIFF".getBytes()).putInt(riff).put("WAVE".getBytes());
+                b.put("fmt ".getBytes()).putInt(fmtLen).put(d, fmtOff, fmtLen);
+                b.put("data".getBytes()).putInt(dataLen).put(d, dataOff, dataLen);
+                java.nio.file.Path tmp = java.nio.file.Files.createTempFile("ecoquest-", ".wav");
+                java.nio.file.Files.write(tmp, b.array());
+                tmp.toFile().deleteOnExit();
+                return tmp.toUri().toString();
+            }
+        }
+        return url.toExternalForm();
+    }
+
+    /** Stops the music only if this track is the one playing. */
+    public static void stopMusicIf(String file) {
+        if (file.equals(musicName)) stopMusic();
     }
 
     public static void stopMusic() {
