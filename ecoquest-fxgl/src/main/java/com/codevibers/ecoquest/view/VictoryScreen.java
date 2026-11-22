@@ -75,17 +75,17 @@ public final class VictoryScreen extends Screen {
     }
 
     private List<String> buildPages() {
+        String tidy = app.save().sibling().name, messy = app.save().sibling().other().name;
         return List.of(
-            "The Spirit Bottle explodes with clean green light! Queen Muck " +
-            "lets out a dramatic shriek as the recycled energy melts her gown of bags " +
-            "piece by piece - cans, bottles and wrappers raining harmlessly " +
-            "to the ground, sorted neatly by colour!",
+            "Queen Muck keeps her promise and throws open the tower door herself. " +
+            "Outside, the smog is gone for good, and cans, bottles and wrappers lie sorted neatly " +
+            "by colour all across the palace grounds!",
 
-            "\"SIBLING!\" the messy sibling cried, tumbling free as the last tendril " +
-            "of plastic crumbled. They threw their arms around the tidy sibling and laughed and laughed. " +
+            "\"" + tidy.toUpperCase() + "!\" " + messy + " cried, racing out of the tower. " +
+            "They threw their arms around " + tidy + " and laughed and laughed. " +
             "\"You sorted all that garbage... just for me?\"",
 
-            "\"Every single piece,\" the tidy sibling grinned, holding up the now-empty bottle. " +
+            "\"Every single piece,\" " + tidy + " grinned, holding up the now-empty bottle. " +
             "The village erupted in cheers. The polluted outskirts bloomed into meadows " +
             "overnight - because clean habits really do change everything. THE END."
         );

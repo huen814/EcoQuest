@@ -8,16 +8,19 @@ package com.codevibers.ecoquest.model;
  * the other sibling is the dirty one (see {@link #other()} and {@link #dirtySheet()}), used by the story.
  */
 public enum Sibling {
-    SISTER("sister", "SISTER"),
-    BROTHER("brother", "BROTHER");
+    SISTER("sister", "SISTER", "Lena"),
+    BROTHER("brother", "BROTHER", "Adam");
 
     /** Used in texture names, e.g. player_sister.png. */
     public final String id;
     public final String label;
+    /** Their name in the story: Lena (sister) and Adam (brother). */
+    public final String name;
 
-    Sibling(String id, String label) {
+    Sibling(String id, String label, String name) {
         this.id = id;
         this.label = label;
+        this.name = name;
     }
 
     /** The sibling the player did not pick. */

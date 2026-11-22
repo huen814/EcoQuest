@@ -6,6 +6,7 @@ Output: src/main/resources/assets/textures/...
 
 Replace any generated PNG with hand-drawn art of the same size and name; the game does not care.
 """
+import math
 import os
 import random
 from PIL import Image, ImageDraw
@@ -1079,71 +1080,354 @@ def npc_sprites():
 
 
 def queen_muck(mode="normal"):
-    """Queen Muck, on the same 16x24 chibi grid as the siblings and villagers (scaled x3, same square head, dot-style
-    face, blush, 1 px ink outlines) but with her own look: tan skin, pink twin-tails tied with can rings, a big polka-dot
-    bow, a ruffled garbage-bag gown with bottle-cap polka dots and a doily hem, a broken-heart brooch, puff sleeves, a hand
-    over her mouth for the 'ho ho ho' laugh (rage: open screaming mouth) and a heart scepter.
-    mode: "normal" (open eyes, little smile), "laugh" (closed ^ ^ eyes, big open mouth) or "rage" (red eyes, screaming)."""
-    rage = mode == "rage"
+    """Queen Muck, on the same 16x24 chibi grid as Mother Nature, the siblings and the villagers (scaled x3 = 48x72), drawn from
+    the Gothic Trash Princess sheet: a big messy burgundy mane with magenta streaks, a silver tiara with pink gems, a black bow
+    with a can charm, pin and crown tag, teal eyes, a choker, a black off-shoulder gown with a pink cross, a belt with a chain
+    and crown tags, a torn layered skirt with X marks, and cross-laced platform boots with pink soles.
+    mode: "normal" (hand on chest, frown), "rage" (hand on hip, anger vein), "laugh" (> < eyes, open mouth, fists up, one boot
+    kicked up, 'ho ho ho'), "sad" (defeated, a tear, hands clasped) or "clean" (after the change: pastel gown, mint and pink)."""
+    clean, rage, laugh, sad = mode == "clean", mode == "rage", mode == "laugh", mode == "sad"
     im, d = canvas(16, 24)
-    skin = hx("#d8a07a")
-    hair = hx("#f08fbe") if not rage else hx("#e0507f")
-    hair_hi = shade(hair, 1.15)
-    gown = hx("#f0608f") if not rage else hx("#c8405a")
-    hot = hx("#e0507f") if not rage else hx("#b83050")
-    white = hx("#fdf6e0")
-    caps = ("#7fb2f2", "#f7d88a", "#86dba6", "#c9cdd4")
-    d.ellipse([2, 21, 13, 23], fill=(60, 40, 90, 55))
 
-    # scepter: pole and a little heart on top
-    d.line([(15, 5), (15, 15)], fill=INK)
-    for x, y in ((13, 2), (15, 2), (13, 3), (14, 3), (15, 3), (14, 4)):
-        d.point((x, y), fill=hx("#e0506a"))
+    def P(x, y, c):
+        d.point((x, y), fill=c)
 
-    # twin-tails: ink on the outside edge, pink inside, can-ring ties, bag-plastic ends
-    for x0, x1, edge in ((0, 2, 0), (13, 15, 15)):
-        rect(d, x0, 6, x1, 16, hair, None)
-        d.line([(edge, 6), (edge, 16)], fill=INK)
-        d.line([(x0, 6), (x1, 6)], fill=INK); d.line([(x0, 16), (x1, 16)], fill=INK)
-        d.point((1 if edge == 0 else 14, 9), fill=hair_hi); d.point((1 if edge == 0 else 14, 12), fill=hair_hi)
-        d.point((1 if edge == 0 else 14, 7), fill=hx("#b8bcc4")); d.point((1 if edge == 0 else 14, 15), fill=white)
-    d.line([(15, 5), (15, 15)], fill=INK)                                # scepter stays in front of the right tail
+    def seg(y, x, chars):
+        for i, ch in enumerate(chars):
+            if ch != ".":
+                P(x + i, y, C[ch])
 
-    # gown: wide ruffled skirt, bottle-cap polka dots, scalloped doily hem
-    d.polygon([(4, 14), (11, 14), (14, 21), (1, 21)], fill=gown, outline=INK)
-    for i, (x, y) in enumerate(((5, 18), (8, 16), (10, 19), (3, 20), (12, 20), (7, 19))):
-        d.point((x, y), fill=hx(caps[i % 4]))
-    for x in range(1, 14, 3):
-        d.point((x, 21), fill=white); d.point((x + 1, 21), fill=white)
-    rect(d, 5, 11, 10, 14, gown, INK)                                   # bodice
-    d.point((7, 12), fill=hx("#ff8fb0")); d.point((8, 12), fill=hx("#ff8fb0")); d.point((7, 13), fill=hx("#ff8fb0"))
-    for x0 in (3, 11):                                                  # puff sleeves
-        rect(d, x0, 11, x0 + 1, 13, white, None); d.line([(x0, 14), (x0 + 1, 14)], fill=INK)
-    rect(d, 14, 12, 15, 14, skin, INK)                                  # hand on the scepter
+    def box(x0, y0, x1, y1, c):
+        d.rectangle([x0, y0, x1, y1], fill=c)
 
-    # head (the same square head as the siblings), pink hair, big polka-dot bow
-    rect(d, 3, 2, 12, 10, skin, INK)
-    rect(d, 4, 3, 11, 5, hair, None); rect(d, 4, 3, 4, 6, hair, None); rect(d, 11, 3, 11, 6, hair, None)
-    d.line([(5, 5), (7, 4)], fill=hair_hi)
-    rect(d, 3, 0, 6, 3, hot, INK); rect(d, 9, 0, 12, 3, hot, INK); rect(d, 7, 1, 8, 2, shade(hot, 0.7), INK)
-    for x, y in ((4, 1), (10, 1), (5, 2), (11, 2)):
-        d.point((x, y), fill=white)
-    d.point((5, 9), fill=BLUSH); d.point((10, 9), fill=BLUSH)
-    if rage:
-        for x in (6, 9):
-            d.point((x, 7), fill=hx("#e03030")); d.point((x, 6), fill=INK)
-        rect(d, 6, 9, 9, 10, hx("#2a1a2a"), INK); d.point((7, 9), fill=white); d.point((8, 9), fill=white)
-    elif mode == "laugh":
-        for x in (4, 9):                                                 # closed ^ ^ eyes
-            d.point((x, 7), fill=INK); d.point((x + 1, 6), fill=INK); d.point((x + 2, 7), fill=INK)
-        d.line([(6, 8), (9, 8)], fill=white)                             # a big open laughing mouth
-        d.point((5, 8), fill=INK); d.point((10, 8), fill=INK)
-        d.point((6, 9), fill=hx("#8a2a46")); d.point((9, 9), fill=hx("#8a2a46"))
-        d.point((7, 9), fill=hx("#f08090")); d.point((8, 9), fill=hx("#f08090"))
+    if clean:
+        C = dict(h="#c4557a", H="#8e3456", m="#dc7898", p="#ffc4d8", s="#fbe4cc", S="#eec8a8", J="#e6b890", E="#141016", W="#fff0e0", b=BLUSH, t="#7fc0c4", T="#2d5a66",
+                 O="#3a2438", d="#f8eff2", D="#ffffff", k="#ee5f90", K="#c23c6c", u="#bfe8d0", U="#f6c2d6", v="#fff3b0", V="#e0c070",
+                 g="#a8dcb6", G="#5faa7c", B="#fbf6f2", o="#ee7aa4", q="#c23c6c", y="#ffc9dc", Y="#ffffff", r="#8fd49a", z="#ee9ab8",
+                 x="#c4506a")
     else:
-        for x in (5, 10):                                                # open eyes and a little smile
-            d.point((x, 7), fill=INK); d.point((x, 8), fill=INK)
-        d.point((6, 9), fill=INK); d.point((9, 9), fill=INK)
+        C = dict(h="#74204a", H="#3c1028", m="#98285a", p="#ff3a80" if rage else "#e02c78", s="#f9d9bd", S="#efc09c", J="#d99b72", E="#101010", W="#fce8d2", b=BLUSH,
+                 t="#7fc0c4", T="#2d5a66", O="#14091a", d="#22142a", D="#3c2448", k="#e8306f", K="#a01c52", u="#52285a",
+                 U="#c01c64", v="#e2e2ee", V="#8c8ca4", g="#bcaec0", G="#7c6c84", B="#2c1832", o="#d0236f", q="#8a1450",
+                 y="#2a1a38", Y="#5a4070", r="#d0344e", z="#0e0712", x="#a04058")
+    C = {k: (v if isinstance(v, tuple) else hx(v)) for k, v in C.items()}
+    d.ellipse([2, 21, 13, 23], fill=(40, 10, 40, 70))
+
+    # long wavy side hair behind the body
+    for y in range(8, 17):
+        w = 1 if (y // 3) % 2 else 0
+        seg(y, 1 + w, "hh"); seg(y, 13 - w, "hh")
+    seg(17, 1, "mh"); seg(17, 13, "hm")
+    P(1, 12, C["p"]); P(14, 13, C["p"])
+
+    # skirt: a purple underlayer with a torn pink hem, black tiers over it, little X marks (flowers when clean)
+    for y, (a, b) in {18: (2, 13), 19: (1, 14), 20: (1, 14)}.items():
+        for x in range(a, b + 1):
+            P(x, y, C["u"])
+    for x in range(1, 15):
+        P(x, 20, C["U"] if x % 2 else C["u"])
+    for x in (3, 7, 11):
+        P(x, 20, (0, 0, 0, 0))
+    for y, (a, b) in {16: (3, 12), 17: (3, 12), 18: (3, 12), 19: (4, 11)}.items():
+        for x in range(a, b + 1):
+            P(x, y, C["d"])
+    for x in range(4, 12):
+        P(x, 19, C["U"] if x % 2 == 0 else C["d"])
+    for y in (14, 15):
+        for x in range(4, 12):
+            P(x, y, C["d"])
+    for x in range(4, 12):
+        P(x, 16, C["D"])
+    for x, y in ((6, 17), (7, 18), (9, 17), (10, 18)):
+        P(x, y, C["k"])
+    for x, y in ((7, 17), (6, 18), (10, 17), (9, 18)):
+        P(x, y, C["v"] if clean else C["K"])
+
+    # legs and platform boots with cross lacing (laugh: the left boot is kicked up)
+    for bx in (4, 9):
+        P(bx + 1, 21, C["s"]); P(bx + 2, 21, C["S"])
+    for bx in (4, 9):
+        y0, bxx = (19, 2) if laugh and bx == 4 else (21, bx)
+        box(bxx, y0, bxx + 3, y0 + 1, C["B"])
+        P(bxx + 1, y0, C["V"]); P(bxx + 2, y0 + 1, C["V"])
+        seg(y0 + 2, bxx, "qooq")
+    if laugh:
+        P(3, 20, C["B"]); P(4, 21, C["B"]); seg(21, 3, "qq")
+
+    # bodice with the pink cross, belt with buckle, chain, crown tags
+    box(5, 11, 10, 13, C["d"])
+    seg(11, 7, "kk"); seg(12, 6, "kkkk"); seg(13, 7, "kk")
+    seg(14, 4, "dzzvvzzd")
+    for x in (5, 7, 9):
+        P(x, 15, C["V"])
+    seg(16, 4, "gg"); seg(17, 4, "gG")
+    P(10, 15, C["G"]); P(10, 16, C["g"])
+
+    # ruffled off-shoulder sleeves
+    for sx, ru in ((4, 3), (11, 12)):
+        P(sx, 11, C["s"]); P(sx, 12, C["d"])
+        P(ru, 11, C["d"]); P(ru, 12, C["D"]); P(ru, 13, C["d"])
+
+    # arms
+    if mode in ("normal", "clean"):                       # hand on the chest, other arm down
+        P(4, 13, C["s"]); P(5, 13, C["s"]); P(6, 13, C["S"])
+        P(12, 14, C["s"]); P(12, 15, C["s"]); P(12, 16, C["S"])
+    elif rage:                                            # attacking: right fist thrown out in a punch, left fist cocked back
+        P(12, 13, C["s"]); P(13, 13, C["s"])               # punching arm, straight out
+        box(14, 12, 15, 13, C["s"]); P(14, 13, C["S"]); P(15, 13, C["S"])   # fist
+        for x, y in ((15, 10), (14, 10), (15, 15), (14, 15)):  # impact streaks
+            P(x, y, hx("#ff3a2a"))
+        P(15, 11, hx("#ffd23a")); P(15, 14, hx("#ffd23a"))
+        P(3, 12, C["s"]); P(3, 11, C["s"])                  # cocked arm
+        box(2, 9, 3, 10, C["s"]); P(2, 10, C["S"]); P(3, 10, C["S"])        # raised fist
+    elif laugh:                                           # both fists up
+        box(4, 12, 5, 13, C["s"]); box(10, 12, 11, 13, C["s"]); P(4, 13, C["S"]); P(11, 13, C["S"])
+    elif sad:                                             # hands clasped low
+        P(4, 13, C["s"]); P(5, 14, C["s"]); P(11, 13, C["s"]); P(10, 14, C["s"])
+        seg(15, 6, "sSSs")
+
+    # face, like the reference sprite: pale peach, single-dot eyes set wide apart, a darker cheek edge, a tan jaw band
+    box(4, 5, 11, 9, C["s"])
+    for y in (7, 8):
+        P(4, y, C["S"]); P(11, y, C["S"])                    # cheek edges
+    P(4, 9, C["h"]); P(11, 9, C["h"])                        # rounded chin
+    seg(10, 4, "hhSvvShh")                                   # small neck + choker, much narrower than the face
+    P(7, 6, C["W"]); P(8, 6, C["W"])
+    if laugh:
+        for x, y in ((4, 7), (5, 6), (6, 7), (9, 7), (10, 6), (11, 7)):               # ^ ^ eyes
+            P(x, y, C["E"])
+        P(4, 8, C["b"]); P(11, 8, C["b"])
+    elif rage:
+        P(6, 7, C["E"]); P(6, 8, C["T"]); P(9, 7, C["E"]); P(9, 8, C["T"])   # | |
+        P(6, 6, C["E"]); P(9, 6, C["E"])                                              # brows slant down to the middle
+    elif sad:
+        P(6, 7, C["E"]); P(6, 8, C["T"]); P(9, 7, C["E"]); P(9, 8, C["T"])
+        P(5, 8, hx("#bfe6ff")); P(5, 9, hx("#bfe6ff"))
+    else:
+        P(6, 7, C["E"]); P(6, 8, C["T"]); P(9, 7, C["E"]); P(9, 8, C["T"])   # | |
+
+    # front hair: fringe, side locks, ahoge (it droops when she is sad)
+    for y in (3, 4):
+        for x in range(2, 14):
+            P(x, y, C["h"])
+    seg(5, 3, "hhhh"); seg(5, 7, "hh"); seg(5, 10, "hhh")
+    seg(6, 3, "hh"); seg(6, 7, "h"); seg(6, 11, "hh")
+    for y in range(5, 10):
+        P(3, y, C["h"]); P(12, y, C["h"])
+    for y in (5, 6, 9):                                     # temple and jaw locks frame the face
+        P(4, y, C["h"]); P(11, y, C["h"])
+    P(9, 6, C["m"]); P(10, 6, C["m"])                       # a lighter strand swept over the right forehead
+    for y in range(7, 14):
+        P(2, y, C["h"]); P(13, y, C["h"])
+    seg(10, 2, "hh"); seg(10, 12, "hh"); seg(11, 2, "hh"); seg(11, 12, "hh")
+    P(2, 12, C["m"]); P(3, 12, C["h"]); P(13, 12, C["m"]); P(12, 12, C["h"])
+    for x, y in ((4, 3), (11, 4)):
+        P(x, y, C["p"])
+    for x, y in ((8, 4), (5, 4), (3, 7), (12, 8), (7, 6)):
+        P(x, y, C["m"])
+    if sad:
+        seg(1, 4, "h"); seg(1, 11, "h"); seg(1, 7, "hh"); seg(2, 4, "hhhhhhhh")
+    else:
+        seg(0, 5, "H"); seg(0, 8, "H"); seg(0, 11, "H"); seg(1, 4, "hhhhh"); seg(1, 10, "hhhh")
+        P(3, 2, C["H"]); P(13, 2, C["H"]); P(14, 3, C["H"]); P(5, 1, C["p"]); P(12, 1, C["m"])
+
+    # tiara; black bow with can charm, hanging pin and crown tag
+    seg(1, 6, "vkkv"); seg(2, 5, "VvkkvV")
+    seg(1, 0, "yYyy"); seg(2, 0, "yyYy"); seg(3, 1, "yyy")
+    seg(0, 2, "vr"); P(2, 4, C["V"]); P(2, 5, C["v"]); seg(6, 1, "gg"); seg(7, 1, "gG")
+
+    if rage:                                              # anger vein
+        for x, y in ((11, 3), (13, 3), (12, 4), (11, 5), (13, 5)):
+            P(x, y, hx("#ff2a2a"))
+    if laugh:                                             # "!" burst lines
+        P(13, 0, C["k"]); P(14, 1, C["k"]); P(15, 2, C["k"]); P(14, 0, C["K"]); P(15, 1, C["K"])
+    if clean:                                             # sparkles
+        for x, y in ((0, 6), (15, 5), (0, 14), (15, 12), (3, 0)):
+            P(x, y, hx("#fff6a0"))
+    if rage:                                              # cocked fist drawn last so the hair does not cover it
+        P(3, 11, C["s"]); P(3, 12, C["s"])
+        box(2, 9, 3, 10, C["s"]); P(2, 10, C["S"]); P(3, 10, C["S"])
+        for x, y in ((1, 8), (1, 11)):
+            P(x, y, hx("#ff3a2a"))
+    return im
+
+
+def muck_mound(mode="normal"):
+    """Boss 1: a heap of unsorted trash that came to life. A squat mound studded with garbage, two googly eyes, a small
+    mouth, a plastic-bag flap on each side and a melted, dripping base. mode: "normal" or "rage" (red eyes, big jagged
+    mouth, flaps thrown up, a redder body)."""
+    rage = mode == "rage"
+    im, d = canvas(40, 32)
+    body = hx("#6b6a46") if not rage else hx("#7a4a3a")
+    slime = hx("#8ab04a") if not rage else hx("#b0d040")
+    wing, wing_shade = hx("#d8d8e0"), hx("#a8a8b8")
+    up = -5 if rage else 0
+    d.ellipse([1, 27, 38, 31], fill=slime, outline=INK)                          # the melted puddle it sits in
+    for x in (7, 13, 27, 33):                                                    # drips running down
+        d.line([(x, 29), (x, 31)], fill=slime)
+    for sgn, base in ((-1, 9), (1, 31)):                                         # the two plastic-bag flaps
+        tip = base + sgn * 7
+        d.polygon([(base, 18), (tip, 12 + up), (tip + sgn, 19 + up), (base + sgn * 6, 24), (base, 24)], fill=wing, outline=INK)
+        d.line([(base + sgn * 2, 20), (tip, 15 + up)], fill=wing_shade)
+    d.polygon([(6, 28), (5, 22), (9, 13), (15, 7), (20, 5), (26, 7), (31, 13), (35, 22), (34, 28)], fill=body, outline=INK)
+    d.line([(10, 14), (15, 9), (20, 7)], fill=shade(body, 1.3))
+    for x, y, kind in ((8, 17, 0), (28, 8, 1), (29, 19, 2), (7, 23, 3), (28, 23, 4), (14, 6, 3), (25, 25, 0)):
+        _junk(d, x, y, kind)                                                     # garbage stuck all over it
+    # googly eyes that look in different directions
+    d.ellipse([11, 11, 19, 19], fill=hx("#ffffff") if not rage else hx("#ffe0e0"), outline=INK)
+    d.ellipse([21, 11, 29, 19], fill=hx("#ffffff") if not rage else hx("#ffe0e0"), outline=INK)
+    eye = hx("#e03030") if rage else INK
+    if rage:
+        d.ellipse([14, 13, 17, 17], fill=eye); d.ellipse([23, 13, 26, 17], fill=eye)
+        d.line([(10, 9), (18, 13)], fill=INK); d.line([(30, 9), (22, 13)], fill=INK)
+        d.polygon([(14, 21), (26, 21), (25, 27), (15, 27)], fill=hx("#2a1a2a"), outline=INK)
+        for x in (15, 18, 21, 24):
+            d.polygon([(x, 21), (x + 1, 24), (x + 2, 21)], fill=hx("#ffffff"))
+    else:
+        d.ellipse([12, 14, 15, 18], fill=eye); d.ellipse([25, 12, 28, 16], fill=eye)
+        d.ellipse([17, 21, 23, 25], fill=hx("#2a1a2a"), outline=INK)             # a small mouth with one tooth
+        d.point((19, 21), fill=hx("#ffffff")); d.point((19, 22), fill=hx("#ffffff"))
+    return im
+
+
+def experiment(mode="normal"):
+    """Boss 2, the Queen's experiment: a hunched, horned nightmare with a wide jagged-toothed grin, slanted glowing eyes and
+    long bone claws, whose wings are made of trash: fanned-out sheets of crumpled newspaper, paper and cardboard with torn
+    edges (48x44 art, drawn at 3x: the body is 32 wide and the wings stick out either side).
+    mode: "normal" (burning orange eyes), "rage" (blazing red eyes, jaws wide open, wings flared) or "stun" (X eyes, tongue out, stars)."""
+    import math
+    im, d = canvas(32, 44)                                          # the body
+    wing_im, dw = canvas(48, 44)                                    # wings behind it, with room to spread
+    skin, skin_dark, skin_hi = hx("#5a4a6e"), hx("#3a2f4c"), hx("#7a6892")
+    bone = hx("#efe6cf")
+    mouth_in, tongue, tooth = hx("#16091a"), hx("#c0304a"), hx("#f6f0dc")
+    rage, stun = mode == "rage", mode == "stun"
+    glow = hx("#ff2a1a") if rage else hx("#ffa21c")
+    core = hx("#fff0a0") if rage else hx("#fff6c0")
+    d.ellipse([5, 41, 27, 44], fill=(20, 10, 30, 90))
+
+    # wings of trash: fanned sheets of newspaper, paper and cardboard
+    news, paper, card, ink_txt = hx("#e2dcc8"), hx("#f2f0e8"), hx("#a67c52"), hx("#857f6e")
+
+    def sheet(ax, ay, sgn, ang, length, width, color, kind):
+        a = math.radians(ang)
+        dx, dy = sgn * math.cos(a), -math.sin(a)
+        px, py = -dy, dx
+        def pt(f, o): return (ax + dx * length * f + px * width * o, ay + dy * length * f + py * width * o)
+        pts = [pt(0, -.25), pt(0, .25), pt(.55, .5), pt(.9, .5), pt(1.0, .3), pt(.93, .12), pt(1.05, -.05),
+               pt(.95, -.25), pt(1.0, -.5), pt(.6, -.5)]
+        dw.polygon(pts, fill=color, outline=INK)
+        for f in (.25, .45, .65):                                   # printed lines on newspaper / paper
+            if kind != "card":
+                dw.line([pt(f, -.3), pt(f + .12, -.3)], fill=ink_txt)
+                dw.line([pt(f, .05), pt(f + .12, .05)], fill=ink_txt)
+        if kind == "card":
+            dw.line([pt(.2, -.4), pt(.9, .4)], fill=hx("#e8d9a0"))   # a strip of tape
+        dw.line([pt(.1, 0), pt(.8, .1)], fill=shade(color, .78))      # crumple fold
+
+    spread = 9 if rage else 0
+    fan = ((8, 14, paper, "paper"), (30, 17, card, "card"), (55 + spread, 20, news, "news"), (80 + spread // 2, 22, paper, "paper"))
+    for sgn, ax in ((-1, 17), (1, 31)):                              # shoulders, in wide-canvas coordinates
+        for ang, length, color, kind in fan:
+            sheet(ax, 27, sgn, ang, length, 7, color, kind)
+
+
+    # thick legs, clawed feet
+    for x in (11, 18):
+        rect(d, x, 33, x + 3, 40, skin_dark, INK)
+        d.polygon([(x - 2, 42), (x, 40), (x + 4, 40), (x + 6, 42), (x + 4, 43), (x - 1, 43)], fill=skin_dark, outline=INK)
+        for cx in (x - 2, x + 1, x + 4):
+            d.polygon([(cx, 43), (cx + 1, 43), (cx, 44)], fill=INK)
+    # broad hunched torso with ribs
+    d.polygon([(7, 25), (25, 25), (22, 36), (10, 36)], fill=skin_dark, outline=INK)
+    for y in (29, 32):
+        d.line([(12, y), (19, y)], fill=skin)
+    d.line([(15, 27), (15, 35)], fill=skin)
+    # long arms hanging down to wicked claws
+    for sgn, x0 in ((-1, 8), (1, 24)):
+        d.polygon([(x0 - sgn * 2, 25), (x0 + sgn * 2, 27), (x0 + sgn * 3, 38), (x0 - sgn * 1, 38)], fill=skin, outline=INK)
+        for k in range(3):
+            bx = x0 - 3 + k * 3 + (1 if sgn > 0 else 0)
+            d.polygon([(bx, 38), (bx + 1, 38), (bx + (k - 1), 41)], fill=bone, outline=INK)
+    # the head, wide and low-browed, with two curved horns
+    for sgn, x0 in ((-1, 9), (1, 22)):
+        d.polygon([(x0, 13), (x0 + sgn * 2, 6), (x0 + sgn * 4, 2), (x0 + sgn * 5, 0), (x0 + sgn * 6, 4), (x0 + sgn * 6, 9), (x0 + sgn * 4, 13)],
+                  fill=bone, outline=INK)
+    d.ellipse([5, 7, 26, 28], fill=skin, outline=INK)
+    d.arc([7, 9, 18, 18], 190, 260, fill=skin_hi)
+    d.line([(20, 8), (17, 13)], fill=skin_dark); d.line([(17, 13), (19, 15)], fill=skin_dark)      # a scar
+    # slanted glowing eyes under angry brows
+    for sgn, ex in ((-1, 11), (1, 20)):
+        if stun:
+            d.ellipse([ex - 3, 13, ex + 3, 19], fill=hx("#d8d0e8"), outline=INK)
+            d.line([(ex - 2, 14), (ex + 2, 18)], fill=INK); d.line([(ex + 2, 14), (ex - 2, 18)], fill=INK)
+            continue
+        out, inn = ex + sgn * 4, ex - sgn * 3
+        d.polygon([(out, 14), (inn, 16 + (1 if rage else 0)), (inn, 19), (out + sgn * -1, 18)], fill=glow, outline=INK)
+        d.rectangle([ex - 1, 16, ex, 18], fill=core)
+        d.line([(ex, 15), (ex, 19)], fill=INK)                                                  # slit pupil
+        d.line([(out + sgn, 11 - (1 if rage else 0)), (inn, 15)], fill=INK)                    # brow
+        d.line([(out + sgn, 12 - (1 if rage else 0)), (inn, 16)], fill=INK)
+    d.point((15, 20), fill=INK); d.point((16, 20), fill=INK)
+    # the grin: a wide mouth full of jagged teeth
+    top, bot = (20, 28) if rage else (22, 27)
+    d.polygon([(8, top + 1), (12, top - 1), (19, top - 1), (23, top + 1), (22, bot), (16, bot + 1), (9, bot)], fill=mouth_in, outline=INK)
+    if rage or stun:
+        d.polygon([(12, bot), (19, bot), (17, bot - 3), (14, bot - 3)], fill=tongue)
+    for x in (10, 13, 16, 19, 22):
+        d.polygon([(x - 1, top), (x, top), (x - 1, top + (4 if rage else 3))], fill=tooth)
+    for x in (11, 14, 17, 20):
+        d.polygon([(x - 1, bot), (x, bot), (x - 1, bot - (3 if rage else 2))], fill=tooth)
+    # green drool
+    for x in (9, 22):
+        d.line([(x, bot), (x, bot + (4 if rage else 2))], fill=hx("#9ac060"))
+    if stun:
+        for x, y in ((12, 2), (19, 0), (16, 4)):
+            for ox, oy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
+                d.point((x + ox, y + oy), fill=hx("#fff06a"))
+    wing_im.alpha_composite(im, (8, 0))
+    return wing_im
+
+
+def stink_ghost():
+    """A small toothy ghost that haunts Boss 2's street (16x20 art, drawn at 3x)."""
+    im, d = canvas(16, 20)
+    body = hx("#e4def0")
+    d.ellipse([5, 17, 12, 19], fill=(40, 30, 60, 60))
+    d.polygon([(2, 17), (2, 9), (4, 4), (8, 2), (12, 4), (14, 9), (14, 17), (11, 15), (8, 17), (5, 15)], fill=body, outline=INK)
+    for x in (5, 11):
+        d.ellipse([x - 2, 6, x + 2, 10], fill=hx("#ffffff"), outline=INK); d.point((x, 8), fill=INK)
+    rect(d, 4, 12, 12, 15, hx("#3a1a3a"), INK)
+    for x in (5, 7, 9, 11):
+        d.polygon([(x - 1, 12), (x + 1, 12), (x, 14)], fill=hx("#ffffff"))
+    for x in (4, 10):
+        rect(d, x, 17, x + 2, 19, body, INK)
+    return im
+
+
+def junk_cube(variant=0):
+    """A cube of crushed junk, like a scrapyard bale: pressed garbage with bits of bottles, cans, cardboard and bags
+    showing, a lighter top face and metal bands (16x16 art, drawn at 3x). Three colour variants."""
+    im, d = canvas(16, 16)
+    bodies = ("#7a7c5a", "#6f7f86", "#86705c")
+    body = hx(bodies[variant % 3])
+    rnd = random.Random(20 + variant)
+    rect(d, 0, 0, 15, 15, body, INK)
+    d.rectangle([1, 1, 14, 4], fill=shade(body, 1.3))                              # the top face
+    for _ in range(22):                                                            # pressed-in specks
+        d.point((rnd.randrange(1, 15), rnd.randrange(5, 15)), fill=shade(body, rnd.choice((0.7, 0.85, 1.2))))
+    junk = (("#a9d2f7", 3, 1), ("#c9cdd4", 1, 3), ("#d9b887", 3, 2), ("#f2d64a", 3, 1), ("#f4a8c0", 2, 2), ("#86dba6", 1, 2))
+    for i in range(9):
+        c, w, h = junk[(variant * 2 + i) % len(junk)]
+        x, y = rnd.randrange(1, 14 - w), rnd.randrange(5, 14 - h)
+        d.rectangle([x, y, x + w - 1, y + h - 1], fill=hx(c))
+    band = hx("#4a4f58")
+    d.line([(5, 5), (5, 14)], fill=band); d.line([(10, 5), (10, 14)], fill=band)   # metal straps
+    d.line([(1, 4), (14, 4)], fill=INK)
+    for x in (3, 7, 11):                                                            # junk poking out of the top face
+        d.point((x + variant % 2, 2), fill=hx(junk[(x + variant) % len(junk)][0]))
+    for x in (5, 10):
+        d.point((x, 9), fill=hx("#c9cdd4"))                                        # rivets
     return im
 
 
@@ -1437,19 +1721,817 @@ def meadow_scene():
     return pastel(im, 0.08)
 
 
+# ----------------------------------------------------------------------------- Mother Nature and her grove
+
+def mother_nature():
+    """Mother Nature, on the same 16x24 chibi grid as the siblings, villagers and Queen Muck (square head, dot-style face,
+    blush, 1 px ink outlines). Her hair: very long, wavy platinum / pale ash blonde, reaching behind her knees; swept bangs
+    over her left eye (the right one as you look at her); two big side curls framing her face and curling inward in front of
+    her shoulders; the side hair covers her ears and the back of her neck. A leaf-green gown and a little flower crown."""
+    im, d = canvas(16, 24)
+    skin = hx("#f6dcc4")
+    hair, hair_sh, hair_hi = hx("#ebe9f3"), hx("#c4c3dc"), hx("#ffffff")
+    gown, gown_dk, leaf = hx("#7cc79a"), hx("#4e9d78"), hx("#b4ecc0")
+    d.ellipse([2, 21, 13, 23], fill=(60, 40, 90, 55))
+
+    # the long back hair: a wavy panel behind her, from the crown to behind the knees
+    for y in range(3, 20):
+        l = 1 + (1 if (y // 3) % 2 else 0)
+        r = 14 - (1 if ((y + 1) // 3) % 2 else 0)
+        d.line([(l, y), (r, y)], fill=hair)
+        d.point((l, y), fill=shade(hair_sh, 0.55)); d.point((r, y), fill=shade(hair_sh, 0.55))
+        if y % 3 == 0:
+            d.point((l + 2, y), fill=hair_sh); d.point((r - 2, y), fill=hair_sh)
+        if y % 4 == 1:
+            d.point((l + 1, y), fill=hair_hi); d.point((r - 1, y), fill=hair_hi)
+    d.line([(2, 20), (13, 20)], fill=INK)
+    for x in (3, 6, 9, 12):                                                      # wavy tips
+        d.point((x, 19), fill=hair_sh); d.point((x + 1, 20), fill=INK)
+
+    # gown: a long leaf-green skirt with a leaf hem, a bodice with a vine sash
+    d.polygon([(4, 14), (11, 14), (13, 21), (2, 21)], fill=gown, outline=INK)
+    for i, x in enumerate(range(2, 14, 2)):                                      # leaf-shaped hem
+        d.point((x, 21), fill=leaf); d.point((x, 20), fill=gown_dk if i % 2 else leaf)
+    d.line([(6, 15), (5, 20)], fill=gown_dk); d.line([(9, 15), (10, 20)], fill=gown_dk)
+    rect(d, 5, 11, 10, 14, gown, INK)
+    d.line([(5, 13), (10, 13)], fill=gown_dk)
+    d.point((7, 12), fill=hx("#ffd0e0")); d.point((8, 12), fill=hx("#fff6a0"))
+    for x0 in (3, 11):                                                           # leaf sleeves
+        rect(d, x0, 11, x0 + 1, 13, leaf, None); d.line([(x0, 14), (x0 + 1, 14)], fill=INK)
+    rect(d, 7, 15, 8, 16, skin, INK)                                             # hands together at the waist
+
+    # head and hair
+    rect(d, 3, 2, 12, 10, skin, INK)
+    rect(d, 4, 3, 11, 4, hair, None)                                             # hair over the forehead
+    rect(d, 4, 3, 4, 9, hair, None); rect(d, 11, 3, 11, 9, hair, None)           # side hair covers the ears
+    d.point((4, 6), fill=hair_sh); d.point((11, 6), fill=hair_sh); d.point((5, 3), fill=hair_hi); d.point((7, 3), fill=hair_hi)
+    # swept bangs over her left eye (the right one as we look at her)
+    for x, y in ((5, 5), (6, 5), (7, 5), (8, 5), (8, 6), (9, 6), (9, 7), (10, 7), (10, 8), (10, 5), (10, 6)):
+        d.point((x, y), fill=hair)
+    for x, y in ((7, 5), (9, 8), (10, 9), (8, 6)):
+        d.point((x, y), fill=hair_sh)
+    d.point((6, 4), fill=hair_hi); d.point((9, 5), fill=hair_hi)
+    # the face: one visible eye, blush, a soft smile
+    d.point((6, 7), fill=INK); d.point((6, 8), fill=hx("#2f7a5a"))
+    d.point((5, 9), fill=BLUSH); d.point((10, 9), fill=BLUSH)
+    d.point((7, 9), fill=hx("#c46a7a")); d.point((8, 9), fill=hx("#c46a7a"))
+
+    # two big side curls: frame the face and curl inward in front of the shoulders
+    for x0 in (2, 11):
+        rect(d, x0, 9, x0 + 2, 12, hair, None)
+        d.point((x0 + 1, 10), fill=hair_hi); d.point((x0 + 1, 12), fill=hair_sh)
+    for x, y in ((5, 12), (5, 13), (4, 13), (3, 13), (10, 12), (10, 13), (11, 13), (12, 13)):   # both curls hook inward
+        d.point((x, y), fill=hair)
+    for x, y in ((6, 13), (3, 14), (4, 14), (5, 14), (9, 13), (10, 14), (11, 14), (12, 14)):
+        d.point((x, y), fill=shade(hair_sh, 0.62))
+
+    # a little flower crown
+    for x in range(3, 13):
+        d.point((x, 1), fill=hx("#5fae6a") if x % 2 else hx("#8fd49a"))
+    for x, c in ((4, "#ff9cc0"), (6, "#ffffff"), (8, "#fff08a"), (10, "#ff9cc0"), (12, "#ffffff")):
+        d.point((x, 1), fill=hx(c)); d.point((x, 0), fill=hx(c))
+    return im
+
+
+def grove_guard():
+    """A forest guardian: sage skin, a leaf helm, bark armour and a spear tipped with a leaf. Same 16x24 grid."""
+    im, d = canvas(16, 24)
+    skin, bark, bark_dk = hx("#cfe6c0"), hx("#9a7a52"), hx("#6e5538")
+    leaf, leaf_dk = hx("#7cc79a"), hx("#4e9d78")
+    d.ellipse([3, 21, 12, 23], fill=(60, 40, 90, 55))
+    d.line([(13, 3), (13, 21)], fill=hx("#8a6a4a")); d.line([(12, 3), (12, 21)], fill=INK)   # spear shaft
+    d.polygon([(12, 4), (14, 4), (13, 0)], fill=leaf, outline=INK)                              # leaf tip
+    rect(d, 5, 19, 6, 21, bark_dk, INK); rect(d, 9, 19, 10, 21, bark_dk, INK)                    # boots
+    rect(d, 5, 16, 10, 19, leaf_dk, INK)                                                         # kilt of leaves
+    for x in (5, 7, 9): d.point((x, 19), fill=leaf)
+    rect(d, 4, 10, 11, 16, bark, INK)                                                            # bark armour
+    for y in (12, 14): d.line([(5, y), (10, y)], fill=bark_dk)
+    d.point((7, 11), fill=leaf); d.point((8, 11), fill=leaf)
+    rect(d, 2, 11, 3, 14, bark, INK); rect(d, 12, 11, 13, 14, skin, INK)                         # arms
+    rect(d, 3, 2, 12, 10, skin, INK)                                                             # head
+    rect(d, 3, 1, 12, 4, leaf, INK)                                                              # leaf helm with a crest
+    d.line([(7, 0), (8, 0)], fill=leaf_dk); d.point((7, 2), fill=leaf_dk); d.point((9, 2), fill=leaf_dk)
+    d.point((6, 7), fill=INK); d.point((9, 7), fill=INK)
+    d.point((5, 8), fill=BLUSH); d.point((10, 8), fill=BLUSH)
+    d.point((7, 9), fill=INK); d.point((8, 9), fill=INK)
+    return im
+
+
+def grove_scene(open_way=True):
+    """Mother Nature's grove: a long hall of living moss between arching trees, with waterfalls pouring down the cliffs on
+    both sides, little streams along the path and a throne woven from roots and flowers on a dais. Behind the throne a
+    glowing arch looks out toward Queen Muck's far-off palace (the cutscene hides it behind a waterfall until Mother Nature
+    shows the way).
+    open_way=False draws the same grove with a waterfall curtain across the arch instead (grove.png); open_way=True is
+    the arch opened onto the palace (grove_open.png), and the cutscene fades from one to the other."""
+    W, H = 240, 160
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(21)
+    bark, bark_dk, bark_hi = hx("#8a6a4a"), hx("#5e4630"), hx("#b08a62")
+    rock, rock_dk, moss = hx("#7d8f8c"), hx("#566a6a"), hx("#6fbf7a")
+    water, water_hi, water_dk = hx("#bfeaf6"), hx("#f2fcff"), hx("#6ec0d6")
+    dark = hx("#25402f")
+
+    # sky and misty forest far away
+    vgrad(d, W, 108, hx("#3a7e66"), hx("#d4f4d8"))
+    for x in range(-6, W + 10, 12):
+        h = 40 + (x * 7) % 18
+        d.rectangle([x + 3, 100 - h // 2, x + 4, 100], fill=hx("#6aa88a"))
+        d.ellipse([x - 3, 100 - h, x + 11, 100 - h // 2 + 4], fill=hx("#8fd0a4"))
+    for _ in range(26):                                                            # light shafts through the leaves
+        x = rnd.randrange(W)
+        d.polygon([(x, 0), (x + 3, 0), (x + 16, 104), (x + 8, 104)], fill=(255, 255, 220, 22))
+
+    # the glowing arch behind the throne, with Queen Muck's palace far away inside it
+    if open_way:
+        d.rectangle([84, 40, 156, 98], fill=hx("#e8fff0"))
+        d.pieslice([84, 14, 156, 66], 180, 360, fill=hx("#e8fff0"))
+        vgrad(d, W, 1, hx("#e8fff0"), hx("#e8fff0"))
+        for i in range(0, 72, 2):                                                      # warm light, brighter toward the middle
+            c = int(40 * (1 - abs(i - 36) / 36))
+            d.line([(84 + i, 20), (84 + i, 98)], fill=(255, 244, 200, c))
+        base = 78
+        for cx, w_, top in ((104, 8, 56), (112, 9, 48), (122, 14, 38), (133, 9, 50), (141, 8, 58)):   # palace silhouette
+            d.rectangle([cx - w_ // 2, top, cx + w_ // 2, base], fill=hx("#b9a8c8"))
+            d.polygon([(cx - w_ // 2 - 1, top), (cx, top - 8), (cx + w_ // 2 + 1, top)], fill=hx("#e8a0c4"))
+        d.rectangle([98, 70, 146, base + 10], fill=hx("#b9a8c8"))
+        d.pieslice([116, 70, 128, 86], 180, 360, fill=hx("#6a5a86"))
+        for x in range(92, 150, 4):
+            d.point((x, 98), fill=hx("#9acb90"))
+    else:                                                                          # a waterfall curtain hides the way
+        d.rectangle([84, 40, 156, 98], fill=water)
+        d.pieslice([84, 14, 156, 66], 180, 360, fill=water)
+        for x in range(86, 156, 4):
+            d.line([(x, 20 if 96 < x < 144 else 40), (x, 98)], fill=water_hi)
+        for x in range(90, 156, 6):
+            d.line([(x, 46), (x, 90)], fill=water_dk)
+    d.line([(84, 98), (84, 36)], fill=dark); d.line([(156, 98), (156, 36)], fill=dark)
+    d.arc([84, 14, 156, 66], 180, 360, fill=dark, width=2)
+    for i in range(18):                                                            # vines on the arch
+        a = 180 + i * 10
+        x = 120 + 36 * math.cos(math.radians(a)); y = 40 + 26 * math.sin(math.radians(a))
+        d.ellipse([x - 2, y - 2, x + 2, y + 1], fill=hx("#5fae6a" if i % 2 else "#8fd49a"), outline=dark)
+        if i % 3 == 0:
+            d.point((int(x), int(y) - 3), fill=hx("#ff9cc0"))
+
+    # mossy cliffs on both sides, each with a waterfall
+    for side in (0, 1):
+        x0, x1 = (0, 66) if side == 0 else (174, 240)
+        poly = [(x0, 0), (x1, 0), (x1 - (8 if side == 0 else -8), 70), (x1 - (14 if side == 0 else -14), 104), (x0, 104)]
+        d.polygon(poly, fill=rock)
+        for _ in range(110):
+            x, y = rnd.randrange(x0, x1), rnd.randrange(0, 104)
+            d.point((x, y), fill=shade(rock, 1.15 if rnd.random() < .5 else 0.82))
+        for y in range(8, 100, 14):
+            d.line([(x0, y), (x1 - 6, y + rnd.randrange(-2, 3))], fill=rock_dk)
+        for _ in range(30):
+            x, y = rnd.randrange(x0, x1 - 8), rnd.randrange(60, 104)
+            d.ellipse([x, y, x + rnd.randrange(3, 8), y + 2], fill=moss)
+    for fx0 in (18, 198):                                                          # the waterfalls
+        d.rectangle([fx0, 0, fx0 + 24, 96], fill=water)
+        for x in range(fx0 + 2, fx0 + 24, 4):
+            d.line([(x, 0), (x, 96)], fill=water_hi)
+        for x in range(fx0 + 4, fx0 + 24, 6):
+            d.line([(x, 20), (x, 70)], fill=water_dk)
+        d.line([(fx0, 0), (fx0, 96)], fill=rock_dk); d.line([(fx0 + 24, 0), (fx0 + 24, 96)], fill=rock_dk)
+        for i in range(7):                                                         # foam where it lands
+            d.ellipse([fx0 - 4 + i * 5, 92, fx0 + 3 + i * 5, 100], fill=water_hi)
+    for px in (30, 210):                                                           # pools
+        d.ellipse([px - 26, 94, px + 26, 116], fill=water_dk, outline=dark)
+        d.ellipse([px - 22, 96, px + 22, 112], fill=water)
+        d.arc([px - 14, 99, px + 6, 109], 200, 330, fill=water_hi)
+
+    # the ground: grass, with a hall of mossy stone leading to the dais
+    d.rectangle([0, 104, W, H], fill=hx("#8fd09a"))
+    noise(d, W, H, hx("#8fd09a"), 5, 420, y0=104)
+    d.polygon([(100, 100), (140, 100), (214, H), (26, H)], fill=hx("#b6c8a2"), outline=dark)
+    for i in range(7):
+        t = i / 6.0
+        y = int(104 + t * t * 56)
+        xl = 100 + (26 - 100) * ((y - 100) / 60.0); xr = 140 + (214 - 140) * ((y - 100) / 60.0)
+        d.line([(xl, y), (xr, y)], fill=hx("#8aa07a"))
+        for k in range(1, 7):
+            x = xl + (xr - xl) * (k / 7.0 + ((i % 2) * 0.07))
+            d.line([(x, y), (x + (x - 120) * 0.05, y + 8 * (0.3 + t))], fill=hx("#8aa07a"))
+    bloom = random.Random(77)
+    for xs in (-1, 1):
+        pts = [(120 + xs * 24, 100), (120 + xs * 42, 118), (120 + xs * 70, 138), (120 + xs * 108, H)]
+        d.line(pts, fill=hx("#4f9a5c"), width=5)
+        steps = 54
+        for k in range(steps + 1):
+            seg = min(2, int(k / steps * 3)); u = (k / steps * 3) - seg
+            if seg == 2: u = min(u, 1.0)
+            ax, ay = pts[seg]; bx, by = pts[seg + 1]
+            x = int(ax + (bx - ax) * u + bloom.randint(-2, 2)); y = int(ay + (by - ay) * u + bloom.randint(-1, 1))
+            petal = hx(bloom.choice(("#ff7fb0", "#ffd0e4", "#ffffff", "#fff08a", "#c8a8ff", "#ff9a7a")))
+            d.point((x - 1, y + 1), fill=hx("#6fc688")); d.point((x + 1, y + 1), fill=hx("#6fc688"))
+            d.point((x, y + 1), fill=hx("#3f8a4c"))
+            for dx, dy in ((0, -1), (-1, 0), (1, 0), (0, 1)):
+                d.point((x + dx, y + dy - 1), fill=petal)
+            d.point((x, y - 1), fill=hx("#f7c948"))
+    for _ in range(90):                                                            # flowers
+        x, y = rnd.randrange(W), rnd.randrange(108, H)
+        if 120 - (y - 100) * 1.55 < x < 120 + (y - 100) * 1.55:
+            continue
+        c = hx(rnd.choice(("#ff9cc0", "#fff6a0", "#ffffff", "#c8b0ff")))
+        d.point((x, y + 1), fill=hx("#5fae6a")); d.point((x, y), fill=c)
+        if rnd.random() < 0.4:
+            d.point((x + 1, y), fill=c); d.point((x - 1, y), fill=c)
+
+    # trees that lean together into arches, far to near, like  /\ /\ /\
+    def trunk(cx, w_, bot, top=0):
+        d.polygon([(cx - w_ // 2 - 3, bot), (cx - w_ // 2, bot - 8), (cx - w_ // 2, top), (cx + w_ // 2, top),
+                   (cx + w_ // 2, bot - 8), (cx + w_ // 2 + 3, bot)], fill=bark, outline=dark)
+        for x in range(cx - w_ // 2 + 1, cx + w_ // 2, 3):
+            d.line([(x, top), (x, bot - 6)], fill=bark_hi)
+        d.line([(cx + w_ // 2 - 1, top), (cx + w_ // 2 - 1, bot - 6)], fill=bark_dk)
+
+    def archway(lx, rx, bot, apex, w_):
+        trunk(lx, w_, bot); trunk(rx, w_, bot)
+        mid = (lx + rx) // 2
+        for off in range(w_):
+            d.arc([lx - w_ // 2 + off, apex - 18 + off, rx + w_ // 2 - off, apex + 40 - off * 2], 180, 360, fill=bark if off % 2 else bark_dk)
+        for i in range(10):                                                        # leaves along the bough
+            a = 190 + i * 17
+            x = mid + (rx - lx) / 2.0 * math.cos(math.radians(a)); y = apex + 11 + 29 * math.sin(math.radians(a))
+            d.ellipse([x - 5, y - 3, x + 5, y + 5], fill=hx("#4fae6a" if i % 2 else "#7cc88a"), outline=dark)
+        for k in range(14):                                                        # leaves hanging from the bough
+            x = lx + (rx - lx) * k / 13.0
+            y = apex + 11 - (24 * 0) + 29 * -math.sin(math.radians(190 + 160 * k / 13.0)) * -1
+            d.ellipse([x - 3, y + 1, x + 3, y + 6 + (k % 3)], fill=hx("#6fc47e"), outline=None)
+
+    archway(72, 168, 104, 22, 6)
+    archway(46, 194, 118, 4, 8)
+    for cx in (6, 234):
+        trunk(cx, 12, H)
+    for x in range(-4, W + 6, 9):                                                  # a roof of leaves across the top
+        d.ellipse([x - 8, -8, x + 10, 8 + (x * 3) % 7], fill=hx("#3f9a5e"), outline=dark)
+    for x in range(0, W, 13):
+        d.ellipse([x - 5, 2, x + 7, 9 + (x * 5) % 6], fill=hx("#5fb878"))
+
+    # the dais and the throne of roots and flowers
+    for i, (x0, x1, y0) in enumerate(((78, 162, 99), (86, 154, 94), (94, 146, 89))):
+        d.rectangle([x0, y0, x1, y0 + 5], fill=hx("#cfdcc0") if i % 2 == 0 else hx("#dde8cf"), outline=dark)
+        d.line([(x0 + 1, y0 + 1), (x1 - 1, y0 + 1)], fill=hx("#f0f8e8"))
+    for x in range(98, 142, 6):
+        d.ellipse([x, 85, x + 6, 92], fill=hx("#6fc47e"), outline=dark)
+    d.rectangle([108, 84, 132, 90], fill=bark, outline=dark)                       # the seat
+    for dx in (-1, 1):                                                             # two root columns arching into a back
+        pts = [(120 + dx * 17, 90), (120 + dx * 22, 70), (120 + dx * 19, 50), (120 + dx * 9, 34), (120, 30)]
+        d.line(pts, fill=dark, width=5); d.line(pts, fill=bark, width=3)
+        d.line([(120 + dx * 21, 74), (120 + dx * 16, 60)], fill=bark_hi)
+    d.line([(112, 30), (128, 30)], fill=dark, width=3)
+    for i in range(16):                                                            # leaves and blossoms along the back
+        a = math.pi * (i / 15.0)
+        x = 120 + 20 * math.cos(a) * (-1); y = 62 - 31 * math.sin(a)
+        d.ellipse([x - 3, y - 2, x + 3, y + 2], fill=hx("#6fc47e" if i % 2 else "#4fae6a"), outline=dark)
+        if i % 3 == 1:
+            d.ellipse([x - 1, y - 5, x + 2, y - 2], fill=hx(("#ff9cc0", "#fff6a0", "#ffffff")[(i // 3) % 3]))
+    for x, y in ((100, 90), (140, 90), (96, 95), (144, 95)):                       # little glowing lanterns
+        d.ellipse([x - 2, y - 7, x + 2, y - 3], fill=hx("#fff6a0"), outline=dark)
+        d.line([(x, y - 3), (x, y)], fill=dark)
+
+    im.putalpha(255)
+    return pastel(im, 0.05)
+
+
+def palace_hall_scene(clean=False):
+    """The long hall inside Queen Muck's palace, seen from the doorway, in deep one-point perspective: lavender stone-brick walls
+    under a gothic vaulted ceiling, tiered chandeliers made of bottles and light bulbs, a magenta carpet strewn with litter running
+    to a wooden stage where a towering throne of garbage sits under a golden halo between two pink banners, and four arched sorting
+    rooms (cardboard, glass, e-waste, scrap metal) each guarded by a pastel sprout-mole minion in makeshift trash armour.
+    clean=False: the palace as Queen Muck keeps it (the state the boss fight and the cutscenes use).
+    clean=True: the same hall after her transformation: mint stone, a green carpet, flowers instead of litter, tidy rooms.
+    Same layout in both, so the two can be cross-faded."""
+    import math
+    W, H = 240, 160
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    d = ImageDraw.Draw(im)
+    rnd = random.Random(21)
+
+    if clean:
+        OUT = hx("#2f4a40")
+        wall_a, wall_b, brick_hi, brick_lo = hx("#b6e4cc"), hx("#8fcfb0"), hx("#d0f0dc"), hx("#6fb494")
+        ceil, rib_hi, rib_lo = hx("#d2e8d2"), hx("#eef8ea"), hx("#8fb8a0")
+        tile_a, tile_b, grout = hx("#e4e8d0"), hx("#cfd8b8"), hx("#9fb08c")
+        carp, carp_hi, carp_lo = hx("#38b86c"), hx("#6fdc98"), hx("#228a4c")
+        far_wall, glass = hx("#c8ecd0"), ("#8fd8c0", "#a8e8d4", "#c8f4e4")
+    else:
+        OUT = hx("#2e1f40")
+        wall_a, wall_b, brick_hi, brick_lo = hx("#b9a0de"), hx("#957cc2"), hx("#cbb8ea"), hx("#7a63a8")
+        ceil, rib_hi, rib_lo = hx("#a39fb2"), hx("#c8c4d4"), hx("#6e6882")
+        tile_a, tile_b, grout = hx("#c9a8d4"), hx("#b693c6"), hx("#8a72a6")
+        carp, carp_hi, carp_lo = hx("#e0187f"), hx("#f45aa8"), hx("#a80f5c")
+        far_wall, glass = hx("#8a6aa8"), ("#9a8ad0", "#b8a8e8", "#d8c8f8")
+    gold, gold_hi, gold_lo = hx("#f2c14e"), hx("#ffe28a"), hx("#b8862a")
+
+    # ---- perspective: the far wall is the rectangle (BX0,BY0)-(BX1,BY1); the near plane is the whole canvas
+    BX0, BX1, BY0, BY1 = 84, 156, 34, 82
+    S_FAR = (BX1 - BX0) / W
+
+    def U(z): return (1.0 / z - S_FAR) / (1.0 - S_FAR)        # z=1 near plane -> 1, far wall -> 0
+    def xl(u): return BX0 * (1 - u)
+    def xr(u): return W - BX0 * (1 - u)
+    def ytop(u): return BY0 * (1 - u)
+    def yfl(u): return BY1 + (H - BY1) * u
+    def wy(u, fr): return ytop(u) + (yfl(u) - ytop(u)) * fr
+    def ring_pt(z, th):
+        u = U(z); xw = 120 - xl(u)
+        return (120 + xw * math.cos(th), ytop(u) - 0.5 * xw * math.sin(th))
+
+    # ================= vaulted ceiling =================
+    d.rectangle([0, 0, W, BY0], fill=ceil)
+    bands = [i * math.pi / 9 for i in range(10)]
+    for i in range(9):
+        a, b = bands[i], bands[i + 1]
+        near_a, near_b = ring_pt(1.0, a), ring_pt(1.0, b)
+        far_a, far_b = ring_pt(1 / S_FAR, a), ring_pt(1 / S_FAR, b)
+        d.polygon([near_a, near_b, far_b, far_a], fill=shade(ceil, 1.0 if i % 2 == 0 else 0.93))
+    for th in bands:
+        d.line([ring_pt(1.0, th), ring_pt(1 / S_FAR, th)], fill=rib_lo)
+    for z in (1.18, 1.42, 1.72, 2.08, 2.5, 2.95):
+        pts = [ring_pt(z, k * math.pi / 40) for k in range(41)]
+        d.line(pts, fill=rib_lo, width=3)
+        d.line([(x, y - 1) for x, y in pts], fill=rib_hi, width=1)
+        d.line([ring_pt(z, math.pi * 0.0), ring_pt(z, math.pi * 0.0)], fill=rib_lo)
+    # far wall, with a round arch on top
+    arch = [(120 + 36 * math.cos(k * math.pi / 24), BY0 - 15 * math.sin(k * math.pi / 24)) for k in range(25)]
+    d.polygon(arch + [(BX0, BY1), (BX1, BY1)], fill=far_wall)
+    for r, a2 in ((44, 70), (32, 90), (20, 120)):                    # warm glow behind the throne
+        glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(glow).ellipse([120 - r, 44 - r, 120 + r, 44 + r], fill=(255, 226, 150, a2 // 2))
+        im.alpha_composite(glow)
+    d = ImageDraw.Draw(im)
+    for y in range(BY0 - 14, BY1, 4):                                # far wall bricks
+        for x in range(BX0 + (y // 4 % 2) * 4, BX1, 8):
+            if y >= BY0 - 14 and (x - 120) ** 2 / 36 ** 2 + (max(0, BY0 - y)) ** 2 / 15 ** 2 < 1:
+                d.line([(x, y), (x, y + 3)], fill=shade(far_wall, 0.88))
+        d.line([(BX0, y), (BX1, y)], fill=shade(far_wall, 0.9))
+    d.line(arch, fill=OUT, width=1)
+    d.line([(BX0, BY0), (BX0, BY1)], fill=OUT); d.line([(BX1, BY0), (BX1, BY1)], fill=OUT)
+
+    # ================= floor: perspective tiles =================
+    d.rectangle([0, BY1, W, H], fill=tile_a)
+    zs = [1.0, 1.1, 1.22, 1.38, 1.58, 1.84, 2.18, 2.62, 3.0, 1 / S_FAR]
+    cols = range(-8, 8)
+    for r in range(len(zs) - 1):
+        ua, ub = U(zs[r]), U(zs[r + 1])
+        ya, yb = yfl(ua), yfl(ub)
+        sa, sb = 1 / zs[r], 1 / zs[r + 1]
+        for c in cols:
+            quad = [(120 + c * 40 * sa, ya), (120 + (c + 1) * 40 * sa, ya), (120 + (c + 1) * 40 * sb, yb), (120 + c * 40 * sb, yb)]
+            d.polygon(quad, fill=tile_a if (r + c) % 2 == 0 else tile_b)
+        d.line([(0, ya), (W, ya)], fill=grout)
+    for c in cols:
+        d.line([(120 + c * 40, H), (120 + c * 40 * S_FAR, BY1)], fill=grout)
+
+    # ================= side walls =================
+    def wall_poly(side):
+        X = xl if side < 0 else xr
+        return [(X(0), BY0), (0 if side < 0 else W, 0), (0 if side < 0 else W, H), (X(0), BY1)]
+
+    for side in (-1, 1):
+        X = xl if side < 0 else xr
+        d.polygon(wall_poly(side), fill=wall_a)
+        # brick courses and staggered joints, perspective-correct
+        rows = 14
+        for k in range(rows):
+            fa, fb = k / rows, (k + 1) / rows
+            for j in range(0, 40):
+                z = 1.0 + j * 0.06
+                if z > 1 / S_FAR: break
+                z2 = min(1 / S_FAR, z + 0.06)
+                ua, ub = U(z), U(z2)
+                off = 0.03 if k % 2 else 0
+                zj = z + off
+                if zj >= 1 / S_FAR: continue
+                uj = U(zj)
+                d.line([(X(uj), wy(uj, fa)), (X(uj), wy(uj, fb))], fill=brick_lo)
+            d.line([(X(0), wy(0, fa)), (X(1), wy(1, fa))], fill=brick_lo)
+            if k % 3 == 1:                                          # a few lighter stones for texture
+                for j in range(0, 40, 3):
+                    z = 1.0 + (j + k) % 11 * 0.2
+                    if z > 3.2: continue
+                    u = U(z)
+                    d.line([(X(u), wy(u, fa) + 1), (X(U(z + 0.09)), wy(U(z + 0.09), fa) + 1)], fill=brick_hi)
+        # carved frieze under the cornice
+        fa, fb = 0.075, 0.125
+        d.polygon([(X(1), wy(1, fa)), (X(0), wy(0, fa)), (X(0), wy(0, fb)), (X(1), wy(1, fb))], fill=shade(wall_a, 1.06))
+        d.line([(X(1), wy(1, fa)), (X(0), wy(0, fa))], fill=OUT); d.line([(X(1), wy(1, fb)), (X(0), wy(0, fb))], fill=brick_lo)
+        for j in range(0, 22):
+            z = 1.05 + j * 0.11
+            if z > 3.2: break
+            u = U(z)
+            d.point((X(u), wy(u, 0.1)), fill=shade(wall_b, 0.85))
+        # skirting
+        d.line([(X(1), wy(1, 0.93)), (X(0), wy(0, 0.93))], fill=OUT)
+        d.polygon(wall_poly(side), outline=OUT)
+
+    # ================= side rooms =================
+    def door_poly(side, z0, z1, n=16):
+        X = xl if side < 0 else xr
+        top = []
+        for i in range(n + 1):
+            t = i / n; z = z0 + (z1 - z0) * t; u = U(z)
+            top.append((X(u), wy(u, 0.42 - 0.22 * math.sin(math.pi * t) ** 0.8)))
+        u0, u1 = U(z0), U(z1)
+        return top, [(X(u1), wy(u1, 0.95)), (X(u0), wy(u0, 0.95))]
+
+    def recycle(cx, cy, col):
+        d.polygon([(cx, cy - 5), (cx + 5, cy + 3), (cx - 5, cy + 3)], outline=col)
+        d.polygon([(cx, cy - 3), (cx + 3, cy + 2), (cx - 3, cy + 2)], outline=col)
+        for x, y in ((cx - 5, cy + 3), (cx + 5, cy + 3), (cx, cy - 5)):
+            d.rectangle([x - 1, y - 1, x + 1, y + 1], fill=col)
+
+    def trashcan(cx, cy):
+        rect(d, cx - 3, cy - 2, cx + 3, cy + 5, hx("#9aa0b0"), OUT)
+        d.line([(cx - 4, cy - 3), (cx + 4, cy - 3)], fill=OUT); d.point((cx, cy - 4), fill=OUT)
+        for x in (cx - 1, cx + 1): d.line([(x, cy), (x, cy + 3)], fill=hx("#6a7084"))
+
+    def tools(cx, cy):
+        d.line([(cx - 5, cy - 5), (cx + 5, cy + 5)], fill=hx("#c8ccd8"), width=2)
+        d.line([(cx + 5, cy - 5), (cx - 5, cy + 5)], fill=hx("#c8ccd8"), width=2)
+        d.rectangle([cx - 7, cy - 6, cx - 3, cy - 3], fill=hx("#8a90a4"), outline=OUT)
+        d.rectangle([cx + 3, cy - 7, cx + 7, cy - 4], fill=hx("#8a90a4"), outline=OUT)
+
+    def room(side, z0, z1, kind):
+        top, bottom = door_poly(side, z0, z1)
+        poly = top + bottom
+        mask = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(mask).polygon(poly, fill=255)
+        layer = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+        ld = ImageDraw.Draw(layer)
+        xs = [p[0] for p in poly]; ys = [p[1] for p in poly]
+        bx0, bx1, by0, by1 = int(min(xs)), int(max(xs)) + 1, int(min(ys)), int(max(ys)) + 1
+        bg = {"box": ("#fff0b0", "#f2b868"), "glass": ("#8ec8b8", "#587a78"), "ewaste": ("#c8f4d0", "#88c8a0"), "scrap": ("#5a4a52", "#2e2430")}[kind]
+        if clean:
+            bg = {"box": ("#fffbd8", "#f4e0a0"), "glass": ("#d8f4ec", "#a8d8c8"), "ewaste": ("#e4fae8", "#b4e0c0"), "scrap": ("#d8e8d4", "#a8c0a0")}[kind]
+        for y in range(by0, by1 + 1):
+            f = (y - by0) / max(1, by1 - by0)
+            ld.line([(bx0, y), (bx1, y)], fill=tuple(int(a + (b - a) * f) for a, b in zip(hx(bg[0]), hx(bg[1])))[:3] + (255,))
+        gy = by1 - 2                                              # floor of the room
+        if kind == "box":
+            for i, n in enumerate((3, 2, 3, 1)):
+                bx = bx0 + 1 + i * ((bx1 - bx0) // 4)
+                for j in range(n):
+                    x0, y0 = bx + (j % 2) * 2, gy - (j + 1) * 8
+                    rect(ld, x0, y0, x0 + 12, y0 + 8, hx("#c9a066"), hx("#6a4a2a"))
+                    ld.line([(x0 + 1, y0 + 1), (x0 + 11, y0 + 1)], fill=hx("#e6c88e"))
+                    ld.line([(x0 + 6, y0), (x0 + 6, y0 + 8)], fill=hx("#a07a42"))
+                    if j == 0: ld.point((x0 + 3, y0 + 5), fill=hx("#4a9a56")); ld.point((x0 + 4, y0 + 5), fill=hx("#4a9a56"))
+        elif kind == "glass":
+            for i in range(26):
+                x = bx0 + 2 + rnd.randrange(max(1, bx1 - bx0 - 4)); y = gy - rnd.randrange(0, 22)
+                col = hx(rnd.choice(("#5ab87a", "#d89a40", "#8ac8f0", "#dff0f4", "#3a7a58", "#c8d8e8")))
+                ld.rectangle([x, y - 4, x + 2, y + 2], fill=col, outline=hx("#3a4a50"))
+                ld.line([(x + 1, y - 7), (x + 1, y - 5)], fill=col)
+            for i in range(6):
+                x = bx0 + 3 + rnd.randrange(max(1, bx1 - bx0 - 6)); y = by0 + 4 + rnd.randrange(max(1, by1 - by0 - 10))
+                ld.point((x, y), fill=hx("#ffffff")); ld.point((x - 1, y), fill=hx("#ffffff")); ld.point((x + 1, y), fill=hx("#ffffff"))
+                ld.point((x, y - 1), fill=hx("#ffffff")); ld.point((x, y + 1), fill=hx("#ffffff"))
+        elif kind == "ewaste":
+            for i in range(5):
+                x0 = bx0 + 1 + i * ((bx1 - bx0 - 8) // 4); y0 = gy - 9 - (i % 2) * 11
+                rect(ld, x0, y0, x0 + 9, y0 + 9, hx("#d8d0b8"), OUT)
+                ld.rectangle([x0 + 2, y0 + 2, x0 + 7, y0 + 6], fill=hx("#2a4a48"))
+                ld.point((x0 + 3, y0 + 3), fill=hx("#8ad8c8"))
+            for i in range(3):
+                x0 = bx0 + 3 + i * ((bx1 - bx0 - 8) // 2)
+                rect(ld, x0, gy - 14, x0 + 6, gy, hx("#cfc8b0"), OUT); ld.point((x0 + 3, gy - 11), fill=hx("#4ac88a"))
+        else:
+            for i in range(9):
+                cx, cy = bx0 + 3 + rnd.randrange(max(1, bx1 - bx0 - 6)), gy - 3 - rnd.randrange(0, 20)
+                rr = rnd.randrange(3, 6)
+                ld.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=hx(rnd.choice(("#8a90a4", "#a8644a", "#6a7084", "#c8744a"))), outline=OUT)
+                ld.ellipse([cx - 1, cy - 1, cx + 1, cy + 1], fill=hx("#2e2430"))
+            for i in range(4):
+                y = gy - 2 - i * 5
+                ld.rectangle([bx0 + 1, y - 2, bx1 - 1, y + 1], fill=hx("#9aa0b4"), outline=OUT)
+            ld.polygon([(bx0 + 4, by0 + 6), (bx0 + 12, by0 + 2), (bx0 + 14, by0 + 14), (bx0 + 6, by0 + 16)], fill=hx("#c8ccd8"), outline=OUT)
+            for i in range(6):
+                ld.ellipse([bx1 - 14 + i * 2, gy - 20 + (i % 2) * 3, bx1 - 10 + i * 2, gy - 17 + (i % 2) * 3], outline=hx("#8a90a4"))
+        im.paste(layer.convert("RGB"), (0, 0), mask)
+        # stone frame with a keystone
+        d_ = ImageDraw.Draw(im)
+        d_.line([(x, y - 2) for x, y in top], fill=brick_hi, width=1)
+        d_.line(top, fill=OUT, width=1)
+        d_.line([top[0], bottom[1]], fill=OUT); d_.line([top[-1], bottom[0]], fill=OUT)
+        mx, my = top[len(top) // 2]
+        d_.rectangle([mx - 2, my - 4, mx + 2, my], fill=gold, outline=OUT)
+        return (xs, ys)
+
+    icons = []
+    for side, z0, z1, kind, icon in ((-1, 1.10, 1.70, "box", "recycle_green"), (-1, 1.86, 2.55, "glass", "recycle_gray"),
+                                      (1, 1.86, 2.55, "ewaste", "can"), (1, 1.10, 1.70, "scrap", "tools")):
+        xs, ys = room(side, z0, z1, kind)
+        zm = (z0 + z1) / 2
+        u = U(zm); X = xl if side < 0 else xr
+        icons.append((icon, X(u), wy(u, 0.10)))
+    d = ImageDraw.Draw(im)
+    for icon, ix, iy in icons:
+        ix, iy = int(ix), int(iy)
+        if icon == "recycle_green": recycle(ix, iy + 1, hx("#3aa860"))
+        elif icon == "recycle_gray": recycle(ix, iy + 1, hx("#8a90a4") if not clean else hx("#3aa860"))
+        elif icon == "can": trashcan(ix, iy)
+        else: tools(ix, iy)
+
+    # pilasters between the rooms and a row of pointed windows beyond the last arch
+    for side in (-1, 1):
+        X = xl if side < 0 else xr
+        for zc in (1.78, 1.04, 2.6):
+            za, zb = zc - 0.05, zc + 0.05
+            if za < 1.0: za = 1.0
+            ua, ub = U(za), U(zb)
+            d.polygon([(X(ua), wy(ua, 0.1)), (X(ub), wy(ub, 0.1)), (X(ub), wy(ub, 0.96)), (X(ua), wy(ua, 0.96))], fill=shade(wall_a, 1.1), outline=OUT)
+        for za, zb in ((2.68, 2.82), (2.9, 3.04), (3.1, 3.22)):
+            ua, ub = U(za), U(zb); um = (ua + ub) / 2
+            quad = [(X(ua), wy(ua, 0.62)), (X(ua), wy(ua, 0.34)), (X(um), wy(um, 0.22)), (X(ub), wy(ub, 0.34)), (X(ub), wy(ub, 0.62))]
+            d.polygon(quad, fill=hx(glass[0]), outline=OUT)
+            d.line([(X(um), wy(um, 0.24)), (X(um), wy(um, 0.62))], fill=hx(glass[2]))
+
+    # ================= carpet, stage, throne =================
+    cx0, cw = 120, 52.5
+    def carpet_x(m, z): return cx0 + m * cw / z
+    d.polygon([(carpet_x(-1, 1.0), H), (carpet_x(1, 1.0), H), (carpet_x(1, 1 / S_FAR), BY1), (carpet_x(-1, 1 / S_FAR), BY1)], fill=carp)
+    for r in range(len(zs) - 1):                                     # lighter tufted bands
+        if r % 2: continue
+        ua, ub = U(zs[r]), U(zs[r + 1])
+        sa, sb = 1 / zs[r], 1 / zs[r + 1]
+        d.polygon([(120 - 40 * sa, yfl(ua)), (120 + 40 * sa, yfl(ua)), (120 + 40 * sb, yfl(ub)), (120 - 40 * sb, yfl(ub))], fill=carp_hi)
+    for m in (-1, 1):
+        d.line([(carpet_x(m, 1.0), H), (carpet_x(m, 1 / S_FAR), BY1)], fill=gold, width=2)
+        d.line([(carpet_x(m * 0.86, 1.0), H), (carpet_x(m * 0.86, 1 / S_FAR), BY1)], fill=carp_lo)
+    for y in range(BY1 + 1, H, 2):                                  # dithering on the carpet edges
+        for m in (-1, 1):
+            u = (y - BY1) / (H - BY1); z = 1 / (u * (1 - S_FAR) + S_FAR)
+            xx = int(carpet_x(m * 0.8, z))
+            if (xx + y) % 2 == 0: d.point((xx, y), fill=carp_lo)
+
+    def litter(m, z, kind):
+        s = 1.0 / z
+        x = carpet_x(m, z); y = yfl(U(z))
+        w = max(2, int(round(6 * s)))
+        if clean:
+            for i in range(3):
+                d.point((int(x) + i * 2, int(y) - (i % 2)), fill=hx(rnd.choice(("#f4a6c8", "#ffffff", "#f7d88a"))))
+            return
+        if kind == "can":
+            col = hx(rnd.choice(("#4a6ae0", "#d84a4a", "#c8ccd8")))
+            d.rectangle([x - w // 2, y - w, x + w // 2, y], fill=col, outline=OUT); d.point((x, y - w + 1), fill=hx("#ffffff"))
+        elif kind == "banana":
+            d.line([(x - w, y), (x, y - 1), (x + w, y - 2)], fill=hx("#f4d040"), width=max(1, int(2 * s + 0.5)))
+            d.point((x + w, y - 3), fill=hx("#6a4a1a"))
+        elif kind == "paper":
+            d.ellipse([x - w // 2, y - w // 2, x + w // 2, y + w // 2], fill=hx("#ece8f0"), outline=hx("#8a86a0"))
+        else:
+            d.rectangle([x - w, y - w // 2, x + w, y], fill=hx("#c9a066"), outline=hx("#6a4a2a"))
+    items = [(-0.7, 1.12, "can"), (0.5, 1.25, "banana"), (-0.2, 1.4, "paper"), (0.75, 1.5, "can"), (-0.6, 1.7, "banana"),
+             (0.15, 1.8, "cardboard"), (-0.35, 2.0, "can"), (0.6, 2.1, "paper"), (-0.75, 2.3, "cardboard"), (0.3, 2.5, "can"),
+             (-0.1, 2.7, "banana"), (0.55, 2.9, "paper"), (-0.5, 1.95, "paper"), (0.0, 1.15, "cardboard")]
+    for m, z, k in sorted(items, key=lambda t: -t[1]):
+        litter(m, z, k)
+    if not clean:                                                    # litter on the floor beside the carpet
+        for i in range(18):
+            side = -1 if i % 2 == 0 else 1
+            z = rnd.uniform(1.1, 2.9); m = side * rnd.uniform(1.25, 2.6)
+            litter(m, z, rnd.choice(("can", "banana", "paper", "cardboard")))
+
+    # stage: wooden, with two steps and the carpet running up
+    wood, wood_hi, wood_lo = hx("#b87a44"), hx("#d89a5c"), hx("#7a4a28")
+    for k, (y0, y1, hw) in enumerate(((78, 84, 38), (74, 79, 32))):
+        rect(d, 120 - hw, y0, 120 + hw, y1, wood if not clean else hx("#d8c8a0"), OUT)
+        for x in range(120 - hw + 3, 120 + hw - 1, 6):
+            d.line([(x, y0 + 1), (x, y1 - 1)], fill=wood_lo if not clean else hx("#b8a880"))
+        d.line([(120 - hw + 1, y0 + 1), (120 + hw - 1, y0 + 1)], fill=wood_hi if not clean else hx("#f0e4c0"))
+    d.polygon([(110, 74), (130, 74), (133, 84), (107, 84)], fill=carp)
+    d.line([(110, 74), (107, 84)], fill=gold); d.line([(130, 74), (133, 84)], fill=gold)
+
+    # golden halo behind the throne
+    halo = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    hd = ImageDraw.Draw(halo)
+    for r, a2 in ((40, 45), (34, 70), (28, 100), (22, 140)):
+        hd.ellipse([120 - r, 50 - r, 120 + r, 50 + r], fill=(255, 226, 120, a2))
+    im.alpha_composite(halo)
+    d = ImageDraw.Draw(im)
+    d.ellipse([120 - 26, 50 - 26, 120 + 26, 50 + 26], outline=gold_hi, width=2)
+    d.ellipse([120 - 28, 50 - 28, 120 + 28, 50 + 28], outline=gold_lo)
+
+    # the throne: a tall heap of garbage with a tufted pink cushion and a giant bow
+    hb = hx("#3f8a62") if clean else hx("#5a4a68")
+    d.polygon([(94, 74), (98, 56), (106, 46), (120, 42), (134, 46), (142, 56), (146, 74)], fill=hb, outline=OUT)
+    d.polygon([(86, 74), (90, 62), (98, 56), (104, 74)], fill=hb, outline=OUT)
+    d.polygon([(154, 74), (150, 62), (142, 56), (136, 74)], fill=hb, outline=OUT)
+
+    def scrap(x, y, kind):
+        if clean:                                                    # vines and flowers instead of garbage
+            if kind < 3:
+                d.ellipse([x, y, x + 4, y + 3], fill=hx(rnd.choice(("#6fc688", "#4fae70", "#8fdca0"))), outline=hx("#2f6a4a"))
+            else:
+                d.point((x + 1, y + 1), fill=hx(rnd.choice(("#f4a6c8", "#ffffff", "#f7d88a")))); d.point((x + 2, y + 1), fill=hx("#f7d88a"))
+                d.point((x + 1, y), fill=hx(rnd.choice(("#f4a6c8", "#ffffff")))); d.point((x + 1, y + 2), fill=hx("#ffffff"))
+            return
+        if kind == 0:   d.rectangle([x, y, x + 3, y + 4], fill=hx(rnd.choice(("#4a6ae0", "#d84a4a", "#c8ccd8"))), outline=OUT)      # can
+        elif kind == 1: d.rectangle([x, y, x + 1, y + 5], fill=hx(rnd.choice(("#5ab87a", "#c8884a", "#8ac8f0"))), outline=OUT)        # bottle
+        elif kind == 2: d.rectangle([x, y, x + 5, y + 4], fill=hx("#c9a066"), outline=hx("#6a4a2a")); d.line([(x + 2, y), (x + 2, y + 4)], fill=hx("#a07a42"))
+        elif kind == 3: d.ellipse([x, y, x + 5, y + 5], fill=hx("#3a4228"), outline=OUT); d.point((x + 1, y + 1), fill=hx("#7a8858"))   # bin bag
+        elif kind == 4: d.ellipse([x, y, x + 6, y + 6], fill=hx("#3a3a44"), outline=OUT); d.ellipse([x + 2, y + 2, x + 4, y + 4], fill=hx("#8a90a4"))   # tyre
+        else:           d.rectangle([x, y, x + 4, y + 3], fill=hx("#ece8f0"), outline=hx("#8a86a0"))                                      # paper
+    for row in range(10):
+        y = 44 + row * 3
+        half = 9 + row * 1.6
+        for i in range(int(half // 2.4)):
+            x = 120 + rnd.uniform(-half, half)
+            scrap(int(x) - 2, y + rnd.randrange(-1, 2), rnd.randrange(6))
+    for row in range(6):
+        y = 58 + row * 3
+        for sx in (-1, 1):
+            for i in range(3):
+                scrap(int(120 + sx * (28 + rnd.uniform(0, 20))) - 2, y + rnd.randrange(-1, 2), rnd.randrange(6))
+    pink, pink_hi, pink_lo = (hx("#f08fbe"), hx("#ffc0dc"), hx("#c04a86")) if not clean else (hx("#f4a6c8"), hx("#ffd8e8"), hx("#d878a8"))
+    rect(d, 111, 46, 129, 62, pink, OUT)                             # tufted back cushion
+    rect(d, 106, 63, 134, 71, pink, OUT)                             # seat
+    d.line([(108, 65), (132, 65)], fill=pink_hi)
+    for bx in (116, 124):
+        for by in (51, 57):
+            d.rectangle([bx - 1, by - 1, bx + 1, by + 1], fill=pink_lo); d.point((bx, by), fill=pink_hi)
+    for bx in (112, 120, 128): d.point((bx, 68), fill=pink_lo)
+    bow_a, bow_b = (hx("#e0507f"), hx("#b83050")) if not clean else (hx("#f4a6c8"), hx("#d878a8"))
+    for sx in (-1, 1):                                               # the giant bow on top
+        d.polygon([(120, 40), (120 + sx * 15, 31), (120 + sx * 17, 45), (120, 43)], fill=bow_a, outline=OUT)
+        for dx, dy in ((8, 36), (12, 41), (12, 34)): d.point((120 + sx * dx, dy), fill=hx("#ffffff"))
+    d.rectangle([116, 37, 124, 45], fill=bow_b, outline=OUT)
+    # banners
+    for bx in (90, 150):
+        d.line([(bx - 7, 38), (bx + 7, 38)], fill=gold, width=2)
+        d.polygon([(bx - 6, 39), (bx + 6, 39), (bx + 6, 62), (bx, 68), (bx - 6, 62)], fill=hx("#e0507f") if not clean else hx("#6fc688"), outline=OUT)
+        d.line([(bx - 5, 42), (bx + 5, 42)], fill=gold); d.ellipse([bx - 2, 48, bx + 2, 52], fill=gold, outline=OUT)
+
+    # ================= chandeliers of bottles, chains and bulbs =================
+    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    bulbs = []
+
+    def chandelier(cx, y, rx, bh, n):
+        d.line([(cx - 3, 0), (cx - rx // 2, y - 1)], fill=hx("#7a8094")); d.line([(cx + 3, 0), (cx + rx // 2, y - 1)], fill=hx("#7a8094"))
+        d.line([(cx, 0), (cx, y - 1)], fill=hx("#9aa0b4"))
+        d.ellipse([cx - rx, y - 2, cx + rx, y + 2], fill=hx("#6a6a7e"), outline=OUT)
+        d.line([(cx - rx + 3, y - 1), (cx + rx - 3, y - 1)], fill=gold_hi)
+        step = (2 * rx - 6) / (n - 1)
+        for i in range(n):
+            x = int(cx - rx + 3 + i * step)
+            col = hx(rnd.choice(("#5ab87a", "#6aa8e8", "#d89a40", "#e8f0f4", "#c85a8a")))
+            d.line([(x, y + 2), (x, y + 3)], fill=hx("#8a90a4"))
+            d.rectangle([x - 1, y + 4, x + 1, y + 3 + bh], fill=col)
+            d.point((x - 1, y + 5), fill=shade(col, 1.3)); d.line([(x - 1, y + 3 + bh), (x + 1, y + 3 + bh)], fill=shade(col, 0.7))
+        for i in range(n - 1):
+            x = int(cx - rx + 3 + (i + 0.5) * step)
+            bulbs.append((x, y + 6 + bh // 2))
+    chandelier(120, 3, 30, 9, 9)
+    chandelier(120, 21, 17, 7, 5)
+    for x, y in bulbs:
+        gd.ellipse([x - 7, y - 7, x + 7, y + 7], fill=(255, 236, 150, 60))
+    im.alpha_composite(glow)
+    d = ImageDraw.Draw(im)
+    for x, y in bulbs:
+        d.line([(x, y - 3), (x, y - 1)], fill=hx("#8a90a4"))
+        d.ellipse([x - 2, y - 1, x + 2, y + 3], fill=hx("#fff0a0"), outline=hx("#c89a2a")); d.point((x, y + 1), fill=hx("#ffffff"))
+
+    # ================= the minions =================
+    def minion(cx, feet, k, body, body_dk, cape, kind, face=1):
+        def R(v): return max(1, int(round(v * k)))
+        MO = hx("#4a3050")
+        d.polygon([(cx - R(9), feet - R(18)), (cx + R(9), feet - R(18)), (cx + R(16) * face, feet - R(1)), (cx - R(14) * face, feet - R(1))], fill=cape, outline=MO)
+        for fx in (-6, 6):
+            d.ellipse([cx + R(fx) - R(4), feet - R(4), cx + R(fx) + R(4), feet], fill=body_dk, outline=MO)
+        d.ellipse([cx - R(13), feet - R(25), cx + R(13), feet - R(2)], fill=body, outline=MO)
+        d.ellipse([cx - R(8), feet - R(12), cx + R(8), feet - R(3)], fill=shade(body, 1.08))
+        for ex in (-6, 6):                                           # tiny dot eyes, blush, mouth
+            d.rectangle([cx + R(ex), feet - R(17), cx + R(ex) + max(1, R(2)) - 1, feet - R(17) + R(3) - 1], fill=hx("#3a2a48"))
+            d.rectangle([cx + R(ex * 1.6) - R(2), feet - R(13), cx + R(ex * 1.6) + R(2), feet - R(12)], fill=hx("#f4a0b4"))
+        d.line([(cx - R(2), feet - R(12)), (cx + R(2), feet - R(12))], fill=hx("#3a2a48"))
+        rect(d, cx - R(6), feet - R(10), cx + R(6), feet - R(4), hx("#c9a066"), hx("#6a4a2a"))   # cardboard breastplate
+        d.line([(cx, feet - R(10)), (cx, feet - R(4))], fill=hx("#a07a42"))
+        for sx in (-1, 1):                                           # shoulder pads
+            rect(d, cx + sx * R(11) - R(2), feet - R(17), cx + sx * R(11) + R(2), feet - R(14), hx("#c9a066"), hx("#6a4a2a"))
+        # helmet
+        top = feet - R(23)
+        if kind == "can":
+            rect(d, cx - R(8), top - R(8), cx + R(8), top, hx("#b8bcc8"), MO)
+            for yy in (top - R(6), top - R(3)): d.line([(cx - R(7), yy), (cx + R(7), yy)], fill=hx("#8a90a4"))
+            d.line([(cx + R(1), top - R(7)), (cx - R(1), top - R(4)), (cx + R(2), top - R(4)), (cx, top - R(1))], fill=hx("#f2d040"))
+        elif kind == "bucket":
+            d.polygon([(cx - R(9), top), (cx + R(9), top), (cx + R(7), top - R(9)), (cx - R(7), top - R(9))], fill=hx("#a8aab8") if body[2] > 200 else hx("#a86a40"), outline=MO)
+            d.line([(cx - R(7), top - R(6)), (cx + R(7), top - R(6))], fill=hx("#6a6a7a") if body[2] > 200 else hx("#7a4a28"))
+            d.point((cx - R(5), top - R(3)), fill=hx("#d8744a")); d.point((cx + R(4), top - R(8)), fill=hx("#d8744a"))
+        else:
+            rect(d, cx - R(9), top - R(13), cx + R(9), top, hx("#d8d0b8"), MO)               # CRT monitor
+            rect(d, cx - R(6), top - R(11), cx + R(6), top - R(3), hx("#2a4a48"), MO)
+            d.line([(cx - R(4), top - R(9)), (cx - R(2), top - R(9))], fill=hx("#8ad8c8")); d.point((cx + R(7), top - R(2)), fill=hx("#e04a4a"))
+        tt = top - (R(13) if kind == "crt" else R(9))
+        d.line([(cx, tt), (cx, tt - R(4))], fill=hx("#4a9a56"))                  # the sprout
+        for sx in (-1, 1):
+            d.ellipse([cx + sx * R(4) - R(3), tt - R(7), cx + sx * R(4) + R(3), tt - R(3)], fill=hx("#7ad06a"), outline=hx("#3a7a46"))
+
+    # floor shadows then the four minions
+    for cx_, fy, rr in ((46, 132, 19), (92, 104, 14), (158, 106, 14), (194, 134, 19)):
+        sh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(sh).ellipse([cx_ - rr, fy - 3, cx_ + rr, fy + 3], fill=(60, 30, 80, 70))
+        im.alpha_composite(sh)
+    d = ImageDraw.Draw(im)
+    minion(92, 104, 0.72, hx("#a8d0f0"), hx("#82b0d8"), hx("#cfe4f8"), "bucket", 1)
+    minion(158, 106, 0.72, hx("#f4b4d0"), hx("#d890b0"), hx("#f8d0e0"), "crt", -1)
+    minion(46, 132, 1.05, hx("#a8e6a0"), hx("#84c07c"), hx("#f4f0f8"), "can", 1)
+    minion(194, 134, 1.05, hx("#d89a70"), hx("#b07650"), hx("#e07a3a"), "bucket", -1)
+    # what they are doing: tossed cardboard, a bottle in tongs, a cable, a wrench; each with a little raised arm
+    GR, BL, PK, BR = hx("#84c07c"), hx("#82b0d8"), hx("#d890b0"), hx("#b07650")
+    d.ellipse([27, 108, 33, 114], fill=hx("#a8e6a0"), outline=hx("#4a3050"))          # green: arm up, box in the air
+    rect(d, 14, 92, 24, 99, hx("#c9a066"), hx("#6a4a2a")); d.line([(19, 92), (19, 99)], fill=hx("#a07a42"))
+    for x, y in ((26, 104), (23, 101), (21, 99)): d.point((x, y), fill=hx("#ffe28a"))
+    d.ellipse([105, 97, 110, 102], fill=hx("#a8d0f0"), outline=hx("#4a3050"))          # blue: tongs holding a bottle
+    d.line([(108, 98), (116, 94)], fill=hx("#c8ccd8"), width=1); d.line([(108, 100), (116, 96)], fill=hx("#c8ccd8"), width=1)
+    d.rectangle([115, 92, 118, 99], fill=hx("#5ab87a"), outline=OUT); d.line([(116, 90), (116, 92)], fill=hx("#5ab87a"))
+    d.ellipse([146, 102, 151, 107], fill=hx("#f4b4d0"), outline=hx("#4a3050"))          # pink: dragging a cable
+    d.line([(148, 106), (140, 112), (134, 110), (130, 116)], fill=hx("#4a4a58"), width=1); d.rectangle([128, 116, 132, 119], fill=hx("#8a90a4"), outline=OUT)
+    d.ellipse([205, 118, 211, 124], fill=hx("#d89a70"), outline=hx("#4a3050"))          # brown: a wrench
+    d.line([(208, 120), (218, 112)], fill=hx("#c8ccd8"), width=2); d.rectangle([217, 108, 222, 113], fill=hx("#8a90a4"), outline=OUT)
+    for cx_, fy, kk, col in ((46, 132, 1.05, GR), (92, 104, 0.72, BL), (158, 106, 0.72, PK), (194, 134, 1.05, BR)):     # the other hand
+        for sx in (-1, 1):
+            pass
+
+    im.putalpha(255)
+    return pastel(im, 0.06 if clean else 0.1)
+
+
+def portal_sheet():
+    """The portal: 8 animation frames side by side, 40x56 each. A pixel-art vortex: three spiral arms turn around a bright core
+    inside a glowing rim, with a dithered halo around it. Cycling the frames makes it spin."""
+    import math
+    FR, W, H = 8, 40, 56
+    cx, cy, rx, ry = 19.5, 27.5, 15.5, 23.5
+    ramp = [hx(c) for c in ("#0c3a3c", "#14665f", "#2fa88c", "#74dcb4", "#c4f6e0", "#ffffff")]
+    im = Image.new("RGBA", (FR * W, H), (0, 0, 0, 0))
+    px = im.load()
+    for f in range(FR):
+        phase = f / FR * 2 * math.pi
+        for y in range(H):
+            for x in range(W):
+                u, v = (x - cx) / rx, (y - cy) / ry
+                r = math.hypot(u, v)
+                th = math.atan2(v, u)
+                X = f * W + x
+                if r <= 1.0:
+                    arm = 0.5 + 0.5 * math.sin(3 * (th + 2.6 * r) - phase)
+                    t = 0.18 + 0.5 * arm * (0.35 + 0.65 * r) + 0.55 * (1 - r) ** 2
+                    if r > 0.82:
+                        t = 0.78 + 0.2 * (0.5 + 0.5 * math.sin(6 * th - phase * 2))
+                    idx = min(len(ramp) - 1, int(t * len(ramp)))
+                    c = ramp[idx]
+                    px[X, y] = (c[0], c[1], c[2], 255)
+                elif r < 1.22:
+                    chance = (1.22 - r) / 0.22
+                    if (x + y) % 2 == 0 and chance > 0.35 + 0.3 * (0.5 + 0.5 * math.sin(5 * th + phase)):
+                        c = ramp[3] if chance > 0.7 else ramp[2]
+                        px[X, y] = (c[0], c[1], c[2], 255 if chance > 0.55 else 150)
+        for k in range(5):
+            a = phase + k * 1.26
+            rr = 1.05 + 0.1 * ((f + k * 3) % 5)
+            sx, sy = int(cx + rx * rr * math.cos(a)), int(cy + ry * rr * math.sin(a))
+            if 0 <= sx < W and 0 <= sy < H:
+                px[f * W + sx, sy] = (255, 255, 255, 255)
+    return im
+
+
 def story_backdrops():
     save("backdrop/room.png", room_scene(False))
     save("backdrop/room_hole.png", room_scene(True))
     save("backdrop/palace.png", palace_scene())
     save("backdrop/meadow.png", meadow_scene())
+    save("backdrop/grove.png", grove_scene(False))
+    save("portal.png", portal_sheet())
+    import sys as _sys; _sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "palace_hall"))
+    import scene as _palace_scene     # v2 hall: native 720x480 art (tools/palace_hall/), replaces palace_hall_scene()
+    _palace_scene.main(OUT)
 
 
 def story_sprites():
     story_backdrops()
     npc_sprites(); weapon_sprites()
+    save("npc/mother_nature.png", mother_nature())
+    save("npc/grove_guard.png", grove_guard())
     save("boss/queen_muck.png", queen_muck("normal"))
     save("boss/queen_muck_laugh.png", queen_muck("laugh"))
     save("boss/queen_muck_rage.png", queen_muck("rage"))
+    save("boss/queen_muck_sad.png", queen_muck("sad"))
+    save("boss/queen_muck_clean.png", queen_muck("clean"))
+    save("boss/mound.png", muck_mound("normal"), 4)
+    save("boss/mound_rage.png", muck_mound("rage"), 4)
+    save("boss/experiment.png", experiment("normal"))
+    save("boss/experiment_rage.png", experiment("rage"))
+    save("boss/experiment_stun.png", experiment("stun"))
+    save("boss/ghost.png", stink_ghost())
+    for v in range(3):
+        save("boss/junk_cube%d.png" % v, junk_cube(v))
     save("boss/imp.png", imp_sprite())
 
 

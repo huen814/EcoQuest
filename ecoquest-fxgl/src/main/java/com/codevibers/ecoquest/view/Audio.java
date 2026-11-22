@@ -8,6 +8,9 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.LineEvent;
 
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+
 import com.codevibers.ecoquest.model.Sfx;
 
 /** Synthesised beeps, so the game needs no sound files. */
@@ -89,8 +92,42 @@ public final class Audio {
         return buf;
     }
 
-    public static void setMuted(boolean m) { muted = m; }
+    public static void setMuted(boolean m) {
+        muted = m;
+        if (music != null) music.setMute(m);
+    }
     public static boolean muted() { return muted; }
+
+    // ------------------------------------------------------------------ looping background music (assets/music/*.wav)
+    private static MediaPlayer music;
+    private static String musicName;
+
+    /** Starts a looping track (call from the JavaFX thread). Does nothing if it is already playing. */
+    public static void playMusic(String file, double volume) {
+        if (file.equals(musicName) && music != null) return;
+        stopMusic();
+        try {
+            var url = Audio.class.getResource("/assets/music/" + file);
+            if (url == null) { System.err.println("Missing music: " + file); return; }
+            MediaPlayer p = new MediaPlayer(new Media(url.toExternalForm()));
+            p.setCycleCount(MediaPlayer.INDEFINITE);
+            p.setVolume(volume);
+            p.setMute(muted);
+            p.play();
+            music = p;
+            musicName = file;
+        } catch (Throwable t) {
+            System.err.println("Could not play music " + file + ": " + t);
+        }
+    }
+
+    public static void stopMusic() {
+        if (music != null) {
+            try { music.stop(); music.dispose(); } catch (Throwable ignored) { }
+        }
+        music = null;
+        musicName = null;
+    }
 
     /** Queen Muck's "ho ho ho". */
     public static void laugh() { play(Sfx.LAUGH); }

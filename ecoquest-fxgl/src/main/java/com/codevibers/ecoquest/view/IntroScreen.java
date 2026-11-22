@@ -35,18 +35,20 @@ public final class IntroScreen extends Screen {
     private double grow = -1;   // -1 = not started, otherwise seconds since the second page began
 
     private static final List<String> PAGES = List.of(
-        "In a small, sunny village lived two siblings. One kept everything neat, " +
-        "sorted and shining. The other left things... everywhere.",
+        "In a small, sunny village lived two siblings, {tidy} and {messy}. {tidy} kept everything neat, " +
+        "sorted and shining. {messy} left things... everywhere.",
 
         "Their yards said it all: one spotless, the other buried under a mountain of " +
         "bottles, boxes and banana peels. Nobody suspected that a mountain " +
         "like that could ever wake up."
     );
+    private List<String> pages = PAGES;
 
     public IntroScreen(EcoQuestApp app, Runnable next) {
         super(app);
         this.next = next;
         Sibling me = app.save().sibling();
+        pages = PAGES.stream().map(p -> p.replace("{tidy}", me.name).replace("{messy}", me.other().name)).toList();
 
         // Two yards: a clean village on the left, a dump on the right.
         root.getChildren().add(StoryFx.scene("house"));
@@ -99,8 +101,8 @@ public final class IntroScreen extends Screen {
         sub.shadow(Color.web("#ffffff", 0.7));
         root.getChildren().addAll(title, sub);
 
-        tag(StoryState.role(true) + " (YOU)", YOU_X, FEET - 72 * SCALE - 18, Ui.GOOD);
-        tag(StoryState.role(false), OTHER_X, FEET - 72 * SCALE - 18, Ui.BAD);
+        tag(me.name.toUpperCase() + " (YOU)", YOU_X, FEET - 72 * SCALE - 18, Ui.GOOD);
+        tag(me.other().name.toUpperCase(), OTHER_X, FEET - 72 * SCALE - 18, Ui.BAD);
         root.getChildren().add(box);
     }
 
@@ -113,7 +115,7 @@ public final class IntroScreen extends Screen {
     }
 
     @Override
-    public void enter() { box.show(PAGES); }
+    public void enter() { box.show(pages); }
 
     @Override
     public void update(double tpf) {

@@ -32,6 +32,8 @@ public final class Save {
     public final int[] up = new int[Attribute.COUNT];
     public int xp;
     public int level = 1;
+    /** Index of the level after which a boss is still waiting to be fought, or -1. Saved so quitting cannot skip the boss. */
+    public int bossAfter = -1;
     /** Attribute choices earned but not picked yet, oldest first. Saved so quitting cannot skip or re-roll them. */
     public final java.util.List<java.util.List<Attribute>> offers = new java.util.ArrayList<>();
     /** Ids (e.g. "outfit_mint") of the cosmetics bought so far. The free defaults are always owned. Kept across New Game. */
@@ -74,6 +76,7 @@ public final class Save {
             s.level = Integer.parseInt(p.getProperty("lv", "" + (1 + Math.max(0, s.completed + 1))));
             s.level = Math.max(1, Math.min(Progression.MAX_LEVEL, s.level));
             parseOffers(p.getProperty("pend", ""), s.offers);
+            s.bossAfter = Integer.parseInt(p.getProperty("boss", "-1"));
             if (s.sibling < 0 || s.sibling >= Sibling.values().length) s.sibling = -1;
         } catch (Exception ignored) { }
         return s;
@@ -96,6 +99,7 @@ public final class Save {
             p.setProperty("xp", "" + xp);
             p.setProperty("lv", "" + level);
             p.setProperty("pend", offersToString());
+            p.setProperty("boss", "" + bossAfter);
             p.store(out, "EcoQuest save");
         } catch (Exception ignored) { }
     }
@@ -182,6 +186,7 @@ public final class Save {
         xp = 0;
         level = 1;
         offers.clear();
+        bossAfter = -1;
         store();
     }
 

@@ -115,14 +115,41 @@ public class EcoQuestApp extends GameApplication {
     public void showKidnapCutscene(Runnable next) { pending = new KidnapCutsceneScreen(this, next); }
     /** After each campaign level: villager thank-you and Spirit Bottle charge (the last one leads to the boss fight). */
     public void showVillagerReward(int levelIndex) { pending = new VillagerRewardScreen(this, levelIndex); }
-    public void showBossFight() { pending = new BossFightScreen(this); }
+    /** After the last level: the portal and Mother Nature's grove, then {@code next} (the Queen Muck fight). */
+    public void showGroveCutscene(Runnable next) { pending = new GroveCutsceneScreen(this, next); }
+    public void showBossFight() {
+        pending = new PalaceCutsceneScreen(this, () ->
+                showBoss(BossDef.QUEEN_MUCK, () -> pending = new TransformationScreen(this, this::showVictory)));
+    }
+
+    /** Story lines, then the fight, then more story lines, then {@code after}. */
+    public void showBoss(BossDef def, Runnable after) {
+        Runnable won = () -> {
+            save.bossAfter = -1;                                  // beaten: CONTINUE no longer sends the player back to it
+            save.store();
+            if (def.outro().isEmpty()) after.run();
+            else pending = new BossStoryScreen(this, def, def.outro(), after, false);
+        };
+        Runnable fight = () -> pending = def.kind() == BossDef.Kind.CHASE
+                ? new ChaseScreen(this, def, won)
+                : new BossFightScreen(this, def, won);
+        if (def.intro().isEmpty()) fight.run();
+        else pending = new BossStoryScreen(this, def, def.intro(), fight, true);
+    }
     public void showVictory() { pending = new VictoryScreen(this); }
 
     public void showConfirmNewGame() { pending = new ConfirmNewGameScreen(this); }
 
-    /** CONTINUE: resume the campaign right after the last completed level. */
+    /** CONTINUE: fight the boss that was still waiting, or resume the campaign right after the last completed level. */
     public void continueGame() {
         if (!save.hasPlaythrough()) return;
+        BossDef waiting = save.bossAfter >= 0 ? BossDef.after(save.bossAfter) : null;
+        if (waiting != null) {                                    // the player quit before beating this level's boss
+            int next = Math.min(save.bossAfter + 1, Levels.CAMPAIGN.size() - 1);
+            if (waiting == BossDef.QUEEN_MUCK) showBossFight();
+            else showBoss(waiting, () -> startLevel(Levels.CAMPAIGN.get(next), next));
+            return;
+        }
         int i = Math.min(save.completed + 1, Levels.CAMPAIGN.size() - 1);
         startLevel(Levels.CAMPAIGN.get(i), i);
     }

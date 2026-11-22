@@ -4,7 +4,8 @@ import com.codevibers.ecoquest.model.Sibling;
 
 /**
  * Story wording and art shared by the cutscenes and the boss fight.
- * Nobody has a name: the one you pick is "the tidy sibling" (you), the other is "the messy sibling".
+ * The siblings are Lena (sister) and Adam (brother). The one you pick is the tidy one (you), the other is the messy one.
+ * Story text uses {@link Sibling#name}, so it follows whichever one was picked.
  */
 public final class StoryState {
     private StoryState() { }

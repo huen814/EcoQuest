@@ -91,6 +91,7 @@ public final class VillagerRewardScreen extends Screen {
         String npcNames[] = {"Aling Nena","Mang Ben","Tatay Ramon","Ate Rosa","Lola Remy",
                              "Kuya Jun","Mang Dodoy","Dr. Frost","Ka Tomas","Mayor Cruz"};
         String npc = npcNames[Math.min(levelIndex, npcNames.length - 1)];
+        String messy = app.save().sibling().other().name;
 
         if (isFinal) {
             return List.of(
@@ -99,14 +100,14 @@ public final class VillagerRewardScreen extends Screen {
                 "Now go - Queen Muck's palace is just ahead!\"",
                 "The bottle glows a brilliant green and blue. " +
                 "You raise it high and run toward the final level, " +
-                "determined to rescue your sibling once and for all!"
+                "determined to rescue " + messy + " once and for all!"
             );
         }
         return List.of(
             npc + ": \"Thank you! You kept our " +
             sceneFor(levelIndex).toUpperCase() + " clean! " +
             "Here is a charge of the Spirit Bottle to help you on your quest. " +
-            "Your sibling is counting on you - keep going!\"",
+            messy + " is counting on you - keep going!\"",
             "The bottle absorbs another flash of recycled energy. " +
             "You nod and head to the next area. " +
             (levelIndex < 8 ? "There are still more people who need help!" : "Queen Muck's palace is almost in reach!")
@@ -140,25 +141,25 @@ public final class VillagerRewardScreen extends Screen {
     public void onConfirm() {
         app.sfx(Sfx.SELECT);
         boolean done = box.advance();
-        if (done) {
-            if (isFinal) {
-                app.showBossFight();
-            } else {
-                // Continue to next level
-                int next = levelIndex + 1;
-                app.startLevel(com.codevibers.ecoquest.model.Levels.CAMPAIGN.get(next), next);
-            }
+        if (done) proceed();
+    }
+
+    /** After the final level comes the last boss; after some levels a boss stands in the way; otherwise the next level. */
+    private void proceed() {
+        if (isFinal) {
+            app.showGroveCutscene(app::showBossFight);
+            return;
         }
+        int next = levelIndex + 1;
+        Runnable nextLevel = () -> app.startLevel(com.codevibers.ecoquest.model.Levels.CAMPAIGN.get(next), next);
+        BossDef boss = BossDef.after(levelIndex);
+        if (boss != null) app.showBoss(boss, nextLevel);
+        else nextLevel.run();
     }
 
     @Override
     public void onCancel() {
         // Skip reward screen
-        if (isFinal) {
-            app.showBossFight();
-        } else {
-            int next = levelIndex + 1;
-            app.startLevel(com.codevibers.ecoquest.model.Levels.CAMPAIGN.get(next), next);
-        }
+        proceed();
     }
 }

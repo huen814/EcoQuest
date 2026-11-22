@@ -740,6 +740,10 @@ public final class PlayScreen extends Screen implements SessionListener {
         List<MenuBox.Entry> entries = new ArrayList<>();
         if (cfg.isCampaign() && win) {
             // Through the villager reward; after the last level it leads to the boss fight.
+            if (BossDef.after(levelIndex) != null) {     // remember the boss, so quitting now cannot skip it
+                app.save().bossAfter = levelIndex;
+                app.save().store();
+            }
             entries.add(new MenuBox.Entry(levelIndex < Levels.CAMPAIGN.size() - 1 ? "NEXT LEVEL" : "BOSS FIGHT!",
                     () -> app.showVillagerReward(levelIndex)));
         }

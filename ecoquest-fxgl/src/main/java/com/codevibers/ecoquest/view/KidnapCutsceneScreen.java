@@ -140,17 +140,18 @@ public final class KidnapCutsceneScreen extends Screen {
     }
 
     private String getPage(int i) {
+        String tidy = app.save().sibling().name, messy = app.save().sibling().other().name;
         return switch (i) {
-            case 0 -> "The tidy sibling knocks on the messy sibling's door. No answer. " +
+            case 0 -> tidy + " knocks on " + messy + "'s door. No answer. " +
                       "Pushing it open, they gasp - the room is ankle-deep in rotting garbage. " +
                       "Empty bottles, old takeaway boxes and banana peels are piled to the ceiling!";
             case 1 -> "The rubbish TREMBLES. Cans clatter, bags inflate, and from the heap " +
                       "rises a glittering TRASH QUEEN - QUEEN MUCK! A crown of bottle caps, a gown of " +
                       "garbage bags, and a hand over her grinning mouth. \"Ho ho ho ho~! You simply MUST " +
-                      "stay with me, darling!\" She scoops up the messy sibling in a bouquet of tangled plastic!";
-            default -> "\"SIBLING! NOOO!\" the tidy sibling shouts, but Queen Muck has already " +
+                      "stay with me, darling!\" She scoops up " + messy + " in a bouquet of tangled plastic!";
+            default -> "\"" + messy.toUpperCase() + "! NOOO!\" " + tidy + " shouts, but Queen Muck has already " +
                        "pranced through the wall, laughing \"ho ho ho!\", toward her palace in the polluted outskirts. " +
-                       "Sort trash, earn the SPIRIT BOTTLE, and go rescue your sibling!";
+                       "Sort trash, earn the SPIRIT BOTTLE, and go rescue " + messy + "!";
         };
     }
 
