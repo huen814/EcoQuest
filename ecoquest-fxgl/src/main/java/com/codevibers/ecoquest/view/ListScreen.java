@@ -93,4 +93,8 @@ abstract class ListScreen extends Screen {
 
     @Override
     public void onCancel() { app.showMainMenu(); }
+
+    /** The title song keeps playing on this screen. */
+    @Override
+    public boolean titleMusic() { return true; }
 }

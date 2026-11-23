@@ -168,10 +168,20 @@ public final class PlayScreen extends Screen implements SessionListener {
         buildPlayer();
         dialog.show(briefPages());
         app.input().clear();
+        if (cfg.isCampaign()) Audio.playMusic(levelTrack(levelIndex), 0.35);
+    }
+
+    /** Campaign background loop: levels 1-3, 4-6, 7-9 share a track; level 10 has its own. */
+    private static String levelTrack(int level) {
+        if (level < 3) return "levels_1_3_bgm.wav";
+        if (level < 6) return "levels_4_6_bgm.wav";
+        if (level < 9) return "levels_7_9_bgm.wav";
+        return "level_10_bgm.wav";
     }
 
     @Override
     public void exit() {
+        Audio.stopMusic();
         new ArrayList<>(FXGL.getGameWorld().getEntities()).forEach(Entity::removeFromWorld);
         FXGL.getGameScene().getViewport().setX(0);
         FXGL.getGameScene().getViewport().setY(0);
@@ -682,6 +692,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     private void showResult() {
         state = State.RESULT;
+        Audio.stopMusic();
         toastBox.hide();
         dialog.hide();
         boolean win = session.won();

@@ -114,7 +114,11 @@ public final class PalaceCutsceneScreen extends Screen {
         box.show(named(INTRO_PAGES));
         app.sfx(Sfx.MISSION);
         fx.converge(12, () -> StoryFx.sparkle(3, Color.web("#9fe0cf")), CX, PORTAL_Y, 1.1, 60);
+        Audio.playMusic("queen_dialogue.wav", 0.4);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     @Override
     public void update(double tpf) {

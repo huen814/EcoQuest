@@ -119,11 +119,15 @@ public final class VillagerRewardScreen extends Screen {
         t = 0;
         box.show(buildPages());
         app.sfx(Sfx.MISSION);
+        Audio.playMusic("stage_clear_npc.wav", 0.4);
         // thank-you hearts over the villager and a flash of light into the bottle
         fx.burst(190, FEET - 150, 10, () -> StoryFx.heart(5, Color.web("#ff8fb8")), 90, 1.4, -40);
         fx.burst(BOTTLE_X, BOTTLE_Y, isFinal ? 40 : 16, () -> StoryFx.sparkle(4, Color.web("#9fe0cf")), isFinal ? 320 : 180, 1.1, 0);
         fx.converge(10, () -> StoryFx.sparkle(3, Color.web("#86dba6")), BOTTLE_X, BOTTLE_Y, 0.9, 50);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     @Override
     public void update(double tpf) {

@@ -92,7 +92,11 @@ public final class TransformationScreen extends Screen {
         changeT = -1;
         box.show(named(PAGES));
         app.sfx(Sfx.MISSION);
+        Audio.playMusic("queen_dialogue.wav", 0.4);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     @Override
     public void update(double tpf) {

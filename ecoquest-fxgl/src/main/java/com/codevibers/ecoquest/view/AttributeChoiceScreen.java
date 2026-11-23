@@ -187,4 +187,8 @@ public final class AttributeChoiceScreen extends Screen {
     public void onCancel() {
         if (!done) app.showMainMenu();
     }
+
+    /** The title song keeps playing on this screen. */
+    @Override
+    public boolean titleMusic() { return true; }
 }

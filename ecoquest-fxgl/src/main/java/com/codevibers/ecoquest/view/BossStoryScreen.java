@@ -16,6 +16,7 @@ public final class BossStoryScreen extends Screen {
     private final DialogBox box;
     private final List<String> pages;
     private final Runnable next;
+    private final BossDef def;
     private final ImageView playerImg;
     private final ImageView bossImg;
     private double t;
@@ -25,6 +26,7 @@ public final class BossStoryScreen extends Screen {
         super(app);
         this.pages = pages;
         this.next = next;
+        this.def = def;
 
         root.getChildren().add(def.backdrop().startsWith("scene:")
                 ? StoryFx.scene(def.backdrop().substring("scene:".length()))
@@ -52,6 +54,13 @@ public final class BossStoryScreen extends Screen {
         t = 0;
         box.show(pages);
         app.sfx(bossImg.isVisible() ? Sfx.FULL : Sfx.MISSION);
+        if (bossImg.isVisible()) {            // before the fight: its battle music starts now and carries on into the fight
+            switch (def.kind()) {
+                case MOUND -> Audio.playMusic("boss_mound.wav", 0.5);
+                case CHASE -> Audio.playMusic("chase.wav", 0.55);
+                default -> { }
+            }
+        }
     }
 
     @Override

@@ -99,7 +99,11 @@ public final class VictoryScreen extends Screen {
         box.show(buildPages());
         app.sfx(Sfx.MISSION);
         firework(Ui.W / 2.0, 110);
+        Audio.playMusic("ending.wav", 0.4);
     }
+
+    @Override
+    public void exit() { Audio.stopMusic(); }
 
     private void firework(double x, double y) {
         Color c = Color.web(CONFETTI[rng.nextInt(CONFETTI.length)]);
