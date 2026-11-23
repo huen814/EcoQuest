@@ -115,7 +115,10 @@ public final class IntroScreen extends Screen {
     }
 
     @Override
-    public void enter() { box.show(pages); }
+    public void enter() {
+        box.show(pages);
+        Audio.playMusic("intro.wav", 0.4);      // carries on into the kidnap cutscene until Queen Muck appears
+    }
 
     @Override
     public void update(double tpf) {

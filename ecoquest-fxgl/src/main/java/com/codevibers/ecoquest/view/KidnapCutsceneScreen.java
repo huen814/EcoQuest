@@ -137,7 +137,7 @@ public final class KidnapCutsceneScreen extends Screen {
         holeImg.setOpacity(0);
         shake = 0;
         box.show(List.of(getPage(0), getPage(1), getPage(2)));
-        Audio.playMusic("queen_dialogue.wav", 0.4);
+        Audio.playMusic("intro.wav", 0.4);
     }
 
     @Override
@@ -165,6 +165,7 @@ public final class KidnapCutsceneScreen extends Screen {
     private void startEntrance() {
         if (queenT >= 0) return;
         queenT = 0;
+        Audio.playMusic("queen_dialogue.wav", 0.4);     // Queen Muck appears: her theme takes over
         app.sfx(Sfx.DUMP);
         fx.converge(34, () -> StoryFx.randomLitter(rng, 26), QUEEN_X, QUEEN_MID_Y + 20, 1.3, 90);
         fx.converge(16, () -> StoryFx.sparkle(4, Color.web("#ff8fc0")), QUEEN_X, QUEEN_MID_Y, 1.2, 60);
