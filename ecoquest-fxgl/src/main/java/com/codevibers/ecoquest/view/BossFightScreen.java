@@ -92,6 +92,7 @@ public final class BossFightScreen extends Screen {
     private double bossDeathTimer = -1;
     private double retryAlpha = 0;
     private boolean retryActive = false;
+    private PauseOverlay pause;
     private final Random rng = new Random(99);
 
     // Mouse fire is held locally; keyboard movement/fire are read from the shared input state.
@@ -311,6 +312,8 @@ public final class BossFightScreen extends Screen {
         retryPrompt.setLayoutY(Ui.H / 2.0);
         retryLabel.setOpacity(0); retryPrompt.setOpacity(0);
         root.getChildren().addAll(retryLabel, retryPrompt);
+        pause = new PauseOverlay(app, () -> { }, app::quitBossFight);
+        root.getChildren().add(pause);
 
         // Set up mouse aiming and firing; keyboard state comes from the shared InputState.
         root.setFocusTraversable(true);
@@ -386,6 +389,7 @@ public final class BossFightScreen extends Screen {
     // -------------------------------------------------------------------------
     @Override
     public void update(double tpf) {
+        if (pause.isOpen()) { pause.update(tpf); return; }
         if (laughTimer > 0) laughTimer -= tpf;
         if (attackT > 0) attackT -= tpf;
         attackLabel.setOpacity(Math.max(0, Math.min(1, attackT * 2)));
@@ -413,9 +417,9 @@ public final class BossFightScreen extends Screen {
 
         // -- player shoot --
         shootCooldown -= tpf;
-        boolean auto = app.save().autoAttack;           // auto: always fires at the boss; manual: click / ENTER / Z
-        if ((auto || shooting || app.input().confirmHeld()) && shootCooldown <= 0) {
-            if (auto) { aimX = bossCenterX; aimY = bossCenterY; }
+        boolean autoAim = app.save().autoAim;           // auto aim: shots go at the boss; otherwise they go at the cursor
+        if ((shooting || app.input().confirmHeld()) && shootCooldown <= 0) {   // click / ENTER / Z fires either way
+            if (autoAim) { aimX = bossCenterX; aimY = bossCenterY; }
             fireBullet();
             shootCooldown = SHOOT_CD;
         }
@@ -1084,6 +1088,27 @@ public final class BossFightScreen extends Screen {
     private static double clamp(double v, double lo, double hi) { return Math.max(lo, Math.min(hi, v)); }
 
     // -------------------------------------------------------------------------
-    @Override public void onConfirm() { if (retryActive) retry(); }
-    @Override public void onCancel()  { app.quitBossFight(); }
+    @Override public void onDirection(Direction d) { if (pause.isOpen()) pause.onDirection(d); }
+
+    @Override public void onConfirm() {
+        if (pause.isOpen()) pause.onConfirm();
+        else if (retryActive) retry();
+    }
+
+    /** ESC pauses the fight (RESUME / SETTINGS / QUIT); on the game-over or victory screen it still quits. */
+    @Override public void onCancel() {
+        if (pause.isOpen()) pause.onCancel();
+        else if (retryActive || phase == Phase.DEAD) app.quitBossFight();
+        else openPause();
+    }
+
+    @Override public void onPause() {
+        if (pause.isOpen()) pause.close();
+        else if (!retryActive && phase != Phase.DEAD) openPause();
+    }
+
+    private void openPause() {
+        shooting = false;
+        pause.open();
+    }
 }

@@ -1,6 +1,7 @@
 package com.codevibers.ecoquest.view;
 
 import com.codevibers.ecoquest.EcoQuestApp;
+import com.codevibers.ecoquest.model.Direction;
 import com.codevibers.ecoquest.model.Sfx;
 import java.util.ArrayList;
 import java.util.List;
@@ -131,6 +132,7 @@ public final class ChaseScreen extends Screen {
     private double cameraX, clock, invincible, flash, shoutT, wonT = -1, retryAlpha;
     private int hp = MAX_HP;
     private boolean retryActive;
+    private PauseOverlay pause;
     private boolean up, down, left, right;
 
     private final BossDef def;
@@ -227,6 +229,8 @@ public final class ChaseScreen extends Screen {
         retryPrompt.setLayoutY(Ui.H / 2.0);
         retryLabel.setOpacity(0); retryPrompt.setOpacity(0);
         root.getChildren().addAll(retryLabel, retryPrompt);
+        pause = new PauseOverlay(app, () -> { }, app::quitBossFight);
+        root.getChildren().add(pause);
 
         root.setOnKeyPressed(e -> {
             switch (e.getCode()) {
@@ -290,8 +294,27 @@ public final class ChaseScreen extends Screen {
 
     private void retry() { enter(); }
 
+    @Override public void onDirection(Direction d) { if (pause.isOpen()) pause.onDirection(d); }
+
+    @Override public void onConfirm() { if (pause.isOpen()) pause.onConfirm(); }
+
+    /** ESC pauses the chase (RESUME / SETTINGS / QUIT); on the game-over screen it still quits. */
     @Override
-    public void onCancel() { app.quitBossFight(); }
+    public void onCancel() {
+        if (pause.isOpen()) pause.onCancel();
+        else if (retryActive || wonT >= 0) app.quitBossFight();
+        else openPause();
+    }
+
+    @Override public void onPause() {
+        if (pause.isOpen()) pause.close();
+        else if (!retryActive && wonT < 0) openPause();
+    }
+
+    private void openPause() {
+        up = down = left = right = false;
+        pause.open();
+    }
 
     private void say(String text, double seconds) {
         shout.setText(text);
@@ -302,6 +325,7 @@ public final class ChaseScreen extends Screen {
     // ------------------------------------------------------------------------------------------------
     @Override
     public void update(double tpf) {
+        if (pause.isOpen()) { pause.update(tpf); return; }
         clock += tpf;
         if (shoutT > 0) shoutT -= tpf;
         shout.setOpacity(Math.max(0, Math.min(1, shoutT * 2)));

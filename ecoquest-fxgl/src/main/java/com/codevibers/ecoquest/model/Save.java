@@ -40,8 +40,11 @@ public final class Save {
     private final Map<String, Double> bossBest = new java.util.LinkedHashMap<>();
     /** Bosses whose one-time New Record coin bonus has already been paid. Kept across New Game. */
     private final Set<String> bossBonusPaid = new LinkedHashSet<>();
-    /** Boss fights: true = the Spirit Bottle fires by itself at the boss; false = manual (click / ENTER / Z). */
-    public boolean autoAttack;
+    /** Boss fights: true = shots aim at the boss by themselves; false = aim with the mouse cursor. Click / ENTER / Z fires either way. */
+    public boolean autoAim;
+    /** Settings: music and effects volume (0-10), screen shake, fullscreen and the level briefing shown before a level. */
+    public int musicVol = 10, sfxVol = 10;
+    public boolean screenShake = true, fullscreen = false, levelBriefing = true;
     /** Character used for a Boss Replay only. Never saved, so the sibling picked for the story is untouched. */
     private Sibling replaySibling;
     /** Attribute choices earned but not picked yet, oldest first. Saved so quitting cannot skip or re-roll them. */
@@ -97,7 +100,12 @@ public final class Save {
                 if (c >= 6 || (c == 5 && b != 5)) s.bossesBeaten.add("experiment");
                 if (c >= 9 && b != 9) s.bossesBeaten.add("queen_muck");
             }
-            s.autoAttack = "1".equals(p.getProperty("auto"));
+            s.autoAim = "1".equals(p.getProperty("aim"));
+            s.musicVol = clampVol(p.getProperty("mvol", "10"));
+            s.sfxVol = clampVol(p.getProperty("svol", "10"));
+            s.screenShake = !"0".equals(p.getProperty("shake"));
+            s.fullscreen = "1".equals(p.getProperty("fs"));
+            s.levelBriefing = !"0".equals(p.getProperty("brief"));
             for (String pair : p.getProperty("bt", "").split(",")) {
                 String[] kv = pair.split(":");
                 if (kv.length == 2) {
@@ -129,7 +137,12 @@ public final class Save {
             p.setProperty("pend", offersToString());
             p.setProperty("boss", "" + bossAfter);
             p.setProperty("bb", String.join(",", bossesBeaten));
-            p.setProperty("auto", autoAttack ? "1" : "0");
+            p.setProperty("aim", autoAim ? "1" : "0");
+            p.setProperty("mvol", "" + musicVol);
+            p.setProperty("svol", "" + sfxVol);
+            p.setProperty("shake", screenShake ? "1" : "0");
+            p.setProperty("fs", fullscreen ? "1" : "0");
+            p.setProperty("brief", levelBriefing ? "1" : "0");
             StringBuilder bt = new StringBuilder();
             for (Map.Entry<String, Double> e : bossBest.entrySet()) bt.append(bt.length() > 0 ? "," : "").append(e.getKey()).append(':').append(e.getValue());
             p.setProperty("bt", bt.toString());
@@ -252,6 +265,10 @@ public final class Save {
         offers.clear();
         bossAfter = -1;
         store();
+    }
+
+    private static int clampVol(String v) {
+        try { return Math.max(0, Math.min(10, Integer.parseInt(v.trim()))); } catch (NumberFormatException e) { return 10; }
     }
 
     private static String csv(int[] a) {

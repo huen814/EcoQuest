@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineEvent;
 
 import javafx.scene.media.Media;
@@ -101,6 +102,16 @@ public final class Audio {
     // ------------------------------------------------------------------ looping background music (assets/music/*.wav)
     private static MediaPlayer music;
     private static String musicName;
+    private static double musicBase = 0.4;
+    private static volatile double musicScale = 1, sfxScale = 1;
+
+    /** Settings volumes, 0 to 1. */
+    public static void setMusicScale(double s) {
+        musicScale = s;
+        if (music != null) music.setVolume(musicBase * s);
+    }
+
+    public static void setSfxScale(double s) { sfxScale = s; }
 
     /** Starts a looping track (call from the JavaFX thread). Does nothing if it is already playing. */
     public static void playMusic(String file, double volume) {
@@ -112,7 +123,8 @@ public final class Audio {
             MediaPlayer p = new MediaPlayer(new Media(url));
             p.setOnError(() -> System.err.println("Music error in " + file + ": " + p.getError()));
             p.setCycleCount(MediaPlayer.INDEFINITE);
-            p.setVolume(volume);
+            musicBase = volume;
+            p.setVolume(volume * musicScale);
             p.setMute(muted);
             p.play();
             music = p;
@@ -175,12 +187,16 @@ public final class Audio {
     public static void laugh() { play(Sfx.LAUGH); }
 
     public static void play(Sfx sfx) {
-        if (muted) return;
+        if (muted || sfxScale <= 0) return;
         POOL.submit(() -> {
             try {
                 byte[] buf = BUFFERS.computeIfAbsent(sfx, Audio::synth);
                 Clip clip = AudioSystem.getClip();
                 clip.open(new AudioFormat(RATE, 16, 1, true, false), buf, 0, buf.length);
+                if (sfxScale < 1 && clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+                    FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                    gain.setValue((float) Math.max(gain.getMinimum(), 20 * Math.log10(sfxScale)));
+                }
                 clip.addLineListener(e -> { if (e.getType() == LineEvent.Type.STOP) clip.close(); });
                 clip.start();
             } catch (Throwable ignored) { }

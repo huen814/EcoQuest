@@ -166,7 +166,8 @@ public final class PlayScreen extends Screen implements SessionListener {
         for (Bin b : session.bins()) binViews.add(new BinView(b));
         for (PlantingSpot s : session.spots()) spotViews.add(new SpotView(s));
         buildPlayer();
-        dialog.show(briefPages());
+        if (app.save().levelBriefing) dialog.show(briefPages());
+        else state = State.PLAY;
         app.input().clear();
         Audio.playMusic(cfg.isCampaign() ? levelTrack(levelIndex) : sceneTrack(cfg.scene), 0.35);
     }
@@ -340,6 +341,7 @@ public final class PlayScreen extends Screen implements SessionListener {
         syncTruck();
         updateSparks(tpf);
         updateOverlays(tpf);
+        if (settingsPanel != null) settingsPanel.update(tpf);
         if (state == State.PAUSED && menu != null) {
             String sl = soundLabel();
             if (!sl.equals(shownSound)) {
@@ -464,6 +466,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     @Override
     public void onDirection(Direction d) {
+        if (settingsPanel != null) { settingsPanel.onDirection(d); return; }
         if ((state == State.OFFER || state == State.RESULT || state == State.PAUSED) && menu != null) {
             if (d == Direction.UP) menu.move(-1);
             else if (d == Direction.DOWN) menu.move(1);
@@ -474,6 +477,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     @Override
     public void onConfirm() {
+        if (settingsPanel != null) { settingsPanel.onConfirm(); return; }
         if (attributesOpen) {
             closePauseAttributes();
             return;
@@ -507,6 +511,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     @Override
     public void onCancel() {
+        if (settingsPanel != null) { settingsPanel.onCancel(); return; }
         if (attributesOpen) {
             closePauseAttributes();
             return;
@@ -537,6 +542,7 @@ public final class PlayScreen extends Screen implements SessionListener {
         entries.add(new MenuBox.Entry("RESTART LEVEL", () -> app.startLevel(cfg, levelIndex)));
         entries.add(new MenuBox.Entry(shownSound, app::toggleMute));   // index 2, label refreshed in update()
         entries.add(new MenuBox.Entry("ATTRIBUTES", this::openPauseAttributes));
+        entries.add(new MenuBox.Entry("SETTINGS", this::openPauseSettings));
         if (cfg.mode == LevelConfig.Mode.ZEN) {
             entries.add(new MenuBox.Entry("FINISH RUN", () -> {
                 closePause();
@@ -562,6 +568,23 @@ public final class PlayScreen extends Screen implements SessionListener {
         overlay.getChildren().setAll(dim, panel);
     }
 
+    private SettingsPanel settingsPanel;
+
+    private void openPauseSettings() {
+        menu = null;
+        app.input().clear();
+        settingsPanel = new SettingsPanel(app, true, this::closePauseSettings);
+        settingsPanel.setLayoutX((Ui.W - SettingsPanel.WIDTH) / 2.0);
+        settingsPanel.setLayoutY((Ui.H - SettingsPanel.HEIGHT) / 2.0);
+        Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.rgb(30, 20, 60, 0.55));
+        overlay.getChildren().setAll(dim, settingsPanel);
+    }
+
+    private void closePauseSettings() {
+        settingsPanel = null;
+        openPause();
+    }
+
     private void closePauseAttributes() {
         attributesOpen = false;
         app.sfx(Sfx.SELECT);
@@ -570,6 +593,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     private void closePause() {
         attributesOpen = false;
+        settingsPanel = null;
         overlay.getChildren().clear();
         menu = null;
         state = State.PLAY;
@@ -666,7 +690,7 @@ public final class PlayScreen extends Screen implements SessionListener {
     }
 
     @Override
-    public void onShake(double seconds) { shake = Math.max(shake, seconds); }
+    public void onShake(double seconds) { if (app.save().screenShake) shake = Math.max(shake, seconds); }
 
     @Override
     public void onBinLid(Bin bin) {

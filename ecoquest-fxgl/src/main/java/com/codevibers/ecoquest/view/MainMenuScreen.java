@@ -12,8 +12,6 @@ import javafx.scene.image.ImageView;
 /** Title screen: sky, skyline, the five bins bobbing at the bottom, and the start menu. */
 public final class MainMenuScreen extends Screen {
     private static final int CONTINUE = 3;
-    private static final int SOUND = 7;
-    private static final int ATTACK = 8;
 
     private final MenuBox menu;
     private final ImageView[] bins = new ImageView[5];
@@ -48,27 +46,14 @@ public final class MainMenuScreen extends Screen {
                 new MenuBox.Entry("HOW TO PLAY", app::showHowTo),
                 new MenuBox.Entry("COSMETICS SHOP", app::showShop),
                 new MenuBox.Entry("ATTRIBUTES", app::showAttributesFromMenu),
-                new MenuBox.Entry("SOUND: " + (app.save().muted ? "OFF" : "ON"), this::toggleSound),
-                new MenuBox.Entry(attackLabel(), this::toggleAttack),
-                new MenuBox.Entry("QUIT", () -> System.exit(0))), 300, 28);
+                new MenuBox.Entry("SETTINGS", app::showSettings),
+                new MenuBox.Entry("QUIT", () -> System.exit(0))), 300, 30);
         boolean canContinue = app.save().hasPlaythrough();
         menu.setEnabled(CONTINUE, canContinue);
         menu.setIndex(canContinue ? CONTINUE : 0);
         menu.setLayoutX((Ui.W - 300) / 2.0);
-        menu.setLayoutY(100);
+        menu.setLayoutY(104);
         root.getChildren().addAll(title, sub, menu);
-    }
-
-    private String attackLabel() { return "ATTACK: " + (app.save().autoAttack ? "AUTO" : "MANUAL"); }
-
-    private void toggleAttack() {
-        app.toggleAutoAttack();
-        menu.setLabel(ATTACK, attackLabel());
-    }
-
-    private void toggleSound() {
-        app.toggleMute();
-        menu.setLabel(SOUND, "SOUND: " + (app.save().muted ? "OFF" : "ON"));
     }
 
     @Override

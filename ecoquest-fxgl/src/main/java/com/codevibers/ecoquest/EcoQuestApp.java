@@ -16,6 +16,9 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 
 public class EcoQuestApp extends GameApplication {
+    public static final String VERSION = "0.4.0";
+    private boolean fullscreenPending;
+
     private Save save;
     private InputState input;
     private Screen current;
@@ -33,7 +36,7 @@ public class EcoQuestApp extends GameApplication {
         s.setWidth(Ui.W);
         s.setHeight(Ui.H);
         s.setTitle("EcoQuest: Guardians of the Green City");
-        s.setVersion("0.4.0");
+        s.setVersion(VERSION);
         s.setIntroEnabled(false);
         s.setMainMenuEnabled(false);
         s.setGameMenuEnabled(false);
@@ -53,6 +56,9 @@ public class EcoQuestApp extends GameApplication {
     protected void initGame() {
         save = Save.load();
         Audio.setMuted(save.muted);
+        Audio.setMusicScale(save.musicVol / 10.0);
+        Audio.setSfxScale(save.sfxVol / 10.0);
+        fullscreenPending = save.fullscreen;
         FXGL.getGameScene().setBackgroundColor(Color.web("#10181c"));
         showMainMenu();
     }
@@ -72,8 +78,30 @@ public class EcoQuestApp extends GameApplication {
             else Audio.stopMusicIf("title.wav");
             current.enter();
         }
+        if (fullscreenPending && current != null && current.root().getScene() != null) {
+            fullscreenPending = false;
+            applyFullscreen();
+        }
         if (current != null) current.update(tpf);
     }
+
+    /** Settings: switches fullscreen on or off and remembers it. */
+    public void setFullscreen(boolean on) {
+        save.fullscreen = on;
+        save.store();
+        applyFullscreen();
+    }
+
+    private void applyFullscreen() {
+        if (current == null || current.root().getScene() == null) return;
+        if (current.root().getScene().getWindow() instanceof javafx.stage.Stage stage) {
+            stage.setFullScreenExitKeyCombination(javafx.scene.input.KeyCombination.NO_MATCH);   // ESC is the pause key
+            stage.setFullScreenExitHint("");
+            stage.setFullScreen(save.fullscreen);
+        }
+    }
+
+    public void showSettings() { pending = new SettingsScreen(this); }
 
     // ------------------------------------------------------------------ services for screens
 
@@ -83,9 +111,9 @@ public class EcoQuestApp extends GameApplication {
     /** Queen Muck's "ho ho ho". */
     public void laugh() { Audio.laugh(); }
 
-    /** Boss fights: switches between manual and automatic attacks. */
-    public void toggleAutoAttack() {
-        save.autoAttack = !save.autoAttack;
+    /** Boss fights: switches between auto aim and aiming with the cursor. */
+    public void toggleAutoAim() {
+        save.autoAim = !save.autoAim;
         save.store();
     }
 
