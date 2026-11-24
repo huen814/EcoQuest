@@ -17,7 +17,7 @@ public enum BossDef {
                 "into one hulking, dripping heap with two googly eyes. The corruption of nature has taken shape!",
 
                 "Sprout: That's the Muck Mound, Guardian! It was born from all the trash nobody sorted. " +
-                "Move with the arrow keys or WASD, and fire the Spirit Bottle with ENTER or Z. Dodge the sludge!"),
+                "Move in eight directions with the arrow keys or WASD, aim with the mouse, and fire with left-click, ENTER or Z. Dodge the sludge!"),
             List.of(
                 "The Spirit Bottle's light washes over the Muck Mound. It wobbles, sighs, and collapses " +
                 "into neatly sorted piles of cans, bottles and wrappers, its googly eyes bouncing away down the hill.",
@@ -67,6 +67,8 @@ public enum BossDef {
     }
 
     public String label()      { return label; }
+    /** Stable id used by Boss Replay and the save: "muck_mound", "experiment" or "queen_muck". */
+    public String id()         { return name().toLowerCase(); }
     public int hp()            { return hp; }
     public Kind kind()         { return kind; }
     public String normal()     { return normal; }
@@ -83,6 +85,12 @@ public enum BossDef {
     public double fireRage()   { return fireRage; }
     public List<String> intro() { return intro; }
     public List<String> outro() { return outro; }
+
+    /** The boss with this id (see {@link #id()}), or null. */
+    public static BossDef byId(String id) {
+        for (BossDef d : values()) if (d.id().equalsIgnoreCase(id)) return d;
+        return null;
+    }
 
     /** The boss fought right after this level (0-based), or null when the next level follows directly. */
     public static BossDef after(int levelIndex) {

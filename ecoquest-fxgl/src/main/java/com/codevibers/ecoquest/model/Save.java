@@ -34,6 +34,16 @@ public final class Save {
     public int level = 1;
     /** Index of the level after which a boss is still waiting to be fought, or -1. Saved so quitting cannot skip the boss. */
     public int bossAfter = -1;
+    /** Ids of the bosses beaten in the story (BossDef.id()). They unlock Boss Replay. Kept across New Game. */
+    private final Set<String> bossesBeaten = new LinkedHashSet<>();
+    /** Fastest clear time in seconds per boss (BossDef.id()), set by story fights and replays. Kept across New Game. */
+    private final Map<String, Double> bossBest = new java.util.LinkedHashMap<>();
+    /** Bosses whose one-time New Record coin bonus has already been paid. Kept across New Game. */
+    private final Set<String> bossBonusPaid = new LinkedHashSet<>();
+    /** Boss fights: true = the Spirit Bottle fires by itself at the boss; false = manual (click / ENTER / Z). */
+    public boolean autoAttack;
+    /** Character used for a Boss Replay only. Never saved, so the sibling picked for the story is untouched. */
+    private Sibling replaySibling;
     /** Attribute choices earned but not picked yet, oldest first. Saved so quitting cannot skip or re-roll them. */
     public final java.util.List<java.util.List<Attribute>> offers = new java.util.ArrayList<>();
     /** Ids (e.g. "outfit_mint") of the cosmetics bought so far. The free defaults are always owned. Kept across New Game. */
@@ -77,6 +87,24 @@ public final class Save {
             s.level = Math.max(1, Math.min(Progression.MAX_LEVEL, s.level));
             parseOffers(p.getProperty("pend", ""), s.offers);
             s.bossAfter = Integer.parseInt(p.getProperty("boss", "-1"));
+            String beaten = p.getProperty("bb");
+            if (beaten != null) {
+                for (String id : beaten.split(",")) if (!id.isBlank()) s.bossesBeaten.add(id.trim());
+            } else {
+                // Saves from before Boss Replay: work out which bosses were already beaten from story progress.
+                int c = s.completed, b = s.bossAfter;
+                if (c >= 3 || (c == 2 && b != 2)) s.bossesBeaten.add("muck_mound");
+                if (c >= 6 || (c == 5 && b != 5)) s.bossesBeaten.add("experiment");
+                if (c >= 9 && b != 9) s.bossesBeaten.add("queen_muck");
+            }
+            s.autoAttack = "1".equals(p.getProperty("auto"));
+            for (String pair : p.getProperty("bt", "").split(",")) {
+                String[] kv = pair.split(":");
+                if (kv.length == 2) {
+                    try { s.bossBest.put(kv[0].trim(), Double.parseDouble(kv[1].trim())); } catch (NumberFormatException ignored) { }
+                }
+            }
+            for (String id : p.getProperty("bp", "").split(",")) if (!id.isBlank()) s.bossBonusPaid.add(id.trim());
             if (s.sibling < 0 || s.sibling >= Sibling.values().length) s.sibling = -1;
         } catch (Exception ignored) { }
         return s;
@@ -100,6 +128,12 @@ public final class Save {
             p.setProperty("lv", "" + level);
             p.setProperty("pend", offersToString());
             p.setProperty("boss", "" + bossAfter);
+            p.setProperty("bb", String.join(",", bossesBeaten));
+            p.setProperty("auto", autoAttack ? "1" : "0");
+            StringBuilder bt = new StringBuilder();
+            for (Map.Entry<String, Double> e : bossBest.entrySet()) bt.append(bt.length() > 0 ? "," : "").append(e.getKey()).append(':').append(e.getValue());
+            p.setProperty("bt", bt.toString());
+            p.setProperty("bp", String.join(",", bossBonusPaid));
             p.store(out, "EcoQuest save");
         } catch (Exception ignored) { }
     }
@@ -132,7 +166,37 @@ public final class Save {
     public boolean hasChosenSibling() { return sibling >= 0; }
 
     /** The sibling to draw; the sister until a choice is made (e.g. in the game modes). */
-    public Sibling sibling() { return sibling >= 0 ? Sibling.values()[sibling] : Sibling.SISTER; }
+    public Sibling sibling() {
+        if (replaySibling != null) return replaySibling;
+        return sibling >= 0 ? Sibling.values()[sibling] : Sibling.SISTER;
+    }
+
+    // ------------------------------------------------------------------ boss replay
+
+    /** True once the boss with this id (BossDef.id()) has been beaten in the story. */
+    public boolean hasBeatenBoss(String id) { return bossesBeaten.contains(id); }
+
+    /** Records a story boss win. Does not save by itself: the caller stores. */
+    public void markBossBeaten(String id) { bossesBeaten.add(id); }
+
+    /** Fastest clear of this boss in seconds, or 0 when it has no record yet. */
+    public double bestBossTime(String id) { return bossBest.getOrDefault(id, 0.0); }
+
+    /** Stores the time if it is the first or a faster one. Returns true for a new record. The caller stores. */
+    public boolean recordBossTime(String id, double seconds) {
+        double old = bestBossTime(id);
+        if (old > 0 && seconds >= old) return false;
+        bossBest.put(id, Math.round(seconds * 10) / 10.0);
+        return true;
+    }
+
+    /** True the first time it is asked for this boss (the one-time New Record bonus), false afterwards. */
+    public boolean claimBossRecordBonus(String id) { return bossBonusPaid.add(id); }
+
+    /** Plays as this sibling until {@link #clearReplaySibling()}, without touching the saved story choice. */
+    public void setReplaySibling(Sibling s) { replaySibling = s; }
+
+    public void clearReplaySibling() { replaySibling = null; }
 
     public void chooseSibling(Sibling s) {
         sibling = s.ordinal();

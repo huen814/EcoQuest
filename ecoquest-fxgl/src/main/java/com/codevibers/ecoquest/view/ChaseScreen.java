@@ -133,9 +133,12 @@ public final class ChaseScreen extends Screen {
     private boolean retryActive;
     private boolean up, down, left, right;
 
+    private final BossDef def;
+
     public ChaseScreen(EcoQuestApp app, BossDef def, Runnable onWin) {
         super(app);
         this.onWin = onWin;
+        this.def = def;
 
         // The street: the city scene repeated along the world, a little darker.
         for (int i = 0; i * Ui.W < WORLD_W; i++) {
@@ -288,7 +291,7 @@ public final class ChaseScreen extends Screen {
     private void retry() { enter(); }
 
     @Override
-    public void onCancel() { app.showMainMenu(); }
+    public void onCancel() { app.quitBossFight(); }
 
     private void say(String text, double seconds) {
         shout.setText(text);
@@ -332,6 +335,7 @@ public final class ChaseScreen extends Screen {
 
         if (Math.hypot(pfx - EXIT_X, pfy - EXIT_Y) < 42) {      // made it
             wonT = 1.4;
+            app.reportBossClear(def, clock, hp, MAX_HP);
             app.sfx(Sfx.MISSION);
             say("MADE IT!", 1.4);
         }

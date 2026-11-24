@@ -179,6 +179,16 @@ public final class GameSession {
         player.facing = d;
         if (ended) return false;
         int c = player.col + d.dc, r = player.row + d.dr;
+        // Do not cut diagonally through a blocked corner (walls, bins, planting spots or shore).
+        if (d.diagonal()) {
+            boolean horizontal = player.onBoat
+                    ? boatPassable(player.col + d.dc, player.row)
+                    : landPassable(player.col + d.dc, player.row);
+            boolean vertical = player.onBoat
+                    ? boatPassable(player.col, player.row + d.dr)
+                    : landPassable(player.col, player.row + d.dr);
+            if (!horizontal || !vertical) return false;
+        }
         // walk into the parked boat to get in
         if (!player.onBoat && map.river() && !map.boatBoarded && c == map.boatCol && r == map.boatRow) {
             boardBoat();
@@ -396,6 +406,7 @@ public final class GameSession {
         if (b == null || b.fill() == 0) {
             b = null;
             for (Direction d : Direction.values()) {
+                if (d.diagonal()) continue;
                 Bin n = binAt(player.col + d.dc, player.row + d.dr);
                 if (n != null && n.fill() > 0) { b = n; break; }
             }
@@ -418,10 +429,10 @@ public final class GameSession {
     public void answerFactoryOffer(boolean accept) {
         offerPending = false;
         if (accept) {
-            money += 100;
+            if (cfg.isCampaign()) money += 100;
             pollution += 15;
             score -= 10;
-            toast("Accepted the factory deal", "+100 coins, but Pollution +15 and Score -10.", false, 3.5);
+            toast("Accepted the factory deal", (cfg.isCampaign() ? "+100 coins, but " : "") + "Pollution +15 and Score -10.", false, 3.5);
         } else {
             score += 10;
             toast("Rejected the factory deal! +10 Score", "Integrity keeps the city clean.", true, 3.5);
@@ -639,7 +650,6 @@ public final class GameSession {
     private void endRun(boolean win) {
         if (ended) return;
         ended = true;
-        save.wallet += money;
         if (!cfg.isCampaign()) {
             int v = cfg.mode == Mode.TIME || cfg.mode == Mode.ZEN ? score : (int) time;
             boolean sprint = cfg.mode == Mode.SPRINT;
@@ -652,10 +662,13 @@ public final class GameSession {
                         : (v >= 1000 ? 3 : v >= 500 ? 2 : 1);
                 listener.onSound(Sfx.WIN);
             }
+            money = won ? modeCoins() : 0;      // game modes pay a flat reward at the end, not per item
+            save.wallet += money;
             save.store();
             return;
         }
         won = win;
+        save.wallet += money;
         if (win) {
             stars = pollution <= 25 && mistakes.size() <= 2 ? 3 : pollution <= 50 ? 2 : 1;
             gainXp(Progression.clearBonus(levelIndex, stars));
@@ -667,6 +680,21 @@ public final class GameSession {
         }
         progress = Progression.apply(save, xpEarned(), won && firstClear, rng);
         save.store();
+    }
+
+    /** End-of-run coins for the game modes (kept low so skins take many runs). */
+    private int modeCoins() {
+        return switch (cfg.mode) {
+            case TIME -> 20 + (int) Math.round(15 * Math.min(1, Math.max(0, score) / 1000.0));            // 20-35 by score
+            case SPRINT -> {                                                                                // 20-35 by accuracy and streak
+                int tries = sorted + mistakes.size();
+                double acc = tries == 0 ? 0 : sorted / (double) tries;
+                yield 20 + (int) Math.round(10 * acc) + (int) Math.round(5 * Math.min(1, best / 10.0));
+            }
+            case ENDLESS -> (cfg.highSlot == 2 ? 40 : 30) + (int) Math.round(20 * Math.min(1, time / 240.0));  // Chaos 40-60, Endless 30-50
+            case ZEN -> sorted >= 5 ? 12 : 0;                                                               // flat per session
+            default -> 0;
+        };
     }
 
     /** Unique mistakes, newest last (for the result screen). */

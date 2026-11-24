@@ -2,13 +2,17 @@ package com.codevibers.ecoquest.view;
 
 import com.codevibers.ecoquest.EcoQuestApp;
 import com.codevibers.ecoquest.model.Sfx;
+import com.codevibers.ecoquest.model.Direction;
 
 import javafx.geometry.Rectangle2D;
+import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.effect.BlurType;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
@@ -29,7 +33,7 @@ import java.util.function.Consumer;
 /**
  * Soul Knight-style boss fight.
  *
- * Controls: Arrow keys = move player  ENTER/Z = shoot  X = special (not used here)
+ * Controls: WASD / arrows = move  mouse = aim  left-click or ENTER/Z = shoot
  *
  * Player shoots drops of "Spirit Bottle" liquid.
  * Muck Mound: Gunk Shot (aimed, fast sludge), Sludge Bomb (lobbed, splashes into a puddle and droplets), slime rain, puddles, sludge ring.
@@ -43,8 +47,11 @@ public final class BossFightScreen extends Screen {
     // -- layout constants ------------------------------------------------------
     private static final int PX   = Sprites.PX;
     private static final int SH   = 72;
-    private static final double ARENA_X1 = 32, ARENA_X2 = Ui.W - 32;
-    private static final double ARENA_Y1 = 80, ARENA_Y2 = Ui.H - 100;
+    // Use almost the full game window for the boss arena. The HUD remains in its
+    // original position above the arena, while the player can roam across the
+    // full width and most of the height instead of feeling boxed into one side.
+    private static final double ARENA_X1 = 20, ARENA_X2 = Ui.W - 20;
+    private static final double ARENA_Y1 = 96, ARENA_Y2 = Ui.H - 20;
     private static final double PLAYER_SPEED = 180;
     private static final double BULLET_SPEED  = 320;
     private static final double TRASH_SPEED_N = 180;
@@ -69,11 +76,14 @@ public final class BossFightScreen extends Screen {
 
     private double playerX, playerY;
     private double bossCenterX, bossCenterY;
+    private double aimX, aimY;
     private double bossShakeX, bossShakeY;
 
     private int playerHP = MAX_PLAYER_HP;
     private int bossHP;
     private double shootCooldown = 0;
+    private double fightTime;               // seconds since the fight (re)started, for the best-clear record
+    private boolean reported;
     private double bossFireTimer = 0;
     private double bossFireInterval = 2.0;
     private int bossPattern = 0;
@@ -84,8 +94,8 @@ public final class BossFightScreen extends Screen {
     private boolean retryActive = false;
     private final Random rng = new Random(99);
 
-    // Input flags
-    private boolean moveUp, moveDown, moveLeft, moveRight, shooting;
+    // Mouse fire is held locally; keyboard movement/fire are read from the shared input state.
+    private boolean shooting;
 
     // Projectile lists
     private final List<Bullet> playerBullets = new ArrayList<>();
@@ -217,14 +227,14 @@ public final class BossFightScreen extends Screen {
         root.getChildren().add(dim);
 
         // Floor grid pattern
-        for (int gx = 32; gx < Ui.W; gx += 32) {
-            Rectangle line = new Rectangle(1, Ui.H - 160, Color.web("#ffffff", 0.04));
+        for (int gx = (int) ARENA_X1 + 32; gx < ARENA_X2; gx += 32) {
+            Rectangle line = new Rectangle(1, ARENA_Y2 - ARENA_Y1, Color.web("#ffffff", 0.04));
             line.setLayoutX(gx); line.setLayoutY(ARENA_Y1);
             root.getChildren().add(line);
         }
-        for (int gy = 80; gy < Ui.H - 80; gy += 32) {
-            Rectangle hline = new Rectangle(Ui.W - 64, 1, Color.web("#ffffff", 0.04));
-            hline.setLayoutX(32); hline.setLayoutY(gy);
+        for (int gy = (int) ARENA_Y1 + 32; gy < ARENA_Y2; gy += 32) {
+            Rectangle hline = new Rectangle(ARENA_X2 - ARENA_X1, 1, Color.web("#ffffff", 0.04));
+            hline.setLayoutX(ARENA_X1); hline.setLayoutY(gy);
             root.getChildren().add(hline);
         }
 
@@ -302,38 +312,39 @@ public final class BossFightScreen extends Screen {
         retryLabel.setOpacity(0); retryPrompt.setOpacity(0);
         root.getChildren().addAll(retryLabel, retryPrompt);
 
-        // Set up keyboard input - forward key states to boolean flags
+        // Set up mouse aiming and firing; keyboard state comes from the shared InputState.
         root.setFocusTraversable(true);
-        root.setOnKeyPressed(e -> {
-            switch (e.getCode()) {
-                case UP, W    -> moveUp    = true;
-                case DOWN, S  -> moveDown  = true;
-                case LEFT, A  -> moveLeft  = true;
-                case RIGHT, D -> moveRight = true;
-                case ENTER, Z -> shooting  = true;
-                case X        -> { if (retryActive) onCancel(); }
+        // Mouse aiming is independent from WASD movement; the arena artwork and layout stay unchanged.
+        root.setOnMouseMoved(e -> updateAim(e));
+        root.setOnMouseDragged(e -> updateAim(e));
+        root.setOnMousePressed(e -> {
+            if (e.getButton() == MouseButton.PRIMARY) {
+                updateAim(e);
+                shooting = true;
+                e.consume();
             }
         });
-        root.setOnKeyReleased(e -> {
-            switch (e.getCode()) {
-                case UP, W    -> moveUp    = false;
-                case DOWN, S  -> moveDown  = false;
-                case LEFT, A  -> moveLeft  = false;
-                case RIGHT, D -> moveRight = false;
-                case ENTER, Z -> { shooting = false; if (retryActive) retry(); }
+        root.setOnMouseReleased(e -> {
+            if (e.getButton() == MouseButton.PRIMARY) {
+                shooting = false;
+                e.consume();
             }
         });
+        // Keyboard state is read through InputState so movement works alongside the app-wide input handler.
     }
 
     // -------------------------------------------------------------------------
     @Override
     public void enter() {
+        app.input().clear();
         phase = Phase.NORMAL;
         playerHP = MAX_PLAYER_HP;
         bossHP   = maxBossHp;
         bossFireTimer = 0;
         bossPattern   = 0;
         bossDeathTimer = -1;
+        fightTime = 0;
+        reported = false;
         retryActive = false;
         retryAlpha = 0;
         retryLabel.setOpacity(0); retryPrompt.setOpacity(0);
@@ -341,14 +352,16 @@ public final class BossFightScreen extends Screen {
         arena.getChildren().removeIf(n -> n != bossNormal && n != bossRage && n != playerImg);
         lobs.clear(); rods.clear(); puffs.clear(); delayed.clear(); attackT = 0;
 
-        playerX = ARENA_X1 + 60;
+        playerX = ARENA_X1 + (ARENA_X2 - ARENA_X1) * 0.12;
         playerY = (ARENA_Y1 + ARENA_Y2) / 2.0 - SH / 2.0;
         bossCenterX = ARENA_X2 - bossW / 2.0 - 20;
         bossCenterY = (ARENA_Y1 + ARENA_Y2) / 2.0;
+        aimX = bossCenterX;
+        aimY = bossCenterY;
 
         bossNormal.setVisible(true);
         bossRage.setVisible(false);
-        moveUp = moveDown = moveLeft = moveRight = shooting = false;
+        shooting = false;
         refreshHud();
         root.requestFocus();
         showLaugh();
@@ -381,18 +394,28 @@ public final class BossFightScreen extends Screen {
         if (phase == Phase.DEAD) { updateDeathSequence(tpf); return; }
         if (retryActive) { blinkRetry(tpf); return; }
 
+        fightTime += tpf;
+
         // -- player movement --
         double dx = 0, dy = 0;
-        if (moveLeft)  dx -= PLAYER_SPEED * tpf;
-        if (moveRight) dx += PLAYER_SPEED * tpf;
-        if (moveUp)    dy -= PLAYER_SPEED * tpf;
-        if (moveDown)  dy += PLAYER_SPEED * tpf;
+        Direction movement = app.input().current();
+        if (movement != null) {
+            dx = movement.dc;
+            dy = movement.dr;
+        }
+        if (dx != 0 || dy != 0) {
+            double length = Math.hypot(dx, dy);
+            dx = dx / length * PLAYER_SPEED * tpf;
+            dy = dy / length * PLAYER_SPEED * tpf;
+        }
         playerX = clamp(playerX + dx, ARENA_X1,  ARENA_X2 - PX);
         playerY = clamp(playerY + dy, ARENA_Y1,  ARENA_Y2 - SH);
 
         // -- player shoot --
         shootCooldown -= tpf;
-        if (shooting && shootCooldown <= 0) {
+        boolean auto = app.save().autoAttack;           // auto: always fires at the boss; manual: click / ENTER / Z
+        if ((auto || shooting || app.input().confirmHeld()) && shootCooldown <= 0) {
+            if (auto) { aimX = bossCenterX; aimY = bossCenterY; }
             fireBullet();
             shootCooldown = SHOOT_CD;
         }
@@ -463,10 +486,16 @@ public final class BossFightScreen extends Screen {
     }
 
     // -------------------------------------------------------------------------
+    private void updateAim(MouseEvent event) {
+        Point2D point = root.sceneToLocal(event.getSceneX(), event.getSceneY());
+        aimX = clamp(point.getX(), ARENA_X1, ARENA_X2);
+        aimY = clamp(point.getY(), ARENA_Y1, ARENA_Y2);
+    }
+
     private void fireBullet() {
         double cx = playerX + PX / 2.0;
         double cy = playerY + SH / 2.0;
-        double tx = bossCenterX, ty = bossCenterY;
+        double tx = aimX, ty = aimY;
         double len = Math.hypot(tx - cx, ty - cy);
         if (len < 1) return;
         Bullet b = new Bullet(cx, cy, (tx - cx) / len * BULLET_SPEED, (ty - cy) / len * BULLET_SPEED);
@@ -1036,6 +1065,7 @@ public final class BossFightScreen extends Screen {
         double alpha = Math.min(1.0, (2.5 - bossDeathTimer));
         flashRect.setOpacity(alpha * 0.7);
         if (bossDeathTimer <= 0) {
+            if (!reported) { reported = true; app.reportBossClear(def, fightTime, playerHP, MAX_PLAYER_HP); }
             onWin.run();
         }
     }
@@ -1055,5 +1085,5 @@ public final class BossFightScreen extends Screen {
 
     // -------------------------------------------------------------------------
     @Override public void onConfirm() { if (retryActive) retry(); }
-    @Override public void onCancel()  { app.showMainMenu(); }
+    @Override public void onCancel()  { app.quitBossFight(); }
 }

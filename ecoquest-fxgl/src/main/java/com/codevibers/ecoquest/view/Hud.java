@@ -104,7 +104,7 @@ public final class Hud extends Group {
         if (s.combo() > 0) st.append("COMBO x").append(s.combo()).append("  ");
         st.append("CARRY ").append(s.player().carried().size()).append('/').append(s.carryCapacity());
         if (s.boostSeconds() > 0) st.append("  BOOST ").append((int) Math.ceil(s.boostSeconds())).append('S');
-        st.append("  COINS ").append(s.money());
+        if (cfg.isCampaign()) st.append("  COINS ").append(s.money());
         if (s.earnsXp()) st.append("  XP ").append(s.xpEarned());
         set(2, status, st.toString());
 

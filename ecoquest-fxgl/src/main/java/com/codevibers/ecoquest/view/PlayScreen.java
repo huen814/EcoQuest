@@ -168,7 +168,7 @@ public final class PlayScreen extends Screen implements SessionListener {
         buildPlayer();
         dialog.show(briefPages());
         app.input().clear();
-        if (cfg.isCampaign()) Audio.playMusic(levelTrack(levelIndex), 0.35);
+        Audio.playMusic(cfg.isCampaign() ? levelTrack(levelIndex) : sceneTrack(cfg.scene), 0.35);
     }
 
     /** Campaign background loop: levels 1-3, 4-6, 7-9 share a track; level 10 has its own. */
@@ -177,6 +177,12 @@ public final class PlayScreen extends Screen implements SessionListener {
         if (level < 6) return "levels_4_6_bgm.wav";
         if (level < 9) return "levels_7_9_bgm.wav";
         return "level_10_bgm.wav";
+    }
+
+    /** Game modes play the track of the campaign level that uses the same map (park, river, market, landfill...). */
+    private static String sceneTrack(String scene) {
+        for (int i = 0; i < Levels.CAMPAIGN.size(); i++) if (Levels.CAMPAIGN.get(i).scene.equals(scene)) return levelTrack(i);
+        return levelTrack(0);
     }
 
     @Override
@@ -214,10 +220,10 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     private static int rowOf(Direction d) {
         return switch (d) {
-            case DOWN -> 0;
+            case DOWN, DOWN_LEFT, DOWN_RIGHT -> 0;
             case LEFT -> 1;
             case RIGHT -> 2;
-            case UP -> 3;
+            case UP, UP_LEFT, UP_RIGHT -> 3;
         };
     }
 
@@ -275,7 +281,7 @@ public final class PlayScreen extends Screen implements SessionListener {
                 toX = tx;
                 toY = ty;
                 moveT = 0;
-                moveDur = session.moveSeconds();
+                moveDur = session.moveSeconds() * (p.facing().diagonal() ? Math.sqrt(2.0) : 1.0);
                 moving = true;
             }
         }
@@ -670,8 +676,9 @@ public final class PlayScreen extends Screen implements SessionListener {
     @Override
     public void onFactoryOffer() {
         state = State.OFFER;
-        dialog.show(List.of("A shady factory boss offers you 100 coins to look the other way. "
-                + "It would pollute the city. What do you do?"));
+        dialog.show(List.of(cfg.isCampaign()
+                ? "A shady factory boss offers you 100 coins to look the other way. It would pollute the city. What do you do?"
+                : "A shady factory boss offers you a bribe to look the other way. It would pollute the city. What do you do?"));
         menu = new MenuBox(null, List.of(
                 new MenuBox.Entry("ACCEPT THE MONEY", () -> answerOffer(true)),
                 new MenuBox.Entry("REJECT THE BRIBE", () -> answerOffer(false))), 340);

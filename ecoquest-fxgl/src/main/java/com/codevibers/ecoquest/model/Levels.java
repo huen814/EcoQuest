@@ -8,7 +8,7 @@ public final class Levels {
     private static final int INF = 1_000_000_000;
 
     /**
-     * The ten story levels. Each one asks for a short run (roughly 1 minute at the start, 3 at the end) so a session never drags:
+     * The story's ten levels. Each one asks for a short run (roughly 1 minute at the start, 3 at the end) so a session never drags:
      * the mission counts and the target score are what set the length, the spawn and pollution pacing is unchanged.
      */
     public static final List<LevelConfig> CAMPAIGN = List.of(

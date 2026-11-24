@@ -10,19 +10,26 @@ import javafx.scene.shape.Polygon;
 public final class MenuBox extends Group {
     public record Entry(String label, Runnable action) { }
 
-    private static final double ROW = 34;
+    private static final double DEFAULT_ROW = 34;
     private static final double PAD = 16;
 
     private final List<Entry> entries;
     private final List<Ui.Label> labels = new ArrayList<>();
     private final boolean[] disabled;
     private final Polygon cursor = new Polygon(0, 0, 10, 6, 0, 12);
+    private final double row;
     private final double height;
     private int index;
     private double t;
 
 
     public MenuBox(String title, List<Entry> entries, double width) {
+        this(title, entries, width, DEFAULT_ROW);
+    }
+
+    /** Same as above with a custom row height (used by the title menu, which has more entries). */
+    public MenuBox(String title, List<Entry> entries, double width, double row) {
+        this.row = row;
         this.entries = entries;
         this.disabled = new boolean[entries.size()];
         double top = PAD;
@@ -33,13 +40,13 @@ public final class MenuBox extends Group {
             head.setLayoutY(PAD);
             top += 30;
         }
-        height = top + entries.size() * ROW + PAD - 4;
+        height = top + entries.size() * row + PAD - 4;
         getChildren().add(Ui.panel(width, height));
         if (head != null) getChildren().add(head);
         for (int i = 0; i < entries.size(); i++) {
             Ui.Label l = new Ui.Label(entries.get(i).label(), 12, Ui.INK);
             l.setLayoutX(PAD + 26);
-            l.setLayoutY(top + i * ROW + 8);
+            l.setLayoutY(top + i * row + 8);
             labels.add(l);
             getChildren().add(l);
         }
@@ -84,5 +91,5 @@ public final class MenuBox extends Group {
         cursor.setVisible(Math.sin(t * 9) > -0.6);
     }
 
-    private void place() { cursor.setLayoutY(top0 + index * ROW + 8); }
+    private void place() { cursor.setLayoutY(top0 + index * row + 8); }
 }

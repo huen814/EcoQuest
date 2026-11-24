@@ -9,6 +9,7 @@ import com.codevibers.ecoquest.model.Levels;
 import com.codevibers.ecoquest.model.Progression;
 import com.codevibers.ecoquest.model.Save;
 import com.codevibers.ecoquest.model.Sfx;
+import com.codevibers.ecoquest.model.Sibling;
 
 import com.codevibers.ecoquest.view.*;
 import javafx.scene.input.KeyEvent;
@@ -19,6 +20,11 @@ public class EcoQuestApp extends GameApplication {
     private InputState input;
     private Screen current;
     private Screen pending;
+    /** Boss Replay state: true while a replayed fight is up; the character last picked on the replay screen. */
+    private boolean replaying;
+    private Sibling replayCharacter;
+    /** Reward line from the last replayed fight, shown once on the Boss Replay screen. */
+    private String replayNotice = "";
 
     public static void main(String[] args) { launch(args); }
 
@@ -27,7 +33,7 @@ public class EcoQuestApp extends GameApplication {
         s.setWidth(Ui.W);
         s.setHeight(Ui.H);
         s.setTitle("EcoQuest: Guardians of the Green City");
-        s.setVersion("0.1");
+        s.setVersion("0.4.0");
         s.setIntroEnabled(false);
         s.setMainMenuEnabled(false);
         s.setGameMenuEnabled(false);
@@ -77,6 +83,38 @@ public class EcoQuestApp extends GameApplication {
     /** Queen Muck's "ho ho ho". */
     public void laugh() { Audio.laugh(); }
 
+    /** Boss fights: switches between manual and automatic attacks. */
+    public void toggleAutoAttack() {
+        save.autoAttack = !save.autoAttack;
+        save.store();
+    }
+
+    /** The reward line of the last replay, once (empty after it has been read). */
+    public String takeReplayNotice() {
+        String n = replayNotice;
+        replayNotice = "";
+        return n;
+    }
+
+    /**
+     * A boss was beaten (story or replay). Always keeps the fastest time. A replay also pays 15-25 coins (more for
+     * keeping your hearts) plus a one-time 30 coin bonus the first time it beats the saved record. No XP.
+     */
+    public void reportBossClear(BossDef def, double seconds, int hpLeft, int maxHp) {
+        boolean record = save.recordBossTime(def.id(), seconds);
+        if (replaying) {
+            int coins = 15 + (int) Math.round(10.0 * Math.max(0, hpLeft - 1) / Math.max(1, maxHp - 1));
+            StringBuilder note = new StringBuilder("+" + coins + " COINS");
+            if (record) {
+                note.append("   NEW RECORD ").append(BossReplayScreen.time(seconds));
+                if (save.claimBossRecordBonus(def.id())) { coins += 30; note.append("  +30 BONUS"); }
+            }
+            save.wallet += coins;
+            replayNotice = note.toString();
+        }
+        save.store();
+    }
+
     public void toggleMute() {
         save.muted = !save.muted;
         Audio.setMuted(save.muted);
@@ -100,13 +138,48 @@ public class EcoQuestApp extends GameApplication {
         }
         pending = new PlayScreen(this, cfg, index);
     }
-    public void showMainMenu() { pending = new MainMenuScreen(this); }
+    public void showMainMenu() { endBossReplay(); pending = new MainMenuScreen(this); }
     public void showLevelSelect() {
         if (Progression.hasOffer(save)) showAttributeChoice(this::showLevelSelect);
         else pending = new LevelSelectScreen(this);
     }
     public void showAttributeChoice(Runnable next) { pending = new AttributeChoiceScreen(this, next); }
-    public void showModes() { pending = new ModesScreen(this); }
+    public void showModes() { endBossReplay(); pending = new ModesScreen(this); }
+
+    // ------------------------------------------------------------------ boss replay (Main Menu -> Game Modes -> Boss Replay)
+
+    /** The Boss Replay selection screen. */
+    public void showBossReplay() { endBossReplay(); pending = new BossReplayScreen(this); }
+
+    /** The character shown on the replay screen: the last one picked there, otherwise the story's sibling. */
+    public Sibling replayCharacter() { return replayCharacter != null ? replayCharacter : save.sibling(); }
+    public void setReplayCharacter(Sibling s) { replayCharacter = s; }
+
+    /**
+     * Replays a beaten boss as {@code character} ("Lena", "Adam", or SISTER / BROTHER). No intro or outro story, no XP,
+     * no coins and no save changes: when the fight ends the player lands back on the Boss Replay screen.
+     */
+    public void startBossReplay(String bossId, String character) {
+        BossDef def = BossDef.byId(bossId);
+        if (def == null || !save.hasBeatenBoss(def.id())) { showBossReplay(); return; }
+        Sibling who = save.sibling();
+        for (Sibling s : Sibling.values()) {
+            if (s.name.equalsIgnoreCase(character) || s.label.equalsIgnoreCase(character) || s.id.equalsIgnoreCase(character)) who = s;
+        }
+        replayCharacter = who;
+        save.setReplaySibling(who);     // only for this fight; never written to the save file
+        replaying = true;
+        Runnable done = this::showBossReplay;
+        pending = def.kind() == BossDef.Kind.CHASE ? new ChaseScreen(this, def, done) : new BossFightScreen(this, def, done);
+    }
+
+    /** X during a fight: back to the replay screen when replaying, otherwise to the main menu. */
+    public void quitBossFight() { if (replaying) showBossReplay(); else showMainMenu(); }
+
+    private void endBossReplay() {
+        replaying = false;
+        save.clearReplaySibling();
+    }
     public void showShop() { pending = new ShopScreen(this); }
     public void showHowTo() { pending = new HowToScreen(this); }
     public void showAttributes() { pending = new AttributesScreen(this, this::showLevelSelect); }
@@ -128,6 +201,7 @@ public class EcoQuestApp extends GameApplication {
     public void showBoss(BossDef def, Runnable after) {
         Runnable won = () -> {
             save.bossAfter = -1;                                  // beaten: CONTINUE no longer sends the player back to it
+            save.markBossBeaten(def.id());                        // unlocks it in Boss Replay
             save.store();
             if (def.outro().isEmpty()) after.run();
             else pending = new BossStoryScreen(this, def, def.outro(), after, false);

@@ -1,7 +1,5 @@
 package com.codevibers.ecoquest;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -13,17 +11,33 @@ import javafx.scene.input.KeyEvent;
 /** Keyboard: held direction for walking, plus one-shot button events forwarded to the active screen. */
 public final class InputState {
     private final EcoQuestApp app;
-    private final Deque<Direction> held = new ArrayDeque<>();
     private final Set<KeyCode> down = EnumSet.noneOf(KeyCode.class);
 
     public InputState(EcoQuestApp app) { this.app = app; }
 
-    /** The most recently pressed direction that is still held, or null. */
-    public Direction current() { return held.peekFirst(); }
+    /** Current combined movement direction. Opposing keys cancel each other. */
+    public Direction current() {
+        boolean left = down.contains(KeyCode.LEFT) || down.contains(KeyCode.A);
+        boolean right = down.contains(KeyCode.RIGHT) || down.contains(KeyCode.D);
+        boolean up = down.contains(KeyCode.UP) || down.contains(KeyCode.W);
+        boolean downKey = down.contains(KeyCode.DOWN) || down.contains(KeyCode.S);
+        int x = (right ? 1 : 0) - (left ? 1 : 0);
+        int y = (downKey ? 1 : 0) - (up ? 1 : 0);
+        if (x == 0 && y == 0) return null;
+        if (x < 0 && y < 0) return Direction.UP_LEFT;
+        if (x > 0 && y < 0) return Direction.UP_RIGHT;
+        if (x < 0 && y > 0) return Direction.DOWN_LEFT;
+        if (x > 0 && y > 0) return Direction.DOWN_RIGHT;
+        if (x < 0) return Direction.LEFT;
+        if (x > 0) return Direction.RIGHT;
+        return y < 0 ? Direction.UP : Direction.DOWN;
+    }
 
-    public void clear() {
-        held.clear();
-        down.clear();
+    public void clear() { down.clear(); }
+
+    /** True while a boss-fight fire key is held. */
+    public boolean confirmHeld() {
+        return down.contains(KeyCode.ENTER) || down.contains(KeyCode.Z);
     }
 
     public void pressed(KeyEvent e) {
@@ -31,11 +45,7 @@ public final class InputState {
         boolean fresh = down.add(k);
         Direction d = dir(k);
         if (d != null) {
-            if (fresh) {
-                held.remove(d);
-                held.addFirst(d);
-                app.dispatchDirection(d);
-            }
+            if (fresh) app.dispatchDirection(d);
             e.consume();
             return;
         }
@@ -54,8 +64,6 @@ public final class InputState {
 
     public void released(KeyEvent e) {
         down.remove(e.getCode());
-        Direction d = dir(e.getCode());
-        if (d != null) held.remove(d);
     }
 
     private static Direction dir(KeyCode k) {
