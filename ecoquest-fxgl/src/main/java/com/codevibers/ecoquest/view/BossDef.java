@@ -25,23 +25,15 @@ public enum BossDef {
                 "Sprout: It was only trash that nobody sorted. But somebody is stirring up real trouble. " +
                 "Keep sorting, Guardian. The next level is waiting!")),
 
-    /** Boss 2: the Discarded Knight, once the Queen's royal guard, now guarding the junkyard maze. He cannot be beaten, so this one is an escape. Fought after level 6. */
-    EXPERIMENT("THE DISCARDED KNIGHT", 0, Kind.CHASE, "boss/knight.png", "boss/knight_rage.png", null, "FOR HER MAJESTY!",
+    /** Boss 2: the Queen's Knight, sent by Queen Muck to capture the Guardian. He cannot be beaten, so this one is an escape. Fought after level 6. */
+    EXPERIMENT("THE QUEEN'S KNIGHT", 0, Kind.CHASE, "boss/knight.png", "boss/knight_rage.png", null, "FOR HER MAJESTY!",
             "scene:dump", 144, 144, 30, 0, 0,
+            List.of(),
             List.of(
-                "The beach is spotless, but a rusty clang echoes from the old junkyard ahead. A knight in battered armor blocks the entrance " +
-                "to a maze of crushed junk, a skull lantern glowing in one hand and a purple staff crackling in the other.",
+                "The maze shudders and the junk cubes crumble to dust. The knight, chasing too hard, trips over his own sludge and crashes into a heap of scrap. " +
+                "\"Her Majesty... will not be pleased...\" he groans, and he drags himself back through his portal.",
 
-                "Knight: Halt, intruder! Her Majesty warned of your kind from the very start! I was her finest knight, and I shall guard " +
-                "her junkyard until my dying breath. Spirits of the maze, arise!",
-
-                "Sprout: Run, Guardian! Get to the exit at the end of the maze! Move with the arrow keys or WASD. There's no fighting him, " +
-                "so use the junk cubes to throw him off your trail, stay out of his sludge, it slows you down, and dodge the sad ghosts and his sludge bombs!"),
-            List.of(
-                "Deep in the maze, the knight trips over his own junk traps. His lantern and staff clatter away, and he " +
-                "slumps into a heap of scrap. \"Her Majesty... I am not... scrap...\" he mutters, and he stays stuck there.",
-
-                "Sprout: He really thought the Queen would take him back. Poor guy. Come on, Guardian, the road to the castle is open!")),
+                "Sprout: He's gone, for now. So that is who Queen Muck sends after her troublemakers. Come on, Guardian, the next area is waiting!")),
 
     /** The final boss: Queen Muck, on her throne in the palace hall. Fought after the last level. */
     QUEEN_MUCK("QUEEN MUCK", 50, Kind.QUEEN, "boss/queen_muck.png", "boss/queen_muck_rage.png", "boss/queen_muck_laugh.png",
@@ -74,7 +66,7 @@ public enum BossDef {
     public Kind kind()         { return kind; }
     public String normal()     { return normal; }
     public String rage()       { return rage; }
-    /** Sprite shown in the story scenes before and after the fight (the Discarded Knight has a larger portrait than his chase sprite). */
+    /** Sprite shown in the story scenes before and after the fight (the Queen's Knight has a larger portrait than his chase sprite). */
     public String story()      { return this == EXPERIMENT ? "boss/knight_story.png" : normal; }
     /** Sprite used while the boss laughs, or null if it has none. */
     public String laugh()      { return laugh; }

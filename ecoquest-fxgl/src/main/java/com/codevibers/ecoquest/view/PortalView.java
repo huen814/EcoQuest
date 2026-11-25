@@ -2,6 +2,7 @@ package com.codevibers.ecoquest.view;
 
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
+import javafx.scene.effect.ColorAdjust;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -11,9 +12,15 @@ public final class PortalView extends Group {
     private static final double OPEN_TIME = 0.9;
 
     private final ImageView img = Sprites.view("portal.png");
-    private final Circle glow = StoryFx.glow(170, Color.web("#9fe0cf", 0.85));
+    private final Circle glow;
 
-    public PortalView() {
+    /** Mother Nature's green portal. */
+    public PortalView() { this(Color.web("#9fe0cf", 0.85), 0); }
+
+    /** The same portal recoloured: {@code hue} shifts the sprite's colours (-1..1, 0.63 turns green into purple) and {@code glowColor} is the light around it. */
+    public PortalView(Color glowColor, double hue) {
+        glow = StoryFx.glow(170, glowColor);
+        if (hue != 0) img.setEffect(new ColorAdjust(hue, 0, 0, 0));
         img.setViewport(new Rectangle2D(0, 0, W, H));
         img.setFitWidth(W);
         img.setFitHeight(H);

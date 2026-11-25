@@ -237,7 +237,8 @@ public class EcoQuestApp extends GameApplication {
         Runnable fight = () -> pending = def.kind() == BossDef.Kind.CHASE
                 ? new ChaseScreen(this, def, won)
                 : new BossFightScreen(this, def, won);
-        if (def.intro().isEmpty()) fight.run();
+        if (def == BossDef.EXPERIMENT) pending = new KnightCutsceneScreen(this, fight);
+        else if (def.intro().isEmpty()) fight.run();
         else pending = new BossStoryScreen(this, def, def.intro(), fight, true);
     }
     public void showVictory() { pending = new VictoryScreen(this); }

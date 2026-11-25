@@ -26,7 +26,7 @@ import javafx.util.Duration;
 
 /**
  * Boss Replay (Main Menu -> Game Modes -> Boss Replay): pick a character, then replay a boss already beaten in the story.
- * Three cards in an HBox: Muck Mound, The Discarded Knight and Queen Muck. A card is locked until that boss is beaten in the story.
+ * Three cards in an HBox: Muck Mound, The Queen's Knight and Queen Muck. A card is locked until that boss is beaten in the story.
  * Works with the keyboard (LEFT/RIGHT pick a card, UP/DOWN or SPACE switch character, ENTER replays, X goes back) and the mouse.
  * The title-screen backdrop stays behind it; text and cards are styled to read clearly over the bright sky.
  *

@@ -16,7 +16,7 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
 /**
- * Boss 2, "the escape": the Discarded Knight hunts the Guardian down a long, scrolling junkyard maze.
+ * Boss 2, "the escape": the Queen's Knight hunts the Guardian down a long, scrolling junkyard maze.
  * Reach the drain at the far end. Cubes of crushed junk form a maze (they block him too), sad ghosts patrol across the maze,
  * he leaves sludge puddles that slow you down, now and then he lunges (he warns you first), and he throws sludge bombs at the
  * spot you are running towards (a dashed ring shows where it lands; the splash hurts and leaves a puddle). Halfway there he
