@@ -7,6 +7,7 @@ import com.codevibers.ecoquest.model.TileMap;
 import com.codevibers.ecoquest.model.TileMap.Tile;
 
 import javafx.scene.Group;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 /**
@@ -23,8 +24,12 @@ public final class MapView {
     private double t;
     private int frame;
 
-    public MapView(TileMap map, String scene) {
+    public MapView(TileMap map, String scene) { this(map, scene, null); }
+
+    /** `boatImage` is the moored boat in the equipped hull paint (null = the plain wooden one). */
+    public MapView(TileMap map, String scene, Image boatImage) {
         this.map = map;
+        if (boatImage != null) boat.setImage(boatImage);
         this.scene = scene;
         root.getChildren().add(Sprites.view("backdrop/" + scene + ".png"));
         for (int c = 0; c < TileMap.COLS; c++) {

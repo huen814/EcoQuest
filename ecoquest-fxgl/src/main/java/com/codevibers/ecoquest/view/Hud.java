@@ -21,6 +21,7 @@ public final class Hud extends Group {
     private final Ui.Label polLabel = new Ui.Label("POLLUTION", 10, Ui.INK);
     private final Ui.Label polValue = new Ui.Label("", 10, Ui.INK);
     private final Ui.Label clock = new Ui.Label("", 10, Ui.INK);
+    private static final Color POL_OK = Color.web("#40c060"), POL_WARN = Color.web("#f0c030"), POL_BAD = Color.web("#e04838");
     private final Rectangle polFill = new Rectangle(0, 14);
     private final String[] last = new String[5];
     private Runnable onPause = () -> { };
@@ -111,7 +112,7 @@ public final class Hud extends Group {
         set(3, polValue, pol + "%");
         polValue.setLayoutX(Ui.W - 6 - 18 - polValue.textWidth());
         polFill.setWidth((RIGHT_W - 36) * pol / 100.0);
-        polFill.setFill(pol < 40 ? Color.web("#40c060") : pol < 75 ? Color.web("#f0c030") : Color.web("#e04838"));
+        polFill.setFill(pol < 40 ? POL_OK : pol < 75 ? POL_WARN : POL_BAD);
 
         String c;
         switch (cfg.mode) {

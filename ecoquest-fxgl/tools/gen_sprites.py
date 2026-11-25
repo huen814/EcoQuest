@@ -379,9 +379,9 @@ def draw_stage(d, direction, step, boat, L, hy, ty):
         d.point((12, hy + 5), fill=hx("#4a4668")); d.point((12, hy + 6), fill=hx("#4a4668")); d.point((11, hy + 7), fill=hx("#4a4668"))
         d.point((10, hy + 7), fill=STAGE_PINK)
     elif direction == "left":
-        d.point((10, hy + 5), fill=hx("#4a4668")); d.point((9, hy + 7), fill=hx("#4a4668")); d.point((8, hy + 7), fill=STAGE_PINK)
+        d.point((10, hy + 5), fill=hx("#4a4668")); d.point((9, hy + 7), fill=hx("#4a4668"))
     elif direction == "right":
-        d.point((5, hy + 5), fill=hx("#4a4668")); d.point((6, hy + 7), fill=hx("#4a4668")); d.point((7, hy + 7), fill=STAGE_PINK)
+        d.point((5, hy + 5), fill=hx("#4a4668")); d.point((6, hy + 7), fill=hx("#4a4668"))
     # jacket
     if direction == "down":
         d.line([(6, ty + 1), (7, ty + 3)], fill=STAGE_WHITE); d.line([(9, ty + 1), (8, ty + 3)], fill=STAGE_WHITE)   # lapels
@@ -676,37 +676,36 @@ def player_frame(direction, step, boat, who="sister", outfit=None):
         a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
         rect(d, 3, ty + 1 + max(0, a), 4, ty + 4 + max(0, a), hood, dark); rect(d, 11, ty + 1 + max(0, -a), 12, ty + 4 + max(0, -a), hood, dark)
 
-    # head
-    rect(d, 3, hy, 12, hy + 8, skin, INK)
+    # head: the border is a darker shade of the skin tone (hair covers it wherever there is hair), never black
+    rect(d, 3, hy, 12, hy + 8, skin, shade(skin, 0.80))
     if direction == "up":
-        if short: rect(d, 4, hy + 1, 11, hy + 5, hair, None)
-        else: rect(d, 3, hy, 12, hy + 8, hair, INK)
+        if short: rect(d, 3, hy, 12, hy + 7, hair, None)   # hair covers the whole back of the head; only the nape shows skin
+        else: rect(d, 3, hy, 12, hy + 8, hair, hair)
         if long_: rect(d, 4, hy + 9, 11, hy + 11, hair, None)
     elif direction == "down":
         if short:
-            rect(d, 4, hy + 1, 11, hy + 2, hair, None); rect(d, 3, hy + 1, 4, hy + 3, hair, None); rect(d, 11, hy + 1, 12, hy + 3, hair, None)
+            rect(d, 3, hy, 12, hy + 2, hair, None); rect(d, 3, hy + 1, 4, hy + 3, hair, None); rect(d, 11, hy + 1, 12, hy + 3, hair, None)
         else:
             side = 9 if long_ else 6
-            rect(d, 3, hy, 12, hy + 3, hair, INK); rect(d, 3, hy, 4, hy + side, hair, None); rect(d, 11, hy, 12, hy + side, hair, None)
+            rect(d, 3, hy, 12, hy + 3, hair, hair); rect(d, 3, hy, 4, hy + side, hair, None); rect(d, 11, hy, 12, hy + side, hair, None)
         d.point((6, hy + 5), fill=INK); d.point((9, hy + 5), fill=INK)
         if L["blush"]:
             d.point((5, hy + 6), fill=L["blush"]); d.point((10, hy + 6), fill=L["blush"])
     else:
         left = direction == "left"
         if short:
-            rect(d, 4, hy + 1, 11, hy + 2, hair, None)
-            if left: rect(d, 8, hy + 1, 11, hy + 4, hair, None)
-            else: rect(d, 4, hy + 1, 7, hy + 4, hair, None)
+            rect(d, 3, hy, 12, hy + 2, hair, None)
+            if left: rect(d, 8, hy, 12, hy + 5, hair, None)
+            else: rect(d, 3, hy, 7, hy + 5, hair, None)
         else:
-            rect(d, 3, hy, 12, hy + 3, hair, INK)
-            if left: rect(d, 8, hy, 12, hy + 6, hair, INK)
-            else: rect(d, 3, hy, 7, hy + 6, hair, INK)
+            rect(d, 3, hy, 12, hy + 3, hair, None)
+            if left: rect(d, 8, hy, 12, hy + 6, hair, None)
+            else: rect(d, 3, hy, 7, hy + 6, hair, None)
             if long_:
                 if left: rect(d, 8, hy + 7, 12, hy + 10, hair, None)
                 else: rect(d, 3, hy + 7, 7, hy + 10, hair, None)
         ex = 5 if left else 10
-        d.point((ex, hy + 5), fill=INK)
-        if L["blush"]: d.point((ex + (-1 if left else 1), hy + 6), fill=L["blush"])
+        d.point((ex, hy + 5), fill=INK)   # (no blush dot in the side views)
     if L["clip"]:
         d.point((7, hy + 1), fill=L["clip"]); d.point((8, hy + 1), fill=L["clip"])  # hair clip
 
@@ -1072,11 +1071,127 @@ NPCS = [  # villagers, one per campaign level (front-facing, single frame)
 ]
 
 
+def npc_frame(p, i):
+    """One front-facing 16x24 villager. No black outline: the head is flat skin framed by hair, clothes use a darker shade of
+    their own colour, and each villager gets props that fit their level (see the per-index block at the end)."""
+    SK, HR, TP, SH, SHOE = p["skin"], p["hair"], p["top"], p["shorts"], p["shoe"]
+    im, d = canvas(16, 24)
+    CLEAR = (0, 0, 0, 0)
+    EYE = (52, 40, 60, 255)
+
+    def P(x, y, c): d.point((x, y), fill=c)
+    def R(x0, y0, x1, y1, c, o=None): rect(d, x0, y0, x1, y1, c, o)
+
+    hy, ty = 2, 11
+    dark, lite = shade(TP, 0.66), shade(TP, 1.18)
+    skin_dk = shade(SK, 0.84)
+    d.ellipse([3, 21, 12, 23], fill=(60, 40, 90, 55))
+
+    # legs, shorts, shoes (soft sole line instead of black)
+    R(5, ty + 6, 10, ty + 7, SH, None); P(5, ty + 7, shade(SH, 0.8)); P(10, ty + 7, shade(SH, 0.8))
+    R(5, ty + 8, 6, 19, SK, None); R(9, ty + 8, 10, 19, SK, None)
+    sole = shade(SHOE, 0.72)
+    R(4, 20, 7, 21, SHOE, sole); R(8, 20, 11, 21, SHOE, sole)
+
+    # torso + arms + hands
+    R(5, ty, 10, ty + 5, TP, dark); R(6, ty + 1, 7, ty + 1, lite, None)
+    R(3, ty + 1, 4, ty + 4, TP, None); R(11, ty + 1, 12, ty + 4, TP, None)
+    for y in range(ty + 1, ty + 5): P(3, y, dark); P(12, y, dark)
+    R(3, ty + 5, 4, ty + 5, SK, None); R(11, ty + 5, 12, ty + 5, SK, None)
+
+    # head: flat skin, rounded chin, no outline
+    R(3, hy, 12, hy + 8, SK, None)
+    P(3, hy + 8, CLEAR); P(12, hy + 8, CLEAR)
+    P(4, hy + 8, skin_dk); P(11, hy + 8, skin_dk)
+    glint = shade(HR, 1.3)
+    if p["style"] == "short":
+        R(3, hy, 12, hy + 2, HR, None); P(3, hy + 3, HR); P(12, hy + 3, HR)
+        for x in (5, 6, 7): P(x, hy, glint)
+        P(2, hy + 5, skin_dk); P(13, hy + 5, skin_dk)   # ears
+    else:
+        R(3, hy, 12, hy + 3, HR, None); R(3, hy, 4, hy + 7, HR, None); R(11, hy, 12, hy + 7, HR, None)
+        P(5, hy + 3, HR); P(10, hy + 3, HR)
+        for x in (5, 6, 7): P(x, hy, glint)
+    # face
+    P(6, hy + 5, EYE); P(9, hy + 5, EYE)
+    P(5, hy + 6, (244, 176, 190, 255)); P(10, hy + 6, (244, 176, 190, 255))
+    P(7, hy + 7, (190, 100, 112, 255)); P(8, hy + 7, (190, 100, 112, 255))
+
+    W = (252, 250, 246, 255)
+    if i == 0:      # Aling Nena: bun, round glasses, apron with a pink pocket
+        R(6, 0, 9, 1, HR, None); P(7, 0, glint); P(8, 0, glint)
+        GL = (176, 166, 196, 255)
+        d.rectangle([5, hy + 4, 7, hy + 6], outline=GL); d.rectangle([8, hy + 4, 10, hy + 6], outline=GL)
+        R(6, ty + 1, 9, ty + 5, W, None); R(6, ty + 1, 9, ty + 1, (244, 176, 196, 255), None)
+        R(7, ty + 4, 8, ty + 5, (244, 176, 196, 255), None)
+    elif i == 1:    # Mang Berting: straw hat, overall bib
+        STRAW, BAND = (238, 206, 122, 255), (156, 96, 56, 255)
+        R(4, 0, 11, 1, STRAW, None); R(4, 1, 11, 1, BAND, None); R(1, 2, 14, 2, STRAW, None)
+        for x in range(2, 14, 2): P(x, 2, shade(STRAW, 0.86))
+        BIB = (112, 86, 58, 255)
+        P(6, ty, BIB); P(9, ty, BIB); R(6, ty + 2, 9, ty + 5, BIB, None); R(7, ty + 3, 8, ty + 4, shade(BIB, 1.25), None)
+    elif i == 2:    # Tatay Isko: fisherman cap with a visor, holding up a fresh catch
+        CAP = (70, 98, 134, 255)
+        R(4, 0, 11, 1, CAP, None); R(3, 2, 12, 2, shade(CAP, 0.85), None); R(4, 3, 11, 3, shade(CAP, 0.7), None)
+        P(7, 0, shade(CAP, 1.25)); P(8, 0, shade(CAP, 1.25))
+        FISH, FISH_D = (150, 196, 226, 255), (96, 142, 184, 255)
+        R(11, ty + 6, 13, ty + 8, FISH, None); P(14, ty + 6, FISH_D); P(14, ty + 8, FISH_D); P(13, ty + 7, FISH_D)
+        for x in (11, 12): P(x, ty + 8, (236, 244, 250, 255))
+        P(11, ty + 6, (40, 40, 60, 255)); P(12, ty + 7, FISH_D)
+    elif i == 3:    # Ate Cora: yellow hard hat, hi-vis stripes
+        HAT = (244, 196, 48, 255)
+        R(4, 0, 11, 1, HAT, None); R(7, 0, 8, 1, shade(HAT, 0.84), None); R(3, 2, 12, 2, shade(HAT, 0.84), None)
+        R(5, ty + 2, 10, ty + 2, (250, 250, 216, 255), None); R(5, ty + 4, 10, ty + 4, (250, 250, 216, 255), None)
+    elif i == 4:    # Aling Pacing: polka-dot headscarf, basket of veggies
+        RED = (214, 78, 96, 255)
+        R(3, 1, 12, 3, RED, None); R(12, 3, 13, 4, shade(RED, 0.8), None); P(14, 5, shade(RED, 0.8))
+        for (x, y) in ((5, 2), (8, 1), (10, 3), (7, 3)): P(x, y, (252, 232, 238, 255))
+        BR = (200, 150, 90, 255)
+        P(0, ty + 4, BR); P(1, ty + 3, BR); P(2, ty + 4, BR)
+        P(0, ty + 5, (96, 180, 96, 255)); P(1, ty + 5, (240, 140, 50, 255)); P(2, ty + 5, (96, 180, 96, 255))
+        R(0, ty + 6, 2, ty + 7, BR, None); P(1, ty + 6, shade(BR, 0.8)); P(0, ty + 7, shade(BR, 0.8)); P(2, ty + 7, shade(BR, 0.8))
+        R(6, ty + 3, 9, ty + 5, (250, 240, 220, 255), None); R(6, ty + 4, 9, ty + 4, (230, 120, 130, 255), None)
+    elif i == 5:    # Kuya Bogs: red lanyard with a whistle, zinc nose
+        CORD = (232, 70, 70, 255)
+        P(6, ty, CORD); P(9, ty, CORD); P(7, ty + 1, CORD); P(8, ty + 1, CORD)
+        R(7, ty + 2, 8, ty + 2, (250, 214, 70, 255), None)
+        P(8, hy + 6, W)
+    elif i == 6:    # Mang Basyo: flat cap, stubble, work gloves, sack of junk
+        CAP = (122, 126, 136, 255)
+        R(3, 1, 12, 2, CAP, None); R(4, 3, 11, 3, shade(CAP, 0.7), None)
+        for (x, y) in ((5, hy + 7), (10, hy + 7), (6, hy + 8), (9, hy + 8)): P(x, y, shade(SK, 0.68))
+        R(3, ty + 5, 4, ty + 5, (244, 200, 60, 255), None); R(11, ty + 5, 12, ty + 5, (244, 200, 60, 255), None)
+        R(0, ty + 3, 2, ty + 7, (192, 172, 132, 255), None); P(1, ty + 2, (120, 90, 60, 255)); P(1, ty + 4, (150, 132, 100, 255)); P(0, ty + 6, (150, 132, 100, 255))
+        R(8, ty + 3, 9, ty + 4, (108, 108, 72, 255), None)
+    elif i == 7:    # Dr. Aurora Vega: fur-trim hood, goggles, clipboard
+        FUR = (244, 248, 252, 255)
+        d.line([(2, hy - 1), (13, hy - 1)], fill=FUR); d.line([(2, hy - 1), (2, hy + 6)], fill=FUR); d.line([(13, hy - 1), (13, hy + 6)], fill=FUR)
+        R(4, ty, 11, ty, FUR, None)
+        LENS = (122, 192, 238, 255)
+        R(5, hy + 1, 7, hy + 2, LENS, None); R(8, hy + 1, 10, hy + 2, LENS, None); P(5, hy + 1, W); P(8, hy + 1, W)
+        R(3, hy + 1, 4, hy + 1, (60, 72, 96, 255), None); R(11, hy + 1, 12, hy + 1, (60, 72, 96, 255), None)
+        R(12, ty + 3, 14, ty + 7, (150, 106, 64, 255), None); R(12, ty + 4, 14, ty + 6, (250, 250, 252, 255), None); P(13, ty + 5, (120, 150, 200, 255))
+    elif i == 8:    # Ka Lando: ranger hat sitting on his head, red neckerchief, khaki vest, gold badge
+        R(4, 0, 11, 2, (122, 94, 58, 255), None); R(7, 0, 8, 0, (96, 72, 44, 255), None); R(4, 2, 11, 2, (212, 172, 62, 255), None)
+        R(1, 3, 14, 3, (150, 112, 68, 255), None); R(2, 4, 13, 4, shade(SK, 0.78), None)
+        KH = (180, 154, 96, 255)
+        R(5, ty, 6, ty + 5, KH, None); R(9, ty, 10, ty + 5, KH, None); P(5, ty + 4, shade(KH, 0.7)); P(10, ty + 4, shade(KH, 0.7))
+        R(7, ty, 8, ty + 1, (206, 66, 66, 255), None)
+        P(9, ty + 2, (250, 212, 72, 255))
+    elif i == 9:    # Mayor Liwanag: white collar, teal-and-gold sash, brooch
+        R(6, ty, 9, ty, W, None)
+        SASH, GOLD2 = (76, 196, 168, 255), (244, 208, 96, 255)
+        for k in range(5):
+            P(5 + k, ty + 1 + k, SASH); P(6 + k, ty + 1 + k, SASH); P(7 + k, ty + 1 + k, GOLD2) if 7 + k <= 10 else None
+        R(5, ty + 1, 6, ty + 2, GOLD2, None)
+    return im
+
+
 def npc_sprites():
     for i, n in enumerate(NPCS):
         p = dict(skin=hx(n["skin"]), hair=hx(n["hair"]), top=hx(n["top"]), shorts=hx(n["shorts"]), shoe=hx("#ffffff"),
                  pack=hx("#f4d8a0"), style=n["style"], clip=hx(n["clip"]))
-        save("npc/npc_%d.png" % i, person_frame("down", 0, False, p))
+        save("npc/npc_%d.png" % i, npc_frame(p, i))
 
 
 def queen_muck(mode="normal"):

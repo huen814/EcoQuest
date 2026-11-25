@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.codevibers.ecoquest.model.Cosmetic;
+import com.codevibers.ecoquest.model.Cosmetics;
 import com.codevibers.ecoquest.model.Cosmetic.Slot;
 import com.codevibers.ecoquest.model.Save;
 import com.codevibers.ecoquest.model.Sibling;
@@ -28,14 +29,25 @@ public final class Wardrobe {
         Map<Integer, Integer> swaps = PlayerPalette.swaps(boat, hair, paint);
         if (swaps.isEmpty()) return base;
         String key = who.id + boat + outfit.id() + hair.id() + (boat ? paint.id() : "");
-        return CACHE.computeIfAbsent(key, k -> {
-            int w = (int) base.getWidth(), h = (int) base.getHeight();
-            int[] px = new int[w * h];
-            base.getPixelReader().getPixels(0, 0, w, h, PixelFormat.getIntArgbInstance(), px, 0, w);
-            PlayerPalette.apply(px, swaps);
-            WritableImage out = new WritableImage(w, h);
-            out.getPixelWriter().setPixels(0, 0, w, h, PixelFormat.getIntArgbInstance(), px, 0, w);
-            return out;
-        });
+        return CACHE.computeIfAbsent(key, k -> recolour(base, swaps));
+    }
+
+    /** The boat moored at the bank (when nobody is rowing it), painted with the hull colour that is equipped. */
+    public static Image parkedBoat(Save save) {
+        Image base = Sprites.get("world/boat.png");
+        Cosmetic paint = save.worn(Slot.BOAT);
+        Map<Integer, Integer> swaps = PlayerPalette.swaps(true, Cosmetics.defaultFor(Slot.HAIR), paint);
+        if (swaps.isEmpty()) return base;
+        return CACHE.computeIfAbsent("parked_boat" + paint.id(), k -> recolour(base, swaps));
+    }
+
+    private static Image recolour(Image base, Map<Integer, Integer> swaps) {
+        int w = (int) base.getWidth(), h = (int) base.getHeight();
+        int[] px = new int[w * h];
+        base.getPixelReader().getPixels(0, 0, w, h, PixelFormat.getIntArgbInstance(), px, 0, w);
+        PlayerPalette.apply(px, swaps);
+        WritableImage out = new WritableImage(w, h);
+        out.getPixelWriter().setPixels(0, 0, w, h, PixelFormat.getIntArgbInstance(), px, 0, w);
+        return out;
     }
 }

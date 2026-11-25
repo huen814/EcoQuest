@@ -101,6 +101,12 @@ public final class Audio {
 
     // ------------------------------------------------------------------ looping background music (assets/music/*.wav)
     private static MediaPlayer music;
+    private static final ExecutorService MUSIC_PREP = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "music-prep");
+        t.setDaemon(true);
+        return t;
+    });
+    private static final java.util.Map<String, String> URLS = new java.util.concurrent.ConcurrentHashMap<>();
     private static String musicName;
     private static double musicBase = 0.4;
     private static volatile double musicScale = 1, sfxScale = 1;
@@ -115,23 +121,39 @@ public final class Audio {
 
     /** Starts a looping track (call from the JavaFX thread). Does nothing if it is already playing. */
     public static void playMusic(String file, double volume) {
-        if (file.equals(musicName) && music != null) return;
+        if (file.equals(musicName)) return;
         stopMusic();
-        try {
-            String url = musicUrl(file);
-            if (url == null) { System.err.println("Missing music: " + file); return; }
-            MediaPlayer p = new MediaPlayer(new Media(url));
-            p.setOnError(() -> System.err.println("Music error in " + file + ": " + p.getError()));
-            p.setCycleCount(MediaPlayer.INDEFINITE);
-            musicBase = volume;
-            p.setVolume(volume * musicScale);
-            p.setMute(muted);
-            p.play();
-            music = p;
-            musicName = file;
-        } catch (Throwable t) {
-            System.err.println("Could not play music " + file + ": " + t);
-        }
+        musicName = file;           // claimed now; the player is built once the file has been prepared off the render thread
+        musicBase = volume;
+        MUSIC_PREP.submit(() -> {
+            String url;
+            try {
+                url = URLS.get(file);
+                if (url == null) {
+                    url = musicUrl(file);       // reads the WAV (and may rewrite it): never on the JavaFX thread
+                    if (url != null) URLS.put(file, url);
+                }
+            } catch (Throwable t) {
+                System.err.println("Could not prepare music " + file + ": " + t);
+                return;
+            }
+            final String ready = url;
+            javafx.application.Platform.runLater(() -> {
+                if (!file.equals(musicName) || music != null) return;   // changed our mind while loading
+                if (ready == null) { System.err.println("Missing music: " + file); return; }
+                try {
+                    MediaPlayer p = new MediaPlayer(new Media(ready));
+                    p.setOnError(() -> System.err.println("Music error in " + file + ": " + p.getError()));
+                    p.setCycleCount(MediaPlayer.INDEFINITE);
+                    p.setVolume(musicBase * musicScale);
+                    p.setMute(muted);
+                    p.play();
+                    music = p;
+                } catch (Throwable t) {
+                    System.err.println("Could not play music " + file + ": " + t);
+                }
+            });
+        });
     }
 
     /**

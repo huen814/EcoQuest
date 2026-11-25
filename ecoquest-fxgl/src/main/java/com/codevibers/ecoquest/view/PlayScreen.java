@@ -54,6 +54,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     private static final int PX = Sprites.PX;
     private static final int PLAYER_H = 72;
+    private static final Color BAR_OK = Color.web("#40c060"), BAR_WARN = Color.web("#f0c030"), BAR_FULL = Color.web("#e04838");
     private static final double TURN_PAUSE = 0.09;
 
     private final LevelConfig cfg;
@@ -161,7 +162,7 @@ public final class PlayScreen extends Screen implements SessionListener {
 
     @Override
     public void enter() {
-        mapView = new MapView(session.map(), cfg.scene);
+        mapView = new MapView(session.map(), cfg.scene, Wardrobe.parkedBoat(app.save()));
         FXGL.entityBuilder().view(mapView.root()).zIndex(-10).buildAndAttach();
         for (Bin b : session.bins()) binViews.add(new BinView(b));
         for (PlantingSpot s : session.spots()) spotViews.add(new SpotView(s));
@@ -896,7 +897,7 @@ public final class PlayScreen extends Screen implements SessionListener {
             barBg.setVisible(any);
             barFill.setVisible(any);
             barFill.setWidth(32 * frac);
-            barFill.setFill(frac < 0.6 ? Color.web("#40c060") : frac < 1 ? Color.web("#f0c030") : Color.web("#e04838"));
+            barFill.setFill(frac < 0.6 ? BAR_OK : frac < 1 ? BAR_WARN : BAR_FULL);
 
             Pickup top = session.player().carried().isEmpty() ? null
                     : session.player().carried().get(session.player().carried().size() - 1);
