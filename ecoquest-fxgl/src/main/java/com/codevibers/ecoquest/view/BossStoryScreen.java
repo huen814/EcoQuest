@@ -37,7 +37,7 @@ public final class BossStoryScreen extends Screen {
         playerImg = Sprites.view(me.sheet(false));      // plain sheet: cutscenes never show shop cosmetics
         StoryFx.stand(playerImg, 140, FEET, 2);
 
-        bossImg = Sprites.view(def.normal());
+        bossImg = Sprites.view(def.story());
         bossImg.setFitWidth(def.width() * 1.4);
         bossImg.setFitHeight(def.height() * 1.4);
         bossImg.setLayoutX(Ui.W - bossImg.getFitWidth() - 40);

@@ -16,10 +16,11 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
 /**
- * Boss 2, "the escape": a creature that cannot be beaten yet hunts the Guardian down a long, scrolling city street.
- * Reach the manhole at the far end. Cubes of crushed junk form a maze (it blocks the creature too), toothy ghosts patrol across
- * the street, the creature leaves stink clouds that slow you down, now and then it lunges (it warns you first), and it spits
- * lobbed gunk at the spot you are running towards (a dashed ring shows where it will land; the splash hurts and leaves a stink cloud).
+ * Boss 2, "the escape": the Discarded Knight hunts the Guardian down a long, scrolling junkyard maze.
+ * Reach the drain at the far end. Cubes of crushed junk form a maze (they block him too), sad ghosts patrol across the maze,
+ * he leaves sludge puddles that slow you down, now and then he lunges (he warns you first), and he throws sludge bombs at the
+ * spot you are running towards (a dashed ring shows where it lands; the splash hurts and leaves a puddle). Halfway there he
+ * enrages (red eye, faster, more bombs); when you escape he trips over his own junk and collapses.
  * There is no Spirit Bottle here: you can only run. Looping chase music plays while the screen is up.
  */
 public final class ChaseScreen extends Screen {
@@ -31,8 +32,8 @@ public final class ChaseScreen extends Screen {
     private static final int MAX_HP = 3;
     private static final double INVINCIBLE = 1.4;
     private static final double EXIT_X = WORLD_W - 120, EXIT_Y = 290;
-    private static final int CW = 144, CH = 132;                 // the creature's sprite (wide, so its paper wings fit)
-    private static final String STUN = "boss/experiment_stun.png";
+    private static final int CW = 96, CH = 96;                   // the knight's sprite (96x96 art, drawn 1:1): he stands ~82 px tall, the Guardian 72
+    private static final String STUN = "boss/knight_stun.png";
 
     /** The street as a grid of junk cubes (# = a cube), 7 rows high (down to the bottom edge), 48 px per cell: start and exit areas are clear. */
     private static final int CELL = 48, MAZE_TOP = 134;     // the cubes cover every height the Guardian can walk at, right down to the bottom of the screen
@@ -69,7 +70,7 @@ public final class ChaseScreen extends Screen {
         final Circle node;
         Cloud(double x, double y) {
             this.x = x; this.y = y;
-            node = new Circle(x, y, 36, Color.web("#7aa040", 0.38));
+            node = new Circle(x, y, 36, Color.web("#7a3fa0", 0.38));
             node.setViewOrder(-1);
         }
     }
@@ -105,7 +106,7 @@ public final class ChaseScreen extends Screen {
     private final Pane world = new Pane();
     private final ImageView playerImg;
     private final ImageView chaserImg;
-    private final Circle chaserGlow = StoryFx.glow(95, Color.web("#d01818", 0.45));
+    private final Circle chaserGlow = StoryFx.glow(60, Color.web("#d01818", 0.45));
     private final List<Block> blocks = new ArrayList<>();
     private final List<Ghost> ghosts = new ArrayList<>();
     private final List<Cloud> clouds = new ArrayList<>();
@@ -131,7 +132,7 @@ public final class ChaseScreen extends Screen {
     private double modeT, lungeCd, lungeDx, lungeDy, cloudT;
     private double cameraX, clock, invincible, flash, shoutT, wonT = -1, retryAlpha;
     private int hp = MAX_HP;
-    private boolean retryActive;
+    private boolean retryActive, enraged;
     private PauseOverlay pause;
     private boolean up, down, left, right;
 
@@ -144,7 +145,7 @@ public final class ChaseScreen extends Screen {
 
         // The street: the city scene repeated along the world, a little darker.
         for (int i = 0; i * Ui.W < WORLD_W; i++) {
-            var part = StoryFx.scene("city");
+            var part = StoryFx.scene(def.backdrop().substring("scene:".length()));
             part.setLayoutX(i * Ui.W);
             world.getChildren().add(part);
         }
@@ -161,7 +162,7 @@ public final class ChaseScreen extends Screen {
         }
 
         for (int gx = 0; gx < GW; gx++) {                         // where the creature can stand
-            for (int gy = 0; gy < GH; gy++) free[gx][gy] = !blocked(gx * G + G / 2.0, GY0 + gy * G + G / 2.0, 22, 8);
+            for (int gy = 0; gy < GH; gy++) free[gx][gy] = !blocked(gx * G + G / 2.0, GY0 + gy * G + G / 2.0, 16, 8);
         }
 
         double[][] patrols = {{600, 300, 125, 1.4, 0}, {1080, 300, 130, 1.7, 1.6}, {1416, 300, 130, 1.5, 3.1},
@@ -282,7 +283,8 @@ public final class ChaseScreen extends Screen {
         for (Spit sp : spits) world.getChildren().removeAll(sp.glob, sp.mark);
         spits.clear(); spitCd = 6.0;
         for (Ghost g : ghosts) if (!world.getChildren().contains(g.node)) world.getChildren().add(g.node);
-        chaserImg.setImage(Sprites.get("boss/experiment.png"));
+        enraged = false;
+        chaserImg.setImage(Sprites.get(def.normal()));
         say("RUN!", 1.4);
         refreshHud();
         root.requestFocus();
@@ -335,7 +337,7 @@ public final class ChaseScreen extends Screen {
         }
         updateRings(tpf);
 
-        if (wonT >= 0) {                                         // diving into the manhole
+        if (wonT >= 0) {                                         // diving down the drain
             wonT -= tpf;
             flashRect.setFill(Color.WHITE);
             flashRect.setOpacity(Math.min(0.9, (1.4 - wonT) * 0.8));
@@ -359,6 +361,7 @@ public final class ChaseScreen extends Screen {
 
         if (Math.hypot(pfx - EXIT_X, pfy - EXIT_Y) < 42) {      // made it
             wonT = 1.4;
+            chaserImg.setImage(Sprites.get(STUN));            // he trips over his own junk and collapses
             app.reportBossClear(def, clock, hp, MAX_HP);
             app.sfx(Sfx.MISSION);
             say("MADE IT!", 1.4);
@@ -395,9 +398,9 @@ public final class ChaseScreen extends Screen {
 
     private void stepChaser(double mx, double my) {
         double nx = Math.max(10, Math.min(WORLD_W - 10, cfx + mx));
-        if (!blocked(nx, cfy, 22, 8)) cfx = nx;
+        if (!blocked(nx, cfy, 16, 8)) cfx = nx;
         double ny = Math.max(Y1 + SH - 10, Math.min(Y2 - 10, cfy + my));
-        if (!blocked(cfx, ny, 22, 8)) cfy = ny;
+        if (!blocked(cfx, ny, 16, 8)) cfy = ny;
     }
 
     private void updateChaser(double tpf) {
@@ -406,10 +409,16 @@ public final class ChaseScreen extends Screen {
         modeT -= tpf;
         switch (mode) {
             case WAIT -> {
-                if (modeT <= 0) { mode = Mode.CHASE; say("RAAAH!", 1.2); app.sfx(Sfx.FULL); }
+                if (modeT <= 0) { mode = Mode.CHASE; say("FOR HER MAJESTY!", 1.6); app.sfx(Sfx.FULL); }
             }
             case CHASE -> {
-                double speed = 158 + 14 * progress;                 // starts slower than you and ends a hair faster: loop round the cubes to keep your lead
+                if (!enraged && progress >= 0.5) {                 // phase 2: he snaps
+                    enraged = true;
+                    chaserImg.setImage(Sprites.get(def.rage()));
+                    say("I AM NOT SCRAP!", 2.2);
+                    app.sfx(Sfx.FULL);
+                }
+                double speed = 158 + 14 * progress + (enraged ? 12 : 0);                 // starts slower than you and ends a hair faster: loop round the cubes to keep your lead
                 flowT -= tpf;
                 if (flowT <= 0) { computeFlow(); flowT = 0.15; }
                 double[] goal = chaseTarget();
@@ -420,14 +429,14 @@ public final class ChaseScreen extends Screen {
                 lungeCd -= tpf;
                 if (lungeCd <= 0 && dist > 140) {                // warn first, then lunge
                     mode = Mode.TELEGRAPH; modeT = 0.55;
-                    chaserImg.setImage(Sprites.get("boss/experiment_rage.png"));
+                    chaserImg.setImage(Sprites.get(def.rage()));
                     say("!!", 0.6);
                     app.sfx(Sfx.FULL);
                 }
                 spitCd -= tpf;
                 if (spitCd <= 0 && dist > 220 && dist < 600) {   // spits ahead of you while you run
                     gunkSpit();
-                    spitCd = 5.5 + (clock * 5 % 2);
+                    spitCd = (enraged ? 3.8 : 5.5) + (clock * 5 % 2);
                 }
             }
             case TELEGRAPH -> {
@@ -443,7 +452,7 @@ public final class ChaseScreen extends Screen {
             case STUN -> {
                 if (modeT <= 0) {
                     mode = Mode.CHASE;
-                    chaserImg.setImage(Sprites.get("boss/experiment.png"));
+                    chaserImg.setImage(Sprites.get(enraged ? def.rage() : def.normal()));
                 }
             }
         }
@@ -496,7 +505,7 @@ public final class ChaseScreen extends Screen {
         int steps = (int) (len / 8);
         for (int i = 1; i <= steps; i++) {
             double t = i * 8.0 / len;
-            if (blocked(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 22, 8)) return false;
+            if (blocked(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 16, 8)) return false;
         }
         return true;
     }
@@ -504,7 +513,7 @@ public final class ChaseScreen extends Screen {
     private void endLunge() {
         mode = Mode.CHASE;
         lungeCd = 4.0 + (clock * 7 % 2);
-        chaserImg.setImage(Sprites.get("boss/experiment.png"));
+        chaserImg.setImage(Sprites.get(enraged ? def.rage() : def.normal()));
     }
 
     private void dropCloud() {
@@ -513,22 +522,22 @@ public final class ChaseScreen extends Screen {
         world.getChildren().add(c.node);
     }
 
-    /** Gunk Spit: lobs a glob at the spot you are running towards. A dashed ring marks the landing; the splash hurts and leaves a stink cloud. */
+    /** Sludge bomb: lobbed at the spot you are running towards. A dashed ring marks the landing; the splash hurts and leaves a sludge puddle. */
     private void gunkSpit() {
         double tx = Math.max(PX, Math.min(WORLD_W - PX, pfx + faceX * 70));
         double ty = Math.max(Y1 + SH, Math.min(Y2 - 10, pfy + faceY * 45));
         if (blocked(tx, ty, 14, 8)) { tx = pfx; ty = pfy; }        // never lands inside a cube
-        Circle mark = new Circle(tx, ty, SPIT_SPLASH_R, Color.web("#8ab04a", 0.18));
-        mark.setStroke(Color.web("#b9f06a")); mark.setStrokeWidth(2);
+        Circle mark = new Circle(tx, ty, SPIT_SPLASH_R, Color.web("#a04ad0", 0.18));
+        mark.setStroke(Color.web("#e0a0ff")); mark.setStrokeWidth(2);
         mark.getStrokeDashArray().addAll(6.0, 5.0);
         mark.setViewOrder(-1);
         Circle glob = new Circle(11, new RadialGradient(0, 0, 0.35, 0.3, 0.85, true, CycleMethod.NO_CYCLE,
                 new Stop(0, Color.web("#d9b8ff")), new Stop(1, Color.web("#5a2a80"))));
-        glob.setStroke(Color.web("#a8e04a")); glob.setStrokeWidth(2);
+        glob.setStroke(Color.web("#e0a0ff")); glob.setStrokeWidth(2);
         glob.setViewOrder(-3000);
         world.getChildren().addAll(mark, glob);
-        spits.add(new Spit(cfx, cfy - 70, tx, ty, glob, mark));
-        say("SPIT!", 0.6);
+        spits.add(new Spit(cfx, cfy - 55, tx, ty, glob, mark));
+        say("BOMB!", 0.6);
         app.sfx(Sfx.FULL);
     }
 
@@ -542,7 +551,7 @@ public final class ChaseScreen extends Screen {
             if (sp.t >= 1) {
                 spits.remove(sp);
                 world.getChildren().removeAll(sp.glob, sp.mark);
-                ring(sp.tx, sp.ty, Color.web("#9ad04a"));
+                ring(sp.tx, sp.ty, Color.web("#b070e0"));
                 app.sfx(Sfx.DUMP);
                 Cloud c = new Cloud(sp.tx, sp.ty);
                 clouds.add(c);
@@ -574,7 +583,7 @@ public final class ChaseScreen extends Screen {
 
     private void checkContacts() {
         if (invincible > 0) return;
-        if (mode != Mode.STUN && mode != Mode.WAIT && Math.hypot(pfx - cfx, pfy - cfy) < 36) {
+        if (mode != Mode.STUN && mode != Mode.WAIT && Math.hypot(pfx - cfx, pfy - cfy) < 30) {
             hurt(cfx, cfy);
             if (!retryActive) {
                 mode = Mode.STUN; modeT = 0.9;                   // it staggers, giving you a moment to get away
@@ -628,11 +637,11 @@ public final class ChaseScreen extends Screen {
         playerImg.setOpacity(invincible > 0 && ((int) (clock * 12) % 2 == 0) ? 0.35 : 1);
         double shake = mode == Mode.TELEGRAPH ? (((int) (clock * 40) % 2) - 0.5) * 6 : 0;
         chaserImg.setLayoutX(cfx - CW / 2.0 + shake);
-        chaserImg.setLayoutY(cfy - CH + 10 + Math.sin(clock * 6) * 2);
+        chaserImg.setLayoutY(cfy - CH + 12 + Math.sin(clock * 6) * 2);   // his boots sit where the Guardian's do
         chaserImg.setViewOrder(-cfy);
         boolean angry = mode == Mode.TELEGRAPH || mode == Mode.LUNGE;
         chaserGlow.setLayoutX(cfx + shake);
-        chaserGlow.setLayoutY(cfy - 62);
+        chaserGlow.setLayoutY(cfy - 40);
         chaserGlow.setViewOrder(-cfy + 1);
         chaserGlow.setScaleX(1 + 0.08 * Math.sin(clock * 5) + (angry ? 0.25 : 0));
         chaserGlow.setScaleY(chaserGlow.getScaleX());

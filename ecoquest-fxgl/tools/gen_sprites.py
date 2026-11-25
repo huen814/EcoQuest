@@ -379,9 +379,9 @@ def draw_stage(d, direction, step, boat, L, hy, ty):
         d.point((12, hy + 5), fill=hx("#4a4668")); d.point((12, hy + 6), fill=hx("#4a4668")); d.point((11, hy + 7), fill=hx("#4a4668"))
         d.point((10, hy + 7), fill=STAGE_PINK)
     elif direction == "left":
-        d.point((10, hy + 5), fill=hx("#4a4668")); d.point((9, hy + 7), fill=hx("#4a4668"))
+        d.point((10, hy + 5), fill=hx("#4a4668")); d.point((9, hy + 7), fill=hx("#4a4668")); d.point((8, hy + 7), fill=STAGE_PINK)
     elif direction == "right":
-        d.point((5, hy + 5), fill=hx("#4a4668")); d.point((6, hy + 7), fill=hx("#4a4668"))
+        d.point((5, hy + 5), fill=hx("#4a4668")); d.point((6, hy + 7), fill=hx("#4a4668")); d.point((7, hy + 7), fill=STAGE_PINK)
     # jacket
     if direction == "down":
         d.line([(6, ty + 1), (7, ty + 3)], fill=STAGE_WHITE); d.line([(9, ty + 1), (8, ty + 3)], fill=STAGE_WHITE)   # lapels
@@ -676,36 +676,37 @@ def player_frame(direction, step, boat, who="sister", outfit=None):
         a = {0: 0, 1: 1, 2: 0, 3: -1}[step]
         rect(d, 3, ty + 1 + max(0, a), 4, ty + 4 + max(0, a), hood, dark); rect(d, 11, ty + 1 + max(0, -a), 12, ty + 4 + max(0, -a), hood, dark)
 
-    # head: the border is a darker shade of the skin tone (hair covers it wherever there is hair), never black
-    rect(d, 3, hy, 12, hy + 8, skin, shade(skin, 0.80))
+    # head
+    rect(d, 3, hy, 12, hy + 8, skin, INK)
     if direction == "up":
-        if short: rect(d, 3, hy, 12, hy + 7, hair, None)   # hair covers the whole back of the head; only the nape shows skin
-        else: rect(d, 3, hy, 12, hy + 8, hair, hair)
+        if short: rect(d, 4, hy + 1, 11, hy + 5, hair, None)
+        else: rect(d, 3, hy, 12, hy + 8, hair, INK)
         if long_: rect(d, 4, hy + 9, 11, hy + 11, hair, None)
     elif direction == "down":
         if short:
-            rect(d, 3, hy, 12, hy + 2, hair, None); rect(d, 3, hy + 1, 4, hy + 3, hair, None); rect(d, 11, hy + 1, 12, hy + 3, hair, None)
+            rect(d, 4, hy + 1, 11, hy + 2, hair, None); rect(d, 3, hy + 1, 4, hy + 3, hair, None); rect(d, 11, hy + 1, 12, hy + 3, hair, None)
         else:
             side = 9 if long_ else 6
-            rect(d, 3, hy, 12, hy + 3, hair, hair); rect(d, 3, hy, 4, hy + side, hair, None); rect(d, 11, hy, 12, hy + side, hair, None)
+            rect(d, 3, hy, 12, hy + 3, hair, INK); rect(d, 3, hy, 4, hy + side, hair, None); rect(d, 11, hy, 12, hy + side, hair, None)
         d.point((6, hy + 5), fill=INK); d.point((9, hy + 5), fill=INK)
         if L["blush"]:
             d.point((5, hy + 6), fill=L["blush"]); d.point((10, hy + 6), fill=L["blush"])
     else:
         left = direction == "left"
         if short:
-            rect(d, 3, hy, 12, hy + 2, hair, None)
-            if left: rect(d, 8, hy, 12, hy + 5, hair, None)
-            else: rect(d, 3, hy, 7, hy + 5, hair, None)
+            rect(d, 4, hy + 1, 11, hy + 2, hair, None)
+            if left: rect(d, 8, hy + 1, 11, hy + 4, hair, None)
+            else: rect(d, 4, hy + 1, 7, hy + 4, hair, None)
         else:
-            rect(d, 3, hy, 12, hy + 3, hair, None)
-            if left: rect(d, 8, hy, 12, hy + 6, hair, None)
-            else: rect(d, 3, hy, 7, hy + 6, hair, None)
+            rect(d, 3, hy, 12, hy + 3, hair, INK)
+            if left: rect(d, 8, hy, 12, hy + 6, hair, INK)
+            else: rect(d, 3, hy, 7, hy + 6, hair, INK)
             if long_:
                 if left: rect(d, 8, hy + 7, 12, hy + 10, hair, None)
                 else: rect(d, 3, hy + 7, 7, hy + 10, hair, None)
         ex = 5 if left else 10
-        d.point((ex, hy + 5), fill=INK)   # (no blush dot in the side views)
+        d.point((ex, hy + 5), fill=INK)
+        if L["blush"]: d.point((ex + (-1 if left else 1), hy + 6), fill=L["blush"])
     if L["clip"]:
         d.point((7, hy + 1), fill=L["clip"]); d.point((8, hy + 1), fill=L["clip"])  # hair clip
 
@@ -1071,127 +1072,11 @@ NPCS = [  # villagers, one per campaign level (front-facing, single frame)
 ]
 
 
-def npc_frame(p, i):
-    """One front-facing 16x24 villager. No black outline: the head is flat skin framed by hair, clothes use a darker shade of
-    their own colour, and each villager gets props that fit their level (see the per-index block at the end)."""
-    SK, HR, TP, SH, SHOE = p["skin"], p["hair"], p["top"], p["shorts"], p["shoe"]
-    im, d = canvas(16, 24)
-    CLEAR = (0, 0, 0, 0)
-    EYE = (52, 40, 60, 255)
-
-    def P(x, y, c): d.point((x, y), fill=c)
-    def R(x0, y0, x1, y1, c, o=None): rect(d, x0, y0, x1, y1, c, o)
-
-    hy, ty = 2, 11
-    dark, lite = shade(TP, 0.66), shade(TP, 1.18)
-    skin_dk = shade(SK, 0.84)
-    d.ellipse([3, 21, 12, 23], fill=(60, 40, 90, 55))
-
-    # legs, shorts, shoes (soft sole line instead of black)
-    R(5, ty + 6, 10, ty + 7, SH, None); P(5, ty + 7, shade(SH, 0.8)); P(10, ty + 7, shade(SH, 0.8))
-    R(5, ty + 8, 6, 19, SK, None); R(9, ty + 8, 10, 19, SK, None)
-    sole = shade(SHOE, 0.72)
-    R(4, 20, 7, 21, SHOE, sole); R(8, 20, 11, 21, SHOE, sole)
-
-    # torso + arms + hands
-    R(5, ty, 10, ty + 5, TP, dark); R(6, ty + 1, 7, ty + 1, lite, None)
-    R(3, ty + 1, 4, ty + 4, TP, None); R(11, ty + 1, 12, ty + 4, TP, None)
-    for y in range(ty + 1, ty + 5): P(3, y, dark); P(12, y, dark)
-    R(3, ty + 5, 4, ty + 5, SK, None); R(11, ty + 5, 12, ty + 5, SK, None)
-
-    # head: flat skin, rounded chin, no outline
-    R(3, hy, 12, hy + 8, SK, None)
-    P(3, hy + 8, CLEAR); P(12, hy + 8, CLEAR)
-    P(4, hy + 8, skin_dk); P(11, hy + 8, skin_dk)
-    glint = shade(HR, 1.3)
-    if p["style"] == "short":
-        R(3, hy, 12, hy + 2, HR, None); P(3, hy + 3, HR); P(12, hy + 3, HR)
-        for x in (5, 6, 7): P(x, hy, glint)
-        P(2, hy + 5, skin_dk); P(13, hy + 5, skin_dk)   # ears
-    else:
-        R(3, hy, 12, hy + 3, HR, None); R(3, hy, 4, hy + 7, HR, None); R(11, hy, 12, hy + 7, HR, None)
-        P(5, hy + 3, HR); P(10, hy + 3, HR)
-        for x in (5, 6, 7): P(x, hy, glint)
-    # face
-    P(6, hy + 5, EYE); P(9, hy + 5, EYE)
-    P(5, hy + 6, (244, 176, 190, 255)); P(10, hy + 6, (244, 176, 190, 255))
-    P(7, hy + 7, (190, 100, 112, 255)); P(8, hy + 7, (190, 100, 112, 255))
-
-    W = (252, 250, 246, 255)
-    if i == 0:      # Aling Nena: bun, round glasses, apron with a pink pocket
-        R(6, 0, 9, 1, HR, None); P(7, 0, glint); P(8, 0, glint)
-        GL = (176, 166, 196, 255)
-        d.rectangle([5, hy + 4, 7, hy + 6], outline=GL); d.rectangle([8, hy + 4, 10, hy + 6], outline=GL)
-        R(6, ty + 1, 9, ty + 5, W, None); R(6, ty + 1, 9, ty + 1, (244, 176, 196, 255), None)
-        R(7, ty + 4, 8, ty + 5, (244, 176, 196, 255), None)
-    elif i == 1:    # Mang Berting: straw hat, overall bib
-        STRAW, BAND = (238, 206, 122, 255), (156, 96, 56, 255)
-        R(4, 0, 11, 1, STRAW, None); R(4, 1, 11, 1, BAND, None); R(1, 2, 14, 2, STRAW, None)
-        for x in range(2, 14, 2): P(x, 2, shade(STRAW, 0.86))
-        BIB = (112, 86, 58, 255)
-        P(6, ty, BIB); P(9, ty, BIB); R(6, ty + 2, 9, ty + 5, BIB, None); R(7, ty + 3, 8, ty + 4, shade(BIB, 1.25), None)
-    elif i == 2:    # Tatay Isko: fisherman cap with a visor, holding up a fresh catch
-        CAP = (70, 98, 134, 255)
-        R(4, 0, 11, 1, CAP, None); R(3, 2, 12, 2, shade(CAP, 0.85), None); R(4, 3, 11, 3, shade(CAP, 0.7), None)
-        P(7, 0, shade(CAP, 1.25)); P(8, 0, shade(CAP, 1.25))
-        FISH, FISH_D = (150, 196, 226, 255), (96, 142, 184, 255)
-        R(11, ty + 6, 13, ty + 8, FISH, None); P(14, ty + 6, FISH_D); P(14, ty + 8, FISH_D); P(13, ty + 7, FISH_D)
-        for x in (11, 12): P(x, ty + 8, (236, 244, 250, 255))
-        P(11, ty + 6, (40, 40, 60, 255)); P(12, ty + 7, FISH_D)
-    elif i == 3:    # Ate Cora: yellow hard hat, hi-vis stripes
-        HAT = (244, 196, 48, 255)
-        R(4, 0, 11, 1, HAT, None); R(7, 0, 8, 1, shade(HAT, 0.84), None); R(3, 2, 12, 2, shade(HAT, 0.84), None)
-        R(5, ty + 2, 10, ty + 2, (250, 250, 216, 255), None); R(5, ty + 4, 10, ty + 4, (250, 250, 216, 255), None)
-    elif i == 4:    # Aling Pacing: polka-dot headscarf, basket of veggies
-        RED = (214, 78, 96, 255)
-        R(3, 1, 12, 3, RED, None); R(12, 3, 13, 4, shade(RED, 0.8), None); P(14, 5, shade(RED, 0.8))
-        for (x, y) in ((5, 2), (8, 1), (10, 3), (7, 3)): P(x, y, (252, 232, 238, 255))
-        BR = (200, 150, 90, 255)
-        P(0, ty + 4, BR); P(1, ty + 3, BR); P(2, ty + 4, BR)
-        P(0, ty + 5, (96, 180, 96, 255)); P(1, ty + 5, (240, 140, 50, 255)); P(2, ty + 5, (96, 180, 96, 255))
-        R(0, ty + 6, 2, ty + 7, BR, None); P(1, ty + 6, shade(BR, 0.8)); P(0, ty + 7, shade(BR, 0.8)); P(2, ty + 7, shade(BR, 0.8))
-        R(6, ty + 3, 9, ty + 5, (250, 240, 220, 255), None); R(6, ty + 4, 9, ty + 4, (230, 120, 130, 255), None)
-    elif i == 5:    # Kuya Bogs: red lanyard with a whistle, zinc nose
-        CORD = (232, 70, 70, 255)
-        P(6, ty, CORD); P(9, ty, CORD); P(7, ty + 1, CORD); P(8, ty + 1, CORD)
-        R(7, ty + 2, 8, ty + 2, (250, 214, 70, 255), None)
-        P(8, hy + 6, W)
-    elif i == 6:    # Mang Basyo: flat cap, stubble, work gloves, sack of junk
-        CAP = (122, 126, 136, 255)
-        R(3, 1, 12, 2, CAP, None); R(4, 3, 11, 3, shade(CAP, 0.7), None)
-        for (x, y) in ((5, hy + 7), (10, hy + 7), (6, hy + 8), (9, hy + 8)): P(x, y, shade(SK, 0.68))
-        R(3, ty + 5, 4, ty + 5, (244, 200, 60, 255), None); R(11, ty + 5, 12, ty + 5, (244, 200, 60, 255), None)
-        R(0, ty + 3, 2, ty + 7, (192, 172, 132, 255), None); P(1, ty + 2, (120, 90, 60, 255)); P(1, ty + 4, (150, 132, 100, 255)); P(0, ty + 6, (150, 132, 100, 255))
-        R(8, ty + 3, 9, ty + 4, (108, 108, 72, 255), None)
-    elif i == 7:    # Dr. Aurora Vega: fur-trim hood, goggles, clipboard
-        FUR = (244, 248, 252, 255)
-        d.line([(2, hy - 1), (13, hy - 1)], fill=FUR); d.line([(2, hy - 1), (2, hy + 6)], fill=FUR); d.line([(13, hy - 1), (13, hy + 6)], fill=FUR)
-        R(4, ty, 11, ty, FUR, None)
-        LENS = (122, 192, 238, 255)
-        R(5, hy + 1, 7, hy + 2, LENS, None); R(8, hy + 1, 10, hy + 2, LENS, None); P(5, hy + 1, W); P(8, hy + 1, W)
-        R(3, hy + 1, 4, hy + 1, (60, 72, 96, 255), None); R(11, hy + 1, 12, hy + 1, (60, 72, 96, 255), None)
-        R(12, ty + 3, 14, ty + 7, (150, 106, 64, 255), None); R(12, ty + 4, 14, ty + 6, (250, 250, 252, 255), None); P(13, ty + 5, (120, 150, 200, 255))
-    elif i == 8:    # Ka Lando: ranger hat sitting on his head, red neckerchief, khaki vest, gold badge
-        R(4, 0, 11, 2, (122, 94, 58, 255), None); R(7, 0, 8, 0, (96, 72, 44, 255), None); R(4, 2, 11, 2, (212, 172, 62, 255), None)
-        R(1, 3, 14, 3, (150, 112, 68, 255), None); R(2, 4, 13, 4, shade(SK, 0.78), None)
-        KH = (180, 154, 96, 255)
-        R(5, ty, 6, ty + 5, KH, None); R(9, ty, 10, ty + 5, KH, None); P(5, ty + 4, shade(KH, 0.7)); P(10, ty + 4, shade(KH, 0.7))
-        R(7, ty, 8, ty + 1, (206, 66, 66, 255), None)
-        P(9, ty + 2, (250, 212, 72, 255))
-    elif i == 9:    # Mayor Liwanag: white collar, teal-and-gold sash, brooch
-        R(6, ty, 9, ty, W, None)
-        SASH, GOLD2 = (76, 196, 168, 255), (244, 208, 96, 255)
-        for k in range(5):
-            P(5 + k, ty + 1 + k, SASH); P(6 + k, ty + 1 + k, SASH); P(7 + k, ty + 1 + k, GOLD2) if 7 + k <= 10 else None
-        R(5, ty + 1, 6, ty + 2, GOLD2, None)
-    return im
-
-
 def npc_sprites():
     for i, n in enumerate(NPCS):
         p = dict(skin=hx(n["skin"]), hair=hx(n["hair"]), top=hx(n["top"]), shorts=hx(n["shorts"]), shoe=hx("#ffffff"),
                  pack=hx("#f4d8a0"), style=n["style"], clip=hx(n["clip"]))
-        save("npc/npc_%d.png" % i, npc_frame(p, i))
+        save("npc/npc_%d.png" % i, person_frame("down", 0, False, p))
 
 
 def queen_muck(mode="normal"):
@@ -1405,116 +1290,17 @@ def muck_mound(mode="normal"):
     return im
 
 
-def experiment(mode="normal"):
-    """Boss 2, the Queen's experiment: a hunched, horned nightmare with a wide jagged-toothed grin, slanted glowing eyes and
-    long bone claws, whose wings are made of trash: fanned-out sheets of crumpled newspaper, paper and cardboard with torn
-    edges (48x44 art, drawn at 3x: the body is 32 wide and the wings stick out either side).
-    mode: "normal" (burning orange eyes), "rage" (blazing red eyes, jaws wide open, wings flared) or "stun" (X eyes, tongue out, stars)."""
-    import math
-    im, d = canvas(32, 44)                                          # the body
-    wing_im, dw = canvas(48, 44)                                    # wings behind it, with room to spread
-    skin, skin_dark, skin_hi = hx("#5a4a6e"), hx("#3a2f4c"), hx("#7a6892")
-    bone = hx("#efe6cf")
-    mouth_in, tongue, tooth = hx("#16091a"), hx("#c0304a"), hx("#f6f0dc")
-    rage, stun = mode == "rage", mode == "stun"
-    glow = hx("#ff2a1a") if rage else hx("#ffa21c")
-    core = hx("#fff0a0") if rage else hx("#fff6c0")
-    d.ellipse([5, 41, 27, 44], fill=(20, 10, 30, 90))
-
-    # wings of trash: fanned sheets of newspaper, paper and cardboard
-    news, paper, card, ink_txt = hx("#e2dcc8"), hx("#f2f0e8"), hx("#a67c52"), hx("#857f6e")
-
-    def sheet(ax, ay, sgn, ang, length, width, color, kind):
-        a = math.radians(ang)
-        dx, dy = sgn * math.cos(a), -math.sin(a)
-        px, py = -dy, dx
-        def pt(f, o): return (ax + dx * length * f + px * width * o, ay + dy * length * f + py * width * o)
-        pts = [pt(0, -.25), pt(0, .25), pt(.55, .5), pt(.9, .5), pt(1.0, .3), pt(.93, .12), pt(1.05, -.05),
-               pt(.95, -.25), pt(1.0, -.5), pt(.6, -.5)]
-        dw.polygon(pts, fill=color, outline=INK)
-        for f in (.25, .45, .65):                                   # printed lines on newspaper / paper
-            if kind != "card":
-                dw.line([pt(f, -.3), pt(f + .12, -.3)], fill=ink_txt)
-                dw.line([pt(f, .05), pt(f + .12, .05)], fill=ink_txt)
-        if kind == "card":
-            dw.line([pt(.2, -.4), pt(.9, .4)], fill=hx("#e8d9a0"))   # a strip of tape
-        dw.line([pt(.1, 0), pt(.8, .1)], fill=shade(color, .78))      # crumple fold
-
-    spread = 9 if rage else 0
-    fan = ((8, 14, paper, "paper"), (30, 17, card, "card"), (55 + spread, 20, news, "news"), (80 + spread // 2, 22, paper, "paper"))
-    for sgn, ax in ((-1, 17), (1, 31)):                              # shoulders, in wide-canvas coordinates
-        for ang, length, color, kind in fan:
-            sheet(ax, 27, sgn, ang, length, 7, color, kind)
-
-
-    # thick legs, clawed feet
-    for x in (11, 18):
-        rect(d, x, 33, x + 3, 40, skin_dark, INK)
-        d.polygon([(x - 2, 42), (x, 40), (x + 4, 40), (x + 6, 42), (x + 4, 43), (x - 1, 43)], fill=skin_dark, outline=INK)
-        for cx in (x - 2, x + 1, x + 4):
-            d.polygon([(cx, 43), (cx + 1, 43), (cx, 44)], fill=INK)
-    # broad hunched torso with ribs
-    d.polygon([(7, 25), (25, 25), (22, 36), (10, 36)], fill=skin_dark, outline=INK)
-    for y in (29, 32):
-        d.line([(12, y), (19, y)], fill=skin)
-    d.line([(15, 27), (15, 35)], fill=skin)
-    # long arms hanging down to wicked claws
-    for sgn, x0 in ((-1, 8), (1, 24)):
-        d.polygon([(x0 - sgn * 2, 25), (x0 + sgn * 2, 27), (x0 + sgn * 3, 38), (x0 - sgn * 1, 38)], fill=skin, outline=INK)
-        for k in range(3):
-            bx = x0 - 3 + k * 3 + (1 if sgn > 0 else 0)
-            d.polygon([(bx, 38), (bx + 1, 38), (bx + (k - 1), 41)], fill=bone, outline=INK)
-    # the head, wide and low-browed, with two curved horns
-    for sgn, x0 in ((-1, 9), (1, 22)):
-        d.polygon([(x0, 13), (x0 + sgn * 2, 6), (x0 + sgn * 4, 2), (x0 + sgn * 5, 0), (x0 + sgn * 6, 4), (x0 + sgn * 6, 9), (x0 + sgn * 4, 13)],
-                  fill=bone, outline=INK)
-    d.ellipse([5, 7, 26, 28], fill=skin, outline=INK)
-    d.arc([7, 9, 18, 18], 190, 260, fill=skin_hi)
-    d.line([(20, 8), (17, 13)], fill=skin_dark); d.line([(17, 13), (19, 15)], fill=skin_dark)      # a scar
-    # slanted glowing eyes under angry brows
-    for sgn, ex in ((-1, 11), (1, 20)):
-        if stun:
-            d.ellipse([ex - 3, 13, ex + 3, 19], fill=hx("#d8d0e8"), outline=INK)
-            d.line([(ex - 2, 14), (ex + 2, 18)], fill=INK); d.line([(ex + 2, 14), (ex - 2, 18)], fill=INK)
-            continue
-        out, inn = ex + sgn * 4, ex - sgn * 3
-        d.polygon([(out, 14), (inn, 16 + (1 if rage else 0)), (inn, 19), (out + sgn * -1, 18)], fill=glow, outline=INK)
-        d.rectangle([ex - 1, 16, ex, 18], fill=core)
-        d.line([(ex, 15), (ex, 19)], fill=INK)                                                  # slit pupil
-        d.line([(out + sgn, 11 - (1 if rage else 0)), (inn, 15)], fill=INK)                    # brow
-        d.line([(out + sgn, 12 - (1 if rage else 0)), (inn, 16)], fill=INK)
-    d.point((15, 20), fill=INK); d.point((16, 20), fill=INK)
-    # the grin: a wide mouth full of jagged teeth
-    top, bot = (20, 28) if rage else (22, 27)
-    d.polygon([(8, top + 1), (12, top - 1), (19, top - 1), (23, top + 1), (22, bot), (16, bot + 1), (9, bot)], fill=mouth_in, outline=INK)
-    if rage or stun:
-        d.polygon([(12, bot), (19, bot), (17, bot - 3), (14, bot - 3)], fill=tongue)
-    for x in (10, 13, 16, 19, 22):
-        d.polygon([(x - 1, top), (x, top), (x - 1, top + (4 if rage else 3))], fill=tooth)
-    for x in (11, 14, 17, 20):
-        d.polygon([(x - 1, bot), (x, bot), (x - 1, bot - (3 if rage else 2))], fill=tooth)
-    # green drool
-    for x in (9, 22):
-        d.line([(x, bot), (x, bot + (4 if rage else 2))], fill=hx("#9ac060"))
-    if stun:
-        for x, y in ((12, 2), (19, 0), (16, 4)):
-            for ox, oy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
-                d.point((x + ox, y + oy), fill=hx("#fff06a"))
-    wing_im.alpha_composite(im, (8, 0))
-    return wing_im
-
-
 def stink_ghost():
-    """A small toothy ghost that haunts Boss 2's street (16x20 art, drawn at 3x)."""
+    """A small sad ghost, one of the maze spirits the Discarded Knight's lantern calls up (16x20 art, drawn at 3x)."""
     im, d = canvas(16, 20)
-    body = hx("#e4def0")
+    body, tear = hx("#d6f2fa"), hx("#7ad0ee")
     d.ellipse([5, 17, 12, 19], fill=(40, 30, 60, 60))
     d.polygon([(2, 17), (2, 9), (4, 4), (8, 2), (12, 4), (14, 9), (14, 17), (11, 15), (8, 17), (5, 15)], fill=body, outline=INK)
     for x in (5, 11):
-        d.ellipse([x - 2, 6, x + 2, 10], fill=hx("#ffffff"), outline=INK); d.point((x, 8), fill=INK)
-    rect(d, 4, 12, 12, 15, hx("#3a1a3a"), INK)
-    for x in (5, 7, 9, 11):
-        d.polygon([(x - 1, 12), (x + 1, 12), (x, 14)], fill=hx("#ffffff"))
+        d.ellipse([x - 2, 6, x + 2, 10], fill=hx("#ffffff"), outline=INK); d.point((x, 9), fill=INK)
+        d.line([(x - 2, 5), (x + 1, 4)] if x == 5 else [(x - 1, 4), (x + 2, 5)], fill=INK)   # brows slanting up in the middle
+        d.point((x + (1 if x == 11 else -1), 11), fill=tear); d.point((x + (1 if x == 11 else -1), 12), fill=tear)
+    d.line([(6, 14), (7, 13), (9, 13), (10, 14)], fill=INK)                                   # a small frown
     for x in (4, 10):
         rect(d, x, 17, x + 2, 19, body, INK)
     return im
@@ -2641,9 +2427,7 @@ def story_sprites():
     save("boss/queen_muck_clean.png", queen_muck("clean"))
     save("boss/mound.png", muck_mound("normal"), 4)
     save("boss/mound_rage.png", muck_mound("rage"), 4)
-    save("boss/experiment.png", experiment("normal"))
-    save("boss/experiment_rage.png", experiment("rage"))
-    save("boss/experiment_stun.png", experiment("stun"))
+    # the Discarded Knight (knight*.png) is built by tools/make_knight_sprites.py from tools/knight_source.png
     save("boss/ghost.png", stink_ghost())
     for v in range(3):
         save("boss/junk_cube%d.png" % v, junk_cube(v))

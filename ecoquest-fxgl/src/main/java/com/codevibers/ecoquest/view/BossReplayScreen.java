@@ -26,7 +26,7 @@ import javafx.util.Duration;
 
 /**
  * Boss Replay (Main Menu -> Game Modes -> Boss Replay): pick a character, then replay a boss already beaten in the story.
- * Three cards in an HBox: Muck Mound, The Experiment and Queen Muck. A card is locked until that boss is beaten in the story.
+ * Three cards in an HBox: Muck Mound, The Discarded Knight and Queen Muck. A card is locked until that boss is beaten in the story.
  * Works with the keyboard (LEFT/RIGHT pick a card, UP/DOWN or SPACE switch character, ENTER replays, X goes back) and the mouse.
  * The title-screen backdrop stays behind it; text and cards are styled to read clearly over the bright sky.
  *
@@ -56,7 +56,7 @@ public final class BossReplayScreen extends Screen {
             new CardSpec(BossDef.MUCK_MOUND, "BOSS FIGHT", Color.web("#EF4444"),
                     "Gunk Shot \u2022 Sludge Bomb \u2022 Slime Rain \u2022 Sludge Ring", "Best Clear", "REPLAY FIGHT"),
             new CardSpec(BossDef.EXPERIMENT, "ESCAPE CHASE", Color.web("#F59E0B"),
-                    "Junk Cubes \u2022 Stink Clouds \u2022 Ghosts", "Fastest Escape", "REPLAY CHASE"),
+                    "Junk Cubes \u2022 Sludge Bombs \u2022 Sad Ghosts", "Fastest Escape", "REPLAY CHASE"),
             new CardSpec(BossDef.QUEEN_MUCK, "FINAL BOSS", Color.web("#9333EA"),
                     "Ricochet Caps \u2022 Rusted Rebar \u2022 Rolling Tires \u2022 Leaky Batteries", "Best Clear", "REPLAY FIGHT"));
 
