@@ -25,12 +25,16 @@ import javafx.scene.shape.Rectangle;
  * through his own portal into the streets and drops the trash maze from a violet sky. {@code next} then starts the chase.
  */
 public final class KnightCutsceneScreen extends Screen {
-    private static final double FEET = 340;
-    private static final double SCALE = 2;
+    private static final double FEET = 318;                    // feet stand on the footpath
+    private static final double SCALE = 1;                      // characters are drawn at their in-game size so they fit the scenery
+    private static final double PORTAL_SCALE = 0.7;
+    private static final String KNIGHT_MUSIC = "knights_dialogue.wav";       // his dialogue theme: from the portal until the chase begins
+    private static final String NATURE_MUSIC = "title.wav";                   // Mother Nature's theme, the same one the grove scene plays
     private static final double PURPLE_HUE = 0.63;
     private static final Color PURPLE = Color.web("#b070ff", 0.85);
-    private static final double KNIGHT_SIZE = 200, KNIGHT_FEET_PAD = 196;
-    private static final double CELL_PORTAL_X = 360, CELL_PORTAL_Y = FEET - 90;
+    private static final double KNIGHT_SIZE = 100, KNIGHT_FEET_PAD = 98;
+    private static final double CELL_KNIGHT_FEET = 342;          // in the corridor, in front of the bars
+    private static final double CELL_PORTAL_X = 360, CELL_PORTAL_Y = FEET - 55;
     private static final Color BAR = Color.web("#8a86a8"), SHINE = Color.web("#b5b1d4");
     private static final Color LEAF_DARK = Color.web("#4fbf6e"), LEAF_LIGHT = Color.web("#a8f0b8");
 
@@ -44,15 +48,15 @@ public final class KnightCutsceneScreen extends Screen {
             "Then the air above the path crackles and tears open. A ring of violet light spins wide, and a knight in dark armor strides " +
             "out of a purple portal. The whole park screams and scatters!",
 
-            "Knight: Halt, Guardian! I am the Queen's knight, sent by Queen Muck herself. Your work has been causing Her Majesty great discomfort, and I am here to put a stop to it.",
+            "Knight: Guardian. I am the Queen's knight, sent by Queen Muck. Your work has been causing Her Majesty great discomfort. It ends today.",
 
-            "Knight: You will come with me. Quietly, if you know what is good for you. Loudly, if you do not!",
+            "Knight: You will come with me. Resistance would be unwise.",
 
             "Before you can run, violet light swallows the park, and the ground drops out from under your feet."),
         List.of(
             "You wake up in a cold stone cell, lit by one flickering purple lamp. Iron bars stand between you and a long, dark hall.",
 
-            "Knight: Stay put and stay quiet. Her Majesty will decide what becomes of a meddling little Guardian. I will be back to check on you!",
+            "Knight: Remain here. Her Majesty will decide your fate. I will return within the hour.",
 
             "An hour crawls by. You rattle the bars, shove the lock and search every crack, but there is no way out. " +
             "Then something warm brushes your mind.",
@@ -65,23 +69,22 @@ public final class KnightCutsceneScreen extends Screen {
             "An hour after the knight locked you away, a kind and unseen hand has carried you out. You land softly in a wide grassfield " +
             "full of flowers, with butterflies drifting all around you.",
 
-            "Sprout: Guardian, you are free! I do not know who helped you, but that knight will be back soon. Look, there is a bus stop " +
-            "down the road. Let's get back to town!"),
+            "You spot a bus stop down the road. That knight will be back soon, so you hurry to catch the next bus into town."),
         List.of(
             "Meanwhile, back in the dungeon, the knight returns to check on his prisoner.",
 
-            "Knight: Time to come out, Guardian! Her Majesty wants a word with... what? The cell is EMPTY? The lock is covered in flowers! How?!",
+            "Knight: ...The cell is empty. The lock is covered in flowers. This was no ordinary escape.",
 
-            "Knight: Queen Muck will nag me for days if the Guardian gets away. You cannot hide from me, wherever you run!"),
+            "Knight: Queen Muck will nag me for days over this. No matter. The Guardian will be found."),
         List.of(
             "You found the nearest bus stop and rode all the way back to town. Now you hurry down the street toward the next area, " +
             "when the air behind you tears open again, and the knight's own portal spits him out right in your way!",
 
-            "Knight: Found you! Did you think a few flowers could save you from the Queen's will?",
+            "Knight: Found you. A few flowers will not save you from the Queen's will.",
 
-            "Knight: Rise, maze of rubbish! Fall from the sky and trap the Guardian!",
+            "Knight: Rise, maze of rubbish. Close every path.",
 
-            "Sprout: He is walling you in with junk! Run, Guardian, and get to the exit at the end of the maze! Move with the arrow keys or WASD. " +
+            "Junk walls rise on every side! Run for the end of the maze! Move with the arrow keys or WASD. " +
             "You cannot fight him, so use the junk cubes to throw him off your trail, stay out of his sludge, it slows you down, " +
             "and dodge the sad ghosts and his sludge bombs!"));
 
@@ -116,6 +119,7 @@ public final class KnightCutsceneScreen extends Screen {
         final Group mid = new Group();
         final StoryFx.Particles fx = new StoryFx.Particles(Ui.W, Ui.H);
         final PortalView portal = new PortalView(PURPLE, PURPLE_HUE);
+        final Group portalHolder;
         final ImageView knight = Sprites.view("boss/knight_story.png");
         final Node knightShadow;
         final ImageView player;
@@ -149,16 +153,15 @@ public final class KnightCutsceneScreen extends Screen {
             storm.setOpacity(0);
             skyFlash.setOpacity(0);
 
-            portal.setTranslateX(portalX);
-            portal.setTranslateY(portalY);
+            portalHolder = holder(portal, portalX, portalY);
             portal.setVisible(false);
-            placeKnight(knight, knightX);
+            placeKnight(knight, knightX, FEET);
             knight.setOpacity(0);
-            knightShadow = StoryFx.shadow(knightX, FEET, 110);
+            knightShadow = StoryFx.shadow(knightX, FEET, 56);
             knightShadow.setOpacity(0);
             player = Sprites.view(app.save().sibling().sheet(false));
             StoryFx.stand(player, playerX, FEET, SCALE);
-            world.getChildren().addAll(scene, decor, violet, portal, mid, StoryFx.shadow(playerX, FEET, 90), knightShadow, knight, player, cubeLayer, fx, skyFlash);
+            world.getChildren().addAll(scene, decor, violet, portalHolder, mid, StoryFx.shadow(playerX, FEET, 36), knightShadow, knight, player, cubeLayer, fx, skyFlash);
             world.setVisible(false);
         }
 
@@ -276,16 +279,16 @@ public final class KnightCutsceneScreen extends Screen {
     private final StoryFx.Particles cellFx = new StoryFx.Particles(Ui.W, Ui.H);
     private ImageView cellPlayer;
     private final ImageView cellKnight = Sprites.view("boss/knight_story.png");
-    private final Node cellKnightShadow = StoryFx.shadow(520, FEET, 110);
+    private final Node cellKnightShadow = StoryFx.shadow(520, CELL_KNIGHT_FEET, 56);
     private final Group bars = new Group();
     private final List<Rectangle> barRects = new ArrayList<>();
     private final List<Rectangle> shineRects = new ArrayList<>();
     private final List<Rectangle> crossRects = new ArrayList<>();
     private final PortalView cellPortal = new PortalView();
     private final Circle lampGlow = StoryFx.glow(170, Color.web("#b070ff", 0.55));
-    private final Circle greenGlow = StoryFx.glow(230, Color.web("#9fffc0", 0.8));
+    private final Circle greenGlow = StoryFx.glow(150, Color.web("#9fffc0", 0.8));
     private final Rectangle greenTint = new Rectangle(Ui.W, Ui.H, Color.web("#8affb0"));
-    private final Ui.Label shock = new Ui.Label("!?", 28, Color.web("#ff4d6d"));
+    private final Ui.Label shock = new Ui.Label("...", 28, Color.web("#c8c0d8"));
 
     private final Group fieldWorld = new Group();
     private final StoryFx.Particles fieldFx = new StoryFx.Particles(Ui.W, Ui.H);
@@ -311,24 +314,24 @@ public final class KnightCutsceneScreen extends Screen {
         super(app);
         this.next = next;
 
-        park = new Stage(Sprites.view("backdrop/park_plaza.png"), new Group(), 190, 500, 540, 215);
+        park = new Stage(Sprites.view("backdrop/park_plaza.png"), new Group(), 190, 500, 540, FEET - 62);
         park.fx.driftIn(12, () -> StoryFx.dot(1.8, Color.web("#bff3ff", 0.9)), 335, 195, 385, 250, 45, 8);
 
-        double[] xs = {90, 270, 345, 430, 640};
+        double[] xs = {125, 270, 330, 385, 585};
         for (int i = 0; i < xs.length; i++) {
-            double feet = 300 + (i % 3) * 14;
+            double feet = 304 + (i % 3) * 11;
             ImageView v = Sprites.view("npc/npc_" + i + ".png");
-            StoryFx.stand(v, xs[i], feet, 1.6);
-            Node shadow = StoryFx.shadow(xs[i], feet, 50);
+            StoryFx.stand(v, xs[i], feet, 1);
+            Node shadow = StoryFx.shadow(xs[i], feet, 30);
             Ui.Label bang = new Ui.Label("!", 20, Color.web("#ff4d6d"));
             bang.setLayoutX(xs[i] - 6);
-            bang.setLayoutY(feet - 72 * 1.6 - 30);
+            bang.setLayoutY(feet - 72 - 26);
             bang.setVisible(false);
             villagers.add(new Villager(v, shadow, bang, xs[i]));
             park.mid.getChildren().addAll(shadow, v, bang);
         }
 
-        street = new Stage(StoryFx.scene("city"), busStop(60, 290), 260, 500, 560, 215);
+        street = new Stage(StoryFx.scene("city"), busStop(60, 290), 260, 500, 560, FEET - 62);
 
         buildCell();
         buildField();
@@ -359,11 +362,21 @@ public final class KnightCutsceneScreen extends Screen {
         return cur < target ? Math.min(target, cur + step) : Math.max(target, cur - step);
     }
 
-    private static void placeKnight(ImageView iv, double centerX) {
+    /** The portal sprite is 168 px tall; wrap it so it is sized for the 72 px characters. */
+    private static Group holder(PortalView p, double x, double y) {
+        Group h = new Group(p);
+        h.setTranslateX(x);
+        h.setTranslateY(y);
+        h.setScaleX(PORTAL_SCALE);
+        h.setScaleY(PORTAL_SCALE);
+        return h;
+    }
+
+    private static void placeKnight(ImageView iv, double centerX, double feetY) {
         iv.setFitWidth(KNIGHT_SIZE);
         iv.setFitHeight(KNIGHT_SIZE);
         iv.setLayoutX(centerX - KNIGHT_SIZE / 2);
-        iv.setLayoutY(FEET - KNIGHT_FEET_PAD);
+        iv.setLayoutY(feetY - KNIGHT_FEET_PAD);
     }
 
     private static Group busStop(double x, double feetY) {
@@ -418,14 +431,12 @@ public final class KnightCutsceneScreen extends Screen {
         cellWorld.getChildren().addAll(rect(358, 0, 4, 72, Color.web("#0c0816")), rect(344, 72, 32, 20, Color.web("#3a2a50")), lampGlow);
 
         greenGlow.setTranslateX(190);
-        greenGlow.setTranslateY(FEET - 70);
+        greenGlow.setTranslateY(FEET - 36);
         greenGlow.setOpacity(0);
         cellPlayer = Sprites.view(app.save().sibling().sheet(false));
         StoryFx.stand(cellPlayer, 190, FEET, SCALE);
-        cellPortal.setTranslateX(CELL_PORTAL_X);
-        cellPortal.setTranslateY(CELL_PORTAL_Y);
         cellPortal.setVisible(false);
-        cellWorld.getChildren().addAll(greenGlow, StoryFx.shadow(190, FEET, 90), cellPlayer, cellPortal);
+        cellWorld.getChildren().addAll(greenGlow, StoryFx.shadow(190, FEET, 36), cellPlayer, holder(cellPortal, CELL_PORTAL_X, CELL_PORTAL_Y));
 
         for (double x = 30; x < 700; x += 46) {
             Rectangle bar = rect(x, 0, 10, 330, BAR);
@@ -434,20 +445,20 @@ public final class KnightCutsceneScreen extends Screen {
             shineRects.add(shine);
             bars.getChildren().addAll(bar, shine);
         }
-        for (double y : new double[] {60, 290}) {
+        for (double y : new double[] {60, 322}) {
             Rectangle cross = rect(0, y, Ui.W, 8, Color.web("#6e6a8c"));
             crossRects.add(cross);
             bars.getChildren().add(cross);
         }
         cellWorld.getChildren().add(bars);
 
-        placeKnight(cellKnight, 520);
+        placeKnight(cellKnight, 520, CELL_KNIGHT_FEET);
         cellKnight.setOpacity(0);
         cellKnightShadow.setOpacity(0);
         cellWorld.getChildren().addAll(cellKnightShadow, cellKnight);
 
         shock.setLayoutX(420);
-        shock.setLayoutY(FEET - KNIGHT_FEET_PAD - 30);
+        shock.setLayoutY(CELL_KNIGHT_FEET - KNIGHT_FEET_PAD - 30);
         shock.setVisible(false);
         greenTint.setOpacity(0);
         greenTint.setMouseTransparent(true);
@@ -466,11 +477,9 @@ public final class KnightCutsceneScreen extends Screen {
             fieldWorld.getChildren().add(node);
         }
 
-        fieldPortal.setTranslateX(190);
-        fieldPortal.setTranslateY(FEET - 80);
         ImageView fieldPlayer = Sprites.view(app.save().sibling().sheet(false));
         StoryFx.stand(fieldPlayer, 190, FEET, SCALE);
-        fieldWorld.getChildren().addAll(StoryFx.shadow(190, FEET, 90), fieldPlayer, fieldPortal, fieldFx);
+        fieldWorld.getChildren().addAll(StoryFx.shadow(190, FEET, 36), fieldPlayer, holder(fieldPortal, 190, FEET - 55), fieldFx);
         fieldWorld.setVisible(false);
     }
 
@@ -479,12 +488,6 @@ public final class KnightCutsceneScreen extends Screen {
     @Override
     public void enter() {
         enterBeat(Beat.PARK_PORTAL);
-    }
-
-    @Override
-    public void exit() {
-        Audio.stopMusicIf("knights_dialogue.wav");
-        Audio.stopMusicIf("title.wav");
     }
 
     private void enterBeat(Beat b) {
@@ -514,7 +517,7 @@ public final class KnightCutsceneScreen extends Screen {
             }
             case CELL -> resetCell();
             case FIELD -> {
-                fieldFx.burst(190, FEET - 70, 14, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 90, 1.4, -30);
+                fieldFx.burst(190, FEET - 36, 14, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 90, 1.4, -30);
                 if (!fieldDrift) {
                     fieldDrift = true;
                     fieldFx.drift(10, () -> StoryFx.sparkle(2.5, Color.web("#fff6a0", 0.85)), 0, -7, 24);
@@ -522,7 +525,6 @@ public final class KnightCutsceneScreen extends Screen {
                 app.sfx(Sfx.MISSION);
             }
             case CELL_EMPTY -> {
-                Audio.playMusic("knights_dialogue.wav", 0.5);            // the knight finds the empty cell: his theme cuts back in
                 cellPlayer.setVisible(false);
                 cellPortal.setVisible(false);
                 bars.setVisible(false);
@@ -647,7 +649,7 @@ public final class KnightCutsceneScreen extends Screen {
                 if (pg == 1) {
                     park.openPortal(0.8);
                     startPanic();
-                    Audio.playMusic("knights_dialogue.wav", 0.5);       // the knight's own tense theme, until the chase starts
+                    Audio.playMusic(KNIGHT_MUSIC, 0.5);
                 } else if (pg == 4) {
                     app.sfx(Sfx.BOOST);
                 }
@@ -657,18 +659,19 @@ public final class KnightCutsceneScreen extends Screen {
                 else if (pg == 2) cellKnightLeaving = true;
                 else if (pg == 3) {
                     greenOn = true;
-                    Audio.playMusic("title.wav", 0.45);                  // Mother Nature's theme, as in her grove later on
+                    Audio.playMusic(NATURE_MUSIC, 0.45);             // her theme starts with the whisper and carries on into the grassfield
                     app.sfx(Sfx.MISSION);
                 } else if (pg == 4) {
                     melting = true;
                     startLeaves();
-                    cellFx.burst(360, FEET - 120, 16, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 110, 1.4, -30);
+                    cellFx.burst(CELL_PORTAL_X, CELL_PORTAL_Y, 16, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 110, 1.4, -30);
                     app.sfx(Sfx.BOOST);
                 }
             }
             case CELL_EMPTY -> {
                 if (pg == 1) {
                     shock.setVisible(true);
+                    Audio.playMusic(KNIGHT_MUSIC, 0.5);              // he finds the empty cell: back to his theme
                     app.sfx(Sfx.WRONG);
                 } else if (pg == 2) {
                     shock.setVisible(false);
@@ -736,7 +739,7 @@ public final class KnightCutsceneScreen extends Screen {
             cellKnightShadow.setTranslateX(cellKnightSlide);
         }
         if (beat == Beat.CELL_EMPTY) {
-            cellKnight.setTranslateX(-80 + Math.round(Math.sin(t * 3) * 3 + (lastPage == 1 ? Math.sin(t * 40) * 3 : 0)));
+            cellKnight.setTranslateX(-80);
         }
         cellKnight.setTranslateY(Math.round(Math.sin(t * 2.2) * 3));
         shock.setTranslateY(Math.round(Math.sin(t * 9) * 3));
@@ -778,7 +781,7 @@ public final class KnightCutsceneScreen extends Screen {
                 suckT = Math.min(1, suckT + tpf / 1.3);
                 double e = suckT * suckT;
                 cellPlayer.setTranslateX((CELL_PORTAL_X - 190) * e);
-                cellPlayer.setTranslateY(-18 * e);
+                cellPlayer.setTranslateY((CELL_PORTAL_Y - (FEET - 36)) * e);
                 cellPlayer.setScaleX(1 - 0.92 * suckT);
                 cellPlayer.setScaleY(1 - 0.92 * suckT);
                 cellPlayer.setRotate(suckT * 720);

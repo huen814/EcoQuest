@@ -16,24 +16,25 @@ public enum BossDef {
                 "Every bottle, can and wrapper that people never sorted properly has dragged itself " +
                 "into one hulking, dripping heap with two googly eyes. The corruption of nature has taken shape!",
 
-                "Sprout: That's the Muck Mound, Guardian! It was born from all the trash nobody sorted. " +
+                "This is the Muck Mound, born from all the trash nobody sorted. " +
                 "Move in eight directions with the arrow keys or WASD, aim with the mouse, and fire with left-click, ENTER or Z. Dodge the sludge!"),
             List.of(
-                "The Spirit Bottle's light washes over the Muck Mound. It wobbles, sighs, and collapses " +
-                "into neatly sorted piles of cans, bottles and wrappers, its googly eyes bouncing away down the hill.",
+                "The Spirit Bottle's light washes over the Muck Mound. It does not collapse. It simply fades, bottle by bottle, " +
+                "until nothing is left, as if it had never existed.",
 
-                "Sprout: It was only trash that nobody sorted. But somebody is stirring up real trouble. " +
-                "Keep sorting, Guardian. The next level is waiting!")),
+                "The dark haze lifts and the air over the landfill turns clean again. Someone is still stirring up real trouble, " +
+                "though. Keep sorting, Guardian. The next level is waiting!")),
 
     /** Boss 2: the Queen's Knight, sent by Queen Muck to capture the Guardian. He cannot be beaten, so this one is an escape. Fought after level 6. */
-    EXPERIMENT("THE QUEEN'S KNIGHT", 0, Kind.CHASE, "boss/knight.png", "boss/knight_rage.png", null, "FOR HER MAJESTY!",
+    EXPERIMENT("THE QUEEN'S KNIGHT", 0, Kind.CHASE, "boss/knight.png", "boss/knight_rage.png", null, "HALT.",
             "scene:city", 144, 144, 30, 0, 0,
             List.of(),
             List.of(
-                "The maze shudders and the junk cubes crumble to dust. The knight, chasing too hard, trips over his own sludge and crashes into a heap of scrap. " +
-                "\"Her Majesty... will not be pleased...\" he groans, and he drags himself back through his portal.",
+                "A wall of living wood stands between you and the knight. He studies it for a long moment, then rests a gauntlet against the bark. " +
+                "\"The Queen will hear of this,\" he says, calm as ever, and his portal swallows him.",
 
-                "Sprout: He's gone, for now. So that is who Queen Muck sends after her troublemakers. Come on, Guardian, the next area is waiting!")),
+                "The junk cubes crumble to dust. In the breeze, a faint voice drifts past your ear: \"Go on, little Guardian. " +
+                "The next area is waiting.\"")),
 
     /** The final boss: Queen Muck, on her throne in the palace hall. Fought after the last level. */
     QUEEN_MUCK("QUEEN MUCK", 50, Kind.QUEEN, "boss/queen_muck.png", "boss/queen_muck_rage.png", "boss/queen_muck_laugh.png",

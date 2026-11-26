@@ -14,14 +14,17 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
+import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.transform.Scale;
 
 /**
  * Boss 2, "the escape": the Queen's Knight hunts the Guardian down a long, scrolling junkyard maze.
  * Reach the drain at the far end. Cubes of crushed junk form a maze (they block him too), sad ghosts patrol across the maze,
  * he leaves sludge puddles that slow you down, now and then he lunges (he warns you first), and he throws sludge bombs at the
  * spot you are running towards (a dashed ring shows where it lands; the splash hurts and leaves a puddle). Halfway there he
- * enrages (red eye, faster, more bombs); when you escape he trips over his own junk and collapses.
+ * enrages (red eye, faster, more bombs); when you reach the seed at the end of the street, Mother Nature grows a wall of living wood that stops him.
  * There is no Spirit Bottle here: you can only run. Looping chase music plays while the screen is up.
  */
 public final class ChaseScreen extends Screen {
@@ -140,6 +143,25 @@ public final class ChaseScreen extends Screen {
     private final BossDef def;
     private Group violet;
 
+    /** One trunk of the wall of living wood Mother Nature grows from the seed: it climbs out of the ground, then its leaves open. */
+    private static final class Trunk {
+        final Group box;
+        final Scale grow;
+        final Circle[] leaves;
+        final double delay, height;
+        boolean started;
+        Trunk(Group box, Scale grow, Circle[] leaves, double delay, double height) {
+            this.box = box; this.grow = grow; this.leaves = leaves; this.delay = delay; this.height = height;
+        }
+    }
+
+    private final Group seed = new Group();
+    private final Circle seedGlow = StoryFx.glow(70, Color.web("#9fffc0", 0.7));
+    private final Group barrier = new Group();
+    private final List<Trunk> trunks = new ArrayList<>();
+    private final StoryFx.Particles growFx = new StoryFx.Particles(WORLD_W, Ui.H);
+    private double barrierT, barX;
+
     public ChaseScreen(EcoQuestApp app, BossDef def, Runnable onWin) {
         super(app);
         this.onWin = onWin;
@@ -178,17 +200,25 @@ public final class ChaseScreen extends Screen {
             world.getChildren().add(g.node);
         }
 
-        Circle exitGlow = StoryFx.glow(70, Color.web("#9fe0cf", 0.7));
-        exitGlow.setLayoutX(EXIT_X); exitGlow.setLayoutY(EXIT_Y);
-        exitGlow.setViewOrder(-1);
-        Circle manhole = new Circle(EXIT_X, EXIT_Y, 30, Color.web("#2a2a38"));
-        manhole.setStroke(Color.web("#c9cdd4")); manhole.setStrokeWidth(3);
-        manhole.setViewOrder(-1);
-        Ui.Label exitLabel = new Ui.Label("EXIT", 12, Ui.GOOD);
+        seedGlow.setLayoutX(EXIT_X); seedGlow.setLayoutY(EXIT_Y);
+        seedGlow.setViewOrder(-1);
+        Ellipse seedBody = new Ellipse(0, 0, 9, 13);
+        seedBody.setFill(Color.web("#8a5a32")); seedBody.setStroke(Color.web("#4a2e18")); seedBody.setStrokeWidth(2); seedBody.setRotate(24);
+        Ellipse seedShine = new Ellipse(-3, -4, 2.5, 4.5);
+        seedShine.setFill(Color.web("#d9a86c")); seedShine.setRotate(24);
+        Polygon leafA = new Polygon(0, -12, 7, -22, 2, -10);
+        leafA.setFill(Color.web("#6fd08a"));
+        Polygon leafB = new Polygon(0, -12, -7, -20, -2, -9);
+        leafB.setFill(Color.web("#4fbf6e"));
+        seed.getChildren().addAll(seedBody, seedShine, leafA, leafB);
+        seed.setLayoutX(EXIT_X); seed.setLayoutY(EXIT_Y);
+        seed.setViewOrder(-1);
+        Ui.Label exitLabel = new Ui.Label("A SEED", 12, Ui.GOOD);
         exitLabel.setLayoutX(EXIT_X - exitLabel.textWidth() / 2.0);
         exitLabel.setLayoutY(EXIT_Y - 70);
         exitLabel.setViewOrder(-2000);
-        world.getChildren().addAll(exitGlow, manhole, exitLabel);
+        world.getChildren().addAll(seedGlow, seed, exitLabel);
+        buildBarrier();
 
         playerImg = new ImageView(Wardrobe.sheet(app.save(), app.save().sibling(), false));
         playerImg.setViewport(new Rectangle2D(0, 0, PX, SH));
@@ -289,6 +319,7 @@ public final class ChaseScreen extends Screen {
         spits.clear(); spitCd = 6.0;
         for (Ghost g : ghosts) if (!world.getChildren().contains(g.node)) world.getChildren().add(g.node);
         enraged = false;
+        resetBarrier();
         chaserImg.setImage(Sprites.get(def.normal()));
         say("RUN!", 1.4);
         refreshHud();
@@ -343,10 +374,14 @@ public final class ChaseScreen extends Screen {
         }
         updateRings(tpf);
 
-        if (wonT >= 0) {                                         // diving down the drain
+        if (wonT >= 0) {                                         // the seed grows a wall of living wood between you and the knight
             wonT -= tpf;
-            flashRect.setFill(Color.WHITE);
-            flashRect.setOpacity(Math.min(0.9, (1.4 - wonT) * 0.8));
+            barrierT += tpf;
+            growBarrier(tpf);
+            if (wonT < 0.6) {
+                flashRect.setFill(Color.web("#e8ffe8"));
+                flashRect.setOpacity(Math.min(0.9, (0.6 - wonT) * 1.6));
+            }
             if (wonT <= 0) onWin.run();
             return;
         }
@@ -365,12 +400,18 @@ public final class ChaseScreen extends Screen {
         updateSpits(tpf);
         checkContacts();
 
-        if (Math.hypot(pfx - EXIT_X, pfy - EXIT_Y) < 42) {      // made it
-            wonT = 1.4;
-            chaserImg.setImage(Sprites.get(STUN));            // he trips over his own junk and collapses
+        if (Math.hypot(pfx - EXIT_X, pfy - EXIT_Y) < 42) {      // made it: the seed answers
+            wonT = 3.6;
+            barX = pfx - 78;                                      // the wall grows between the Guardian and the knight
+            barrier.setLayoutX(barX);
+            barrier.setVisible(true);
+            barrierT = 0;
+            if (barX - cfx > 360) cfx = barX - 360;               // keep him in view for the charge
+            chaserImg.setImage(Sprites.get(def.rage()));
+            growFx.burst(EXIT_X, EXIT_Y, 24, () -> StoryFx.sparkle(3, Color.web("#c8ffd8")), 140, 1.2, -20);
             app.reportBossClear(def, clock, hp, MAX_HP);
             app.sfx(Sfx.MISSION);
-            say("MADE IT!", 1.4);
+            say("THE FOREST ANSWERS...", 2.6);
         }
         placeNodes();
         refreshHud();
@@ -415,13 +456,12 @@ public final class ChaseScreen extends Screen {
         modeT -= tpf;
         switch (mode) {
             case WAIT -> {
-                if (modeT <= 0) { mode = Mode.CHASE; say("FOR HER MAJESTY!", 1.6); app.sfx(Sfx.FULL); }
+                if (modeT <= 0) { mode = Mode.CHASE; say("HALT.", 1.6); app.sfx(Sfx.FULL); }
             }
             case CHASE -> {
                 if (!enraged && progress >= 0.5) {                 // phase 2: he snaps
                     enraged = true;
                     chaserImg.setImage(Sprites.get(def.rage()));
-                    say("I AM NOT SCRAP!", 2.2);
                     app.sfx(Sfx.FULL);
                 }
                 double speed = 158 + 14 * progress + (enraged ? 12 : 0);                 // starts slower than you and ends a hair faster: loop round the cubes to keep your lead
@@ -636,6 +676,84 @@ public final class ChaseScreen extends Screen {
     }
 
     // ------------------------------------------------------------------------------------------------
+    /** A trunk outline with gently wavy sides, drawn from its base (0, 0) upward. */
+    private static Polygon woodPolygon(double h, double phase) {
+        Polygon p = new Polygon();
+        int n = 10;
+        for (int k = 0; k <= n; k++) p.getPoints().addAll(-(10 - 4.0 * k / n) + 3 * Math.sin(k * 0.9 + phase), -h * k / n);
+        for (int k = n; k >= 0; k--) p.getPoints().addAll((10 - 4.0 * k / n) + 3 * Math.sin(k * 0.9 + phase + 1.2), -h * k / n);
+        return p;
+    }
+
+    /** The wall of living wood: seven trunks standing one above the other, so together they close the whole street. */
+    private void buildBarrier() {
+        java.util.Random r = new java.util.Random(3);
+        for (int i = 0; i < 7; i++) {
+            double baseY = Math.min(Y2 - 2, 118 + i * 62), h = 150 + r.nextInt(40);
+            Polygon wood = woodPolygon(h, r.nextDouble() * 6);
+            wood.setFill(Color.web(i % 2 == 0 ? "#7a5232" : "#6b4829"));
+            wood.setStroke(Color.web("#3d2614")); wood.setStrokeWidth(2);
+            Scale grow = new Scale(1, 0, 0, 0);
+            wood.getTransforms().add(grow);
+            Group box = new Group(wood);
+            Circle[] leaves = new Circle[7];
+            for (int k = 0; k < leaves.length; k++) {
+                double a = k * 1.05;
+                leaves[k] = new Circle(Math.cos(a) * 17, -h + Math.sin(a) * 11 + (k > 4 ? 46 : 0), 15 + r.nextInt(6), Color.web(k % 2 == 0 ? "#5fcf7a" : "#3fae62"));
+                leaves[k].setOpacity(0);
+                box.getChildren().add(leaves[k]);
+            }
+            box.setLayoutX((i % 2) * 14 - 7 + r.nextDouble() * 8);
+            box.setLayoutY(baseY);
+            box.setViewOrder(-baseY);
+            barrier.getChildren().add(box);
+            trunks.add(new Trunk(box, grow, leaves, i * 0.16 + r.nextDouble() * 0.1, h));
+        }
+        barrier.setVisible(false);
+        barrier.setViewOrder(-1500);
+        growFx.setViewOrder(-3000);
+        world.getChildren().addAll(barrier, growFx);
+    }
+
+    private void resetBarrier() {
+        barrierT = 0;
+        barrier.setVisible(false);
+        seedGlow.setScaleX(1); seedGlow.setScaleY(1); seedGlow.setOpacity(1);
+        for (Trunk t : trunks) {
+            t.started = false;
+            t.grow.setY(0);
+            for (Circle c : t.leaves) { c.setOpacity(0); c.setTranslateY(0); }
+        }
+        growFx.getChildren().clear();
+    }
+
+    /** The seed sprouts: the trunks shoot up behind the Guardian while the knight charges at the wall and is stopped. */
+    private void growBarrier(double tpf) {
+        seedGlow.setScaleX(1 + barrierT * 1.2);
+        seedGlow.setScaleY(seedGlow.getScaleX());
+        for (Trunk t : trunks) {
+            double u = Math.max(0, Math.min(1, (barrierT - 0.35 - t.delay) / 0.9));
+            double g = u * u * (3 - 2 * u);
+            if (g > 0 && !t.started) {
+                t.started = true;
+                growFx.burst(barX + t.box.getLayoutX(), t.box.getLayoutY(), 8, () -> StoryFx.dot(3, Color.web("#7a5232")), 90, 0.7, 260);
+                app.sfx(Sfx.DUMP);
+            }
+            t.grow.setY(g);
+            double leafOpacity = Math.max(0, Math.min(1, (g - 0.6) / 0.4));
+            for (Circle c : t.leaves) { c.setOpacity(leafOpacity); c.setTranslateY(t.height * (1 - g)); }
+        }
+        growFx.update(tpf);
+        double stop = barX - 34;
+        if (cfx < stop) {
+            cfx = Math.min(stop, cfx + 280 * tpf);
+            chaserImg.setImage(Sprites.get(def.rage()));
+        } else {
+            chaserImg.setImage(Sprites.get(STUN));
+        }
+        placeNodes();
+    }
+
     private void placeNodes() {
         playerImg.setLayoutX(pfx - PX / 2.0);
         playerImg.setLayoutY(pfy - SH + 10);
