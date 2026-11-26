@@ -6,6 +6,7 @@ import com.codevibers.ecoquest.model.Sfx;
 import java.util.ArrayList;
 import java.util.List;
 import javafx.geometry.Rectangle2D;
+import javafx.scene.Group;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -137,6 +138,7 @@ public final class ChaseScreen extends Screen {
     private boolean up, down, left, right;
 
     private final BossDef def;
+    private Group violet;
 
     public ChaseScreen(EcoQuestApp app, BossDef def, Runnable onWin) {
         super(app);
@@ -149,9 +151,12 @@ public final class ChaseScreen extends Screen {
             part.setLayoutX(i * Ui.W);
             world.getChildren().add(part);
         }
-        Rectangle dim = new Rectangle(WORLD_W, Ui.H, Color.web("#0d1a0f", 0.35));
+        Rectangle dim = new Rectangle(WORLD_W, Ui.H, Color.web("#1a0830", 0.3));
         dim.setViewOrder(-0.5);
         world.getChildren().add(dim);
+        violet = StoryFx.violetSky(WORLD_W);                      // the same violet storm sky as when the knight drops the maze
+        violet.setViewOrder(-0.6);
+        world.getChildren().add(violet);
 
         // Cubes of crushed junk: walls with doors, zigzags and pillars to dodge around, like the halls of a haunted house.
         // The creature runs straight at you and gets stuck on corners, so loop around the cubes to shake it off.
@@ -329,6 +334,7 @@ public final class ChaseScreen extends Screen {
     public void update(double tpf) {
         if (pause.isOpen()) { pause.update(tpf); return; }
         clock += tpf;
+        if (violet != null) violet.setOpacity(0.9 + 0.1 * Math.sin(clock * 3));
         if (shoutT > 0) shoutT -= tpf;
         shout.setOpacity(Math.max(0, Math.min(1, shoutT * 2)));
         if (flash > 0) {

@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
@@ -50,6 +51,28 @@ public final class StoryFx {
                 g.getChildren().add(v);
             }
         }
+        return g;
+    }
+
+    /** The violet storm sky of the Queen's Knight: a purple wash over the sky and pools of violet light on the street, {@code width} px wide. */
+    public static Group violetSky(double width) {
+        Group g = new Group();
+        Rectangle sky = new Rectangle(width, 320);
+        sky.setFill(new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, new Stop(0, Color.web("#9b4dff", 0.6)), new Stop(1, Color.web("#9b4dff", 0))));
+        Rectangle storm = new Rectangle(width, 330);
+        storm.setFill(new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, new Stop(0, Color.web("#3a0f66", 0.7)), new Stop(1, Color.web("#3a0f66", 0))));
+        g.getChildren().addAll(sky, storm);
+        for (double x = 180; x < width; x += 360) {
+            Circle skyGlow = glow(230, Color.web("#b070ff", 0.4));
+            skyGlow.setTranslateX(x);
+            skyGlow.setTranslateY(90);
+            Circle pool = glow(170, Color.web("#a35cff", 0.5));
+            pool.setTranslateX(x);
+            pool.setTranslateY(334);
+            pool.setScaleY(0.28);
+            g.getChildren().addAll(skyGlow, pool);
+        }
+        g.setMouseTransparent(true);
         return g;
     }
 

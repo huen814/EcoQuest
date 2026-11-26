@@ -27,7 +27,7 @@ public enum BossDef {
 
     /** Boss 2: the Queen's Knight, sent by Queen Muck to capture the Guardian. He cannot be beaten, so this one is an escape. Fought after level 6. */
     EXPERIMENT("THE QUEEN'S KNIGHT", 0, Kind.CHASE, "boss/knight.png", "boss/knight_rage.png", null, "FOR HER MAJESTY!",
-            "scene:dump", 144, 144, 30, 0, 0,
+            "scene:city", 144, 144, 30, 0, 0,
             List.of(),
             List.of(
                 "The maze shudders and the junk cubes crumble to dust. The knight, chasing too hard, trips over his own sludge and crashes into a heap of scrap. " +

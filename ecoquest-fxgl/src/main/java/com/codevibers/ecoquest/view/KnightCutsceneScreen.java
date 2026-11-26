@@ -12,14 +12,17 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 
 /**
- * Story before boss 2, after level 6: the Queen's Knight steps out of a purple portal in the park and takes the
- * Guardian prisoner, Mother Nature's voice frees the Guardian, the knight finds the empty cell, follows through his own
- * portal and drops the trash maze from the sky. {@code next} then starts the chase.
+ * Story before boss 2, after level 6: the Queen's Knight steps out of a purple portal in the park and takes the Guardian
+ * prisoner, the bars wither and a green portal carries the Guardian to a grassfield, the knight finds the empty cell, follows
+ * through his own portal into the streets and drops the trash maze from a violet sky. {@code next} then starts the chase.
  */
 public final class KnightCutsceneScreen extends Screen {
     private static final double FEET = 340;
@@ -27,8 +30,11 @@ public final class KnightCutsceneScreen extends Screen {
     private static final double PURPLE_HUE = 0.63;
     private static final Color PURPLE = Color.web("#b070ff", 0.85);
     private static final double KNIGHT_SIZE = 200, KNIGHT_FEET_PAD = 196;
+    private static final double CELL_PORTAL_X = 360, CELL_PORTAL_Y = FEET - 90;
+    private static final Color BAR = Color.web("#8a86a8"), SHINE = Color.web("#b5b1d4");
+    private static final Color LEAF_DARK = Color.web("#4fbf6e"), LEAF_LIGHT = Color.web("#a8f0b8");
 
-    private enum Beat { PARK_PORTAL, CELL, PARK_FREE, CELL_EMPTY, PARK_MAZE }
+    private enum Beat { PARK_PORTAL, CELL, FIELD, CELL_EMPTY, STREET }
 
     private static final List<List<String>> PAGES = List.of(
         List.of(
@@ -38,7 +44,7 @@ public final class KnightCutsceneScreen extends Screen {
             "Then the air above the path crackles and tears open. A ring of violet light spins wide, and a knight in dark armor strides " +
             "out of a purple portal. The whole park screams and scatters!",
 
-            "Knight: Halt, Guardian! I am the Queen's knight, sent by Queen Muck herself. Her Majesty is tired of you cleaning up her kingdom.",
+            "Knight: Halt, Guardian! I am the Queen's knight, sent by Queen Muck herself. Your work has been causing Her Majesty great discomfort, and I am here to put a stop to it.",
 
             "Knight: You will come with me. Quietly, if you know what is good for you. Loudly, if you do not!",
 
@@ -48,27 +54,28 @@ public final class KnightCutsceneScreen extends Screen {
 
             "Knight: Stay put and stay quiet. Her Majesty will decide what becomes of a meddling little Guardian. I will be back to check on you!",
 
-            "His footsteps fade down the hall. You rattle the bars, shove the lock and search every crack, but there is no way out. " +
+            "An hour crawls by. You rattle the bars, shove the lock and search every crack, but there is no way out. " +
             "Then something warm brushes your mind.",
 
             "???: Do not be afraid, little Guardian. I shall lend you my assistance.",
 
-            "A soft green light seeps through the stone. The lock clicks, the bars melt into leaves, and the whole cell dissolves " +
-            "into drifting petals. Who was that voice?"),
+            "A soft green light seeps through the stone. The lock clicks, the bars wither into leaves, and a swirling green portal opens " +
+            "in the middle of the cell. You do not hesitate. You step through!"),
         List.of(
-            "You blink. You are back in the park, standing among the trees and picnic blankets. The people have fled, the portal is gone, " +
-            "and your heart is pounding.",
+            "An hour after the knight locked you away, a kind and unseen hand has carried you out. You land softly in a wide grassfield " +
+            "full of flowers, with butterflies drifting all around you.",
 
-            "Sprout: Guardian, you are free! I do not know who helped you, but do not stand around. That knight will come looking for you!"),
+            "Sprout: Guardian, you are free! I do not know who helped you, but that knight will be back soon. Look, there is a bus stop " +
+            "down the road. Let's get back to town!"),
         List.of(
-            "Back in the dungeon, the knight returns to check on his prisoner.",
+            "Meanwhile, back in the dungeon, the knight returns to check on his prisoner.",
 
-            "Knight: Prisoner, rise and... what? The cell is EMPTY? The lock is covered in flowers! How?!",
+            "Knight: Time to come out, Guardian! Her Majesty wants a word with... what? The cell is EMPTY? The lock is covered in flowers! How?!",
 
-            "Knight: Her Majesty will have my head if the Guardian gets away. You cannot hide from me, wherever you run!"),
+            "Knight: Queen Muck will nag me for days if the Guardian gets away. You cannot hide from me, wherever you run!"),
         List.of(
-            "You race down the park path, searching for the next area. Behind you the air tears open again, and the knight's own portal " +
-            "spits him out right in your way!",
+            "You found the nearest bus stop and rode all the way back to town. Now you hurry down the street toward the next area, " +
+            "when the air behind you tears open again, and the knight's own portal spits him out right in your way!",
 
             "Knight: Found you! Did you think a few flowers could save you from the Queen's will?",
 
@@ -80,10 +87,11 @@ public final class KnightCutsceneScreen extends Screen {
 
     private static final class Villager {
         final ImageView node;
+        final Node shadow;
         final Ui.Label bang;
         final double homeX;
         double dx, speed;
-        Villager(ImageView node, Ui.Label bang, double homeX) { this.node = node; this.bang = bang; this.homeX = homeX; }
+        Villager(ImageView node, Node shadow, Ui.Label bang, double homeX) { this.node = node; this.shadow = shadow; this.bang = bang; this.homeX = homeX; }
     }
 
     private static final class Cube {
@@ -94,31 +102,196 @@ public final class KnightCutsceneScreen extends Screen {
         Cube(ImageView node, double targetY) { this.node = node; this.targetY = targetY; }
     }
 
+    private static final class Butterfly {
+        final Group node;
+        final double baseX, baseY, ax, ay, w1, w2, phase;
+        Butterfly(Group node, double baseX, double baseY, double ax, double ay, double w1, double w2, double phase) {
+            this.node = node; this.baseX = baseX; this.baseY = baseY; this.ax = ax; this.ay = ay; this.w1 = w1; this.w2 = w2; this.phase = phase;
+        }
+    }
+
+    /** A park-like street scene with a portal, the knight, the Guardian, a violet sky and the falling maze. */
+    private final class Stage {
+        final Group world = new Group();
+        final Group mid = new Group();
+        final StoryFx.Particles fx = new StoryFx.Particles(Ui.W, Ui.H);
+        final PortalView portal = new PortalView(PURPLE, PURPLE_HUE);
+        final ImageView knight = Sprites.view("boss/knight_story.png");
+        final Node knightShadow;
+        final ImageView player;
+        final Group cubeLayer = new Group();
+        final List<Cube> cubes = new ArrayList<>();
+        final Group violet = new Group();
+        final Rectangle storm = skyGradient(Ui.W, 330, Color.web("#3a0f66", 0.75));
+        final Rectangle skyFlash = skyGradient(Ui.W, 330, Color.web("#e6d0ff", 0.8));
+        final double playerX, knightX;
+        boolean portalOn;
+        double portalT, violetTarget, violetCur, stormTarget, stormCur, shakeT, flashLeft;
+        int landed;
+
+        Stage(Node scene, Node decor, double playerX, double knightX, double portalX, double portalY) {
+            this.playerX = playerX;
+            this.knightX = knightX;
+            Rectangle sky = skyGradient(Ui.W, 320, Color.web("#9b4dff", 0.6));
+            Circle skyGlow = StoryFx.glow(230, Color.web("#b070ff", 0.45));
+            skyGlow.setTranslateX(portalX);
+            skyGlow.setTranslateY(90);
+            Circle poolA = StoryFx.glow(170, Color.web("#a35cff", 0.55));
+            poolA.setTranslateX(portalX);
+            poolA.setTranslateY(FEET - 6);
+            poolA.setScaleY(0.28);
+            Circle poolB = StoryFx.glow(140, Color.web("#a35cff", 0.4));
+            poolB.setTranslateX(playerX);
+            poolB.setTranslateY(FEET - 2);
+            poolB.setScaleY(0.28);
+            violet.getChildren().addAll(sky, skyGlow, storm, poolA, poolB);
+            violet.setOpacity(0);
+            storm.setOpacity(0);
+            skyFlash.setOpacity(0);
+
+            portal.setTranslateX(portalX);
+            portal.setTranslateY(portalY);
+            portal.setVisible(false);
+            placeKnight(knight, knightX);
+            knight.setOpacity(0);
+            knightShadow = StoryFx.shadow(knightX, FEET, 110);
+            knightShadow.setOpacity(0);
+            player = Sprites.view(app.save().sibling().sheet(false));
+            StoryFx.stand(player, playerX, FEET, SCALE);
+            world.getChildren().addAll(scene, decor, violet, portal, mid, StoryFx.shadow(playerX, FEET, 90), knightShadow, knight, player, cubeLayer, fx, skyFlash);
+            world.setVisible(false);
+        }
+
+        void reset() {
+            portalOn = false;
+            portalT = 0;
+            portal.setVisible(false);
+            knight.setOpacity(0);
+            knight.setTranslateX(0);
+            knightShadow.setOpacity(0);
+            violetTarget = 0;
+            violetCur = 0;
+            stormTarget = 0;
+            stormCur = 0;
+            violet.setOpacity(0);
+            storm.setOpacity(0);
+            skyFlash.setOpacity(0);
+            flashLeft = 0;
+            shakeT = 0;
+            world.setTranslateX(0);
+            world.setTranslateY(0);
+            cubeLayer.getChildren().clear();
+            cubes.clear();
+            landed = 0;
+        }
+
+        void openPortal(double violetLevel) {
+            portal.setVisible(true);
+            portalOn = true;
+            portalT = 0;
+            violetTarget = violetLevel;
+            app.sfx(Sfx.MISSION);
+        }
+
+        void dropMaze() {
+            stormTarget = 1;
+            violetTarget = 1;
+            for (int i = 0; i < 18; i++) {
+                double x;
+                do { x = rng.nextDouble() * (Ui.W - 48); } while (Math.abs(x + 24 - playerX) < 90 || Math.abs(x + 24 - knightX) < 100);
+                ImageView iv = Sprites.view("boss/junk_cube" + (i % 3) + ".png");
+                iv.setFitWidth(48);
+                iv.setFitHeight(48);
+                iv.setLayoutX(x);
+                iv.setTranslateY(-60);
+                Cube c = new Cube(iv, 130 + rng.nextDouble() * 170);
+                c.delay = i * 0.12 + rng.nextDouble() * 0.1;
+                cubes.add(c);
+            }
+            cubes.sort(Comparator.comparingDouble(c -> c.targetY));
+            for (Cube c : cubes) cubeLayer.getChildren().add(c.node);
+        }
+
+        void update(double tpf) {
+            fx.update(tpf);
+            if (portalOn) {
+                portalT += tpf;
+                portal.update(portalT);
+            }
+            double op = knight.getOpacity();
+            if (portalOn && portalT > 0.8 && op < 1) {
+                op = Math.min(1, op + tpf / 0.6);
+                knight.setOpacity(op);
+                knightShadow.setOpacity(op);
+            }
+            knight.setTranslateX(Math.round((1 - op) * 40));
+            knight.setTranslateY(Math.round(Math.sin(t * 2.2) * 3));
+
+            violetCur = approach(violetCur, violetTarget, tpf * 1.2);
+            stormCur = approach(stormCur, stormTarget, tpf * 0.9);
+            violet.setOpacity(violetCur * (0.85 + 0.15 * Math.sin(t * 3)));
+            storm.setOpacity(stormCur);
+            if (flashLeft > 0) {
+                flashLeft -= tpf;
+                skyFlash.setOpacity(Math.max(0, flashLeft / 0.15) * 0.7);
+            }
+
+            for (Cube c : cubes) {
+                if (c.landed) continue;
+                c.delay -= tpf;
+                if (c.delay > 0) continue;
+                c.vy += 1400 * tpf;
+                c.y += c.vy * tpf;
+                if (c.y >= c.targetY) {
+                    c.y = c.targetY;
+                    c.landed = true;
+                    shakeT = 0.25;
+                    fx.burst(c.node.getLayoutX() + 24, c.targetY + 48, 4, () -> StoryFx.dot(3, Color.web("#8a7a6a", 0.8)), 60, 0.6, 40);
+                    landed++;
+                    if (landed % 4 == 1) {
+                        app.sfx(Sfx.DUMP);
+                        flashLeft = 0.15;
+                    }
+                }
+                c.node.setTranslateY(c.y);
+            }
+            if (shakeT > 0) {
+                shakeT -= tpf;
+                world.setTranslateX(shakeT > 0 ? (rng.nextDouble() - 0.5) * 8 : 0);
+                world.setTranslateY(shakeT > 0 ? (rng.nextDouble() - 0.5) * 8 : 0);
+            }
+        }
+    }
+
     private final Runnable next;
     private final DialogBox box;
     private final Random rng = new Random();
     private final Rectangle flash = new Rectangle(Ui.W, Ui.H, Color.WHITE);
 
-    private final Group parkWorld = new Group();
-    private final StoryFx.Particles parkFx = new StoryFx.Particles(Ui.W, Ui.H);
-    private final PortalView portal = new PortalView(PURPLE, PURPLE_HUE);
-    private final ImageView parkKnight = Sprites.view("boss/knight_story.png");
-    private final ImageView parkPlayer;
-    private final Node parkKnightShadow = StoryFx.shadow(500, FEET, 110);
-    private final Node cellKnightShadow = StoryFx.shadow(520, FEET, 110);
+    private final Stage park;
+    private final Stage street;
     private final List<Villager> villagers = new ArrayList<>();
-    private final Group cubeLayer = new Group();
-    private final List<Cube> cubes = new ArrayList<>();
 
     private final Group cellWorld = new Group();
     private final StoryFx.Particles cellFx = new StoryFx.Particles(Ui.W, Ui.H);
     private ImageView cellPlayer;
     private final ImageView cellKnight = Sprites.view("boss/knight_story.png");
+    private final Node cellKnightShadow = StoryFx.shadow(520, FEET, 110);
     private final Group bars = new Group();
+    private final List<Rectangle> barRects = new ArrayList<>();
+    private final List<Rectangle> shineRects = new ArrayList<>();
+    private final List<Rectangle> crossRects = new ArrayList<>();
+    private final PortalView cellPortal = new PortalView();
     private final Circle lampGlow = StoryFx.glow(170, Color.web("#b070ff", 0.55));
     private final Circle greenGlow = StoryFx.glow(230, Color.web("#9fffc0", 0.8));
     private final Rectangle greenTint = new Rectangle(Ui.W, Ui.H, Color.web("#8affb0"));
     private final Ui.Label shock = new Ui.Label("!?", 28, Color.web("#ff4d6d"));
+
+    private final Group fieldWorld = new Group();
+    private final StoryFx.Particles fieldFx = new StoryFx.Particles(Ui.W, Ui.H);
+    private final PortalView fieldPortal = new PortalView();
+    private final List<Butterfly> butterflies = new ArrayList<>();
+    private boolean fieldDrift;
 
     private Beat beat = Beat.PARK_PORTAL;
     private double t, beatT;
@@ -128,51 +301,62 @@ public final class KnightCutsceneScreen extends Screen {
     private double transT;
     private Beat transTo;
 
-    private boolean portalOn;
-    private double portalT;
     private boolean panic;
     private double panicT;
-    private double shakeT;
-    private int landedCubes;
 
-    private boolean cellKnightIn, cellKnightLeaving, greenOn, melting, leavesStarted;
-    private double cellKnightAlpha, cellKnightSlide, greenT, meltT;
+    private boolean cellKnightIn, cellKnightLeaving, greenOn, melting, leavesStarted, cellPortalOn, suckDone;
+    private double cellKnightAlpha, cellKnightSlide, greenT, meltT, cellPortalT, suckT;
 
     public KnightCutsceneScreen(EcoQuestApp app, Runnable next) {
         super(app);
         this.next = next;
 
-        parkWorld.getChildren().add(StoryFx.scene("park"));
-        parkWorld.getChildren().add(StoryFx.vignette(Color.web("#1e0f30", 0.3)));
-        portal.setVisible(false);
-        parkWorld.getChildren().add(portal);
+        park = new Stage(Sprites.view("backdrop/park_plaza.png"), new Group(), 190, 500, 540, 215);
+        park.fx.driftIn(12, () -> StoryFx.dot(1.8, Color.web("#bff3ff", 0.9)), 335, 195, 385, 250, 45, 8);
 
         double[] xs = {90, 270, 345, 430, 640};
         for (int i = 0; i < xs.length; i++) {
             double feet = 300 + (i % 3) * 14;
             ImageView v = Sprites.view("npc/npc_" + i + ".png");
             StoryFx.stand(v, xs[i], feet, 1.6);
+            Node shadow = StoryFx.shadow(xs[i], feet, 50);
             Ui.Label bang = new Ui.Label("!", 20, Color.web("#ff4d6d"));
             bang.setLayoutX(xs[i] - 6);
             bang.setLayoutY(feet - 72 * 1.6 - 30);
             bang.setVisible(false);
-            villagers.add(new Villager(v, bang, xs[i]));
-            parkWorld.getChildren().addAll(StoryFx.shadow(xs[i], feet, 50), v, bang);
+            villagers.add(new Villager(v, shadow, bang, xs[i]));
+            park.mid.getChildren().addAll(shadow, v, bang);
         }
 
-        placeKnight(parkKnight, 500);
-        parkKnight.setOpacity(0);
-        parkKnightShadow.setOpacity(0);
-        parkPlayer = Sprites.view(app.save().sibling().sheet(false));
-        StoryFx.stand(parkPlayer, 190, FEET, SCALE);
-        parkWorld.getChildren().addAll(StoryFx.shadow(190, FEET, 90), parkKnightShadow, parkKnight, parkPlayer, cubeLayer, parkFx);
+        street = new Stage(StoryFx.scene("city"), busStop(60, 290), 260, 500, 560, 215);
 
-        buildCell(app);
+        buildCell();
+        buildField();
 
         flash.setOpacity(0);
         flash.setMouseTransparent(true);
         box = new DialogBox(6, Ui.H - 134, Ui.W - 12, 128);
-        root.getChildren().addAll(parkWorld, cellWorld, flash, box);
+        root.getChildren().addAll(park.world, cellWorld, fieldWorld, street.world, flash, box);
+    }
+
+    // ------------------------------------------------------------------ scenery builders
+
+    private static Rectangle rect(double x, double y, double w, double h, Color fill) {
+        Rectangle r = new Rectangle(x, y, w, h);
+        r.setFill(fill);
+        return r;
+    }
+
+    private static Rectangle skyGradient(double w, double h, Color top) {
+        Rectangle r = new Rectangle(w, h);
+        r.setFill(new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE,
+                new Stop(0, top), new Stop(1, Color.color(top.getRed(), top.getGreen(), top.getBlue(), 0))));
+        r.setMouseTransparent(true);
+        return r;
+    }
+
+    private static double approach(double cur, double target, double step) {
+        return cur < target ? Math.min(target, cur + step) : Math.max(target, cur - step);
     }
 
     private static void placeKnight(ImageView iv, double centerX) {
@@ -182,13 +366,42 @@ public final class KnightCutsceneScreen extends Screen {
         iv.setLayoutY(FEET - KNIGHT_FEET_PAD);
     }
 
-    private static Rectangle rect(double x, double y, double w, double h, Color fill) {
-        Rectangle r = new Rectangle(x, y, w, h);
-        r.setFill(fill);
-        return r;
+    private static Group busStop(double x, double feetY) {
+        Group g = new Group();
+        g.getChildren().addAll(
+            rect(x, feetY - 96, 120, 8, Color.web("#2c2748")),
+            rect(x + 4, feetY - 88, 6, 88, Color.web("#4a4468")),
+            rect(x + 110, feetY - 88, 6, 88, Color.web("#4a4468")),
+            rect(x + 10, feetY - 86, 100, 62, Color.web("#8fd0ea", 0.35)),
+            rect(x + 16, feetY - 30, 88, 8, Color.web("#8a5a3c")),
+            rect(x + 20, feetY - 22, 6, 22, Color.web("#4a4468")),
+            rect(x + 94, feetY - 22, 6, 22, Color.web("#4a4468")),
+            rect(x + 132, feetY - 130, 5, 130, Color.web("#8e87aa")),
+            rect(x + 118, feetY - 142, 34, 24, Color.web("#2f6fd0")));
+        Ui.Label sign = new Ui.Label("BUS", 8, Color.WHITE);
+        sign.setLayoutX(x + 124);
+        sign.setLayoutY(feetY - 134);
+        g.getChildren().add(sign);
+        return g;
     }
 
-    private void buildCell(EcoQuestApp app) {
+    private Group butterflyNode(Color wing) {
+        Group g = new Group();
+        Polygon left = new Polygon(0, 0, -10, -8, -8, 5);
+        Polygon right = new Polygon(0, 0, 10, -8, 8, 5);
+        left.setFill(wing);
+        right.setFill(wing);
+        g.getChildren().addAll(left, right, rect(-1, -4, 2, 8, Color.web("#2c2748")));
+        return g;
+    }
+
+    private Node leaf() {
+        Polygon leaf = new Polygon(0, -4, 3, 0, 0, 4, -3, 0);
+        leaf.setFill(rng.nextBoolean() ? Color.web("#7cc79a", 0.9) : Color.web("#ff9fc4", 0.9));
+        return leaf;
+    }
+
+    private void buildCell() {
         Color mortar = Color.web("#241838");
         cellWorld.getChildren().add(new Rectangle(Ui.W, Ui.H, Color.web("#1a1128")));
         Group wall = new Group();
@@ -209,14 +422,23 @@ public final class KnightCutsceneScreen extends Screen {
         greenGlow.setOpacity(0);
         cellPlayer = Sprites.view(app.save().sibling().sheet(false));
         StoryFx.stand(cellPlayer, 190, FEET, SCALE);
-        cellWorld.getChildren().addAll(greenGlow, StoryFx.shadow(190, FEET, 90), cellPlayer);
+        cellPortal.setTranslateX(CELL_PORTAL_X);
+        cellPortal.setTranslateY(CELL_PORTAL_Y);
+        cellPortal.setVisible(false);
+        cellWorld.getChildren().addAll(greenGlow, StoryFx.shadow(190, FEET, 90), cellPlayer, cellPortal);
 
         for (double x = 30; x < 700; x += 46) {
-            bars.getChildren().add(rect(x, 0, 10, 330, Color.web("#8a86a8")));
-            bars.getChildren().add(rect(x, 0, 3, 330, Color.web("#b5b1d4")));
+            Rectangle bar = rect(x, 0, 10, 330, BAR);
+            Rectangle shine = rect(x, 0, 3, 330, SHINE);
+            barRects.add(bar);
+            shineRects.add(shine);
+            bars.getChildren().addAll(bar, shine);
         }
-        bars.getChildren().add(rect(0, 60, Ui.W, 8, Color.web("#6e6a8c")));
-        bars.getChildren().add(rect(0, 290, Ui.W, 8, Color.web("#6e6a8c")));
+        for (double y : new double[] {60, 290}) {
+            Rectangle cross = rect(0, y, Ui.W, 8, Color.web("#6e6a8c"));
+            crossRects.add(cross);
+            bars.getChildren().add(cross);
+        }
         cellWorld.getChildren().add(bars);
 
         placeKnight(cellKnight, 520);
@@ -233,35 +455,76 @@ public final class KnightCutsceneScreen extends Screen {
         cellWorld.setVisible(false);
     }
 
+    private void buildField() {
+        fieldWorld.getChildren().add(Sprites.view("backdrop/field.png"));
+
+        Color[] wings = {Color.web("#ff7aa8"), Color.web("#ffd84d"), Color.web("#7fd0ff"), Color.web("#b98cff"), Color.web("#ff9a57"), Color.web("#ffffff")};
+        for (int i = 0; i < 14; i++) {
+            Group node = butterflyNode(wings[i % wings.length]);
+            butterflies.add(new Butterfly(node, 40 + rng.nextDouble() * 640, 90 + rng.nextDouble() * 220,
+                    30 + rng.nextDouble() * 60, 10 + rng.nextDouble() * 25, 0.4 + rng.nextDouble() * 0.5, 0.7 + rng.nextDouble() * 0.8, rng.nextDouble() * 6.28));
+            fieldWorld.getChildren().add(node);
+        }
+
+        fieldPortal.setTranslateX(190);
+        fieldPortal.setTranslateY(FEET - 80);
+        ImageView fieldPlayer = Sprites.view(app.save().sibling().sheet(false));
+        StoryFx.stand(fieldPlayer, 190, FEET, SCALE);
+        fieldWorld.getChildren().addAll(StoryFx.shadow(190, FEET, 90), fieldPlayer, fieldPortal, fieldFx);
+        fieldWorld.setVisible(false);
+    }
+
+    // ------------------------------------------------------------------ flow
+
     @Override
     public void enter() {
         enterBeat(Beat.PARK_PORTAL);
     }
 
+    @Override
+    public void exit() {
+        Audio.stopMusicIf("knights_dialogue.wav");
+        Audio.stopMusicIf("title.wav");
+    }
+
     private void enterBeat(Beat b) {
         beat = b;
         beatT = 0;
-        boolean cell = b == Beat.CELL || b == Beat.CELL_EMPTY;
-        parkWorld.setVisible(!cell);
-        cellWorld.setVisible(cell);
+        park.world.setVisible(b == Beat.PARK_PORTAL);
+        cellWorld.setVisible(b == Beat.CELL || b == Beat.CELL_EMPTY);
+        fieldWorld.setVisible(b == Beat.FIELD);
+        street.world.setVisible(b == Beat.STREET);
 
         switch (b) {
-            case PARK_PORTAL -> resetPark(true);
-            case PARK_FREE -> {
-                resetPark(false);
-                parkFx.burst(190, FEET - 70, 12, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 80, 1.4, -30);
+            case PARK_PORTAL -> {
+                park.reset();
+                panic = false;
+                panicT = 0;
+                for (Villager v : villagers) {
+                    v.dx = 0;
+                    for (Node n : new Node[] {v.node, v.shadow}) {
+                        n.setVisible(true);
+                        n.setTranslateX(0);
+                        n.setTranslateY(0);
+                    }
+                    v.bang.setVisible(false);
+                    v.bang.setTranslateX(0);
+                    v.bang.setTranslateY(0);
+                }
             }
-            case PARK_MAZE -> {
-                resetPark(false);
-                openPortal(560, 215);
-            }
-            case CELL -> {
-                cellPlayer.setVisible(true);
-                bars.setVisible(true);
-                bars.setOpacity(1);
+            case CELL -> resetCell();
+            case FIELD -> {
+                fieldFx.burst(190, FEET - 70, 14, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 90, 1.4, -30);
+                if (!fieldDrift) {
+                    fieldDrift = true;
+                    fieldFx.drift(10, () -> StoryFx.sparkle(2.5, Color.web("#fff6a0", 0.85)), 0, -7, 24);
+                }
+                app.sfx(Sfx.MISSION);
             }
             case CELL_EMPTY -> {
+                Audio.playMusic("knights_dialogue.wav", 0.5);            // the knight finds the empty cell: his theme cuts back in
                 cellPlayer.setVisible(false);
+                cellPortal.setVisible(false);
                 bars.setVisible(false);
                 cellKnightIn = true;
                 cellKnightLeaving = false;
@@ -276,43 +539,51 @@ public final class KnightCutsceneScreen extends Screen {
                 greenTint.setOpacity(0.08);
                 startLeaves();
             }
+            case STREET -> {
+                street.reset();
+                street.openPortal(0.5);
+            }
             default -> { }
         }
         box.show(PAGES.get(b.ordinal()));
         lastPage = -1;
     }
 
-    private void resetPark(boolean withVillagers) {
-        portalOn = false;
-        portalT = 0;
-        portal.setVisible(false);
-        panic = false;
-        panicT = 0;
-        shakeT = 0;
-        parkWorld.setTranslateX(0);
-        parkWorld.setTranslateY(0);
-        parkKnight.setOpacity(0);
-        parkKnightShadow.setOpacity(0);
-        parkKnight.setTranslateX(0);
-        cubeLayer.getChildren().clear();
-        cubes.clear();
-        landedCubes = 0;
-        for (Villager v : villagers) {
-            v.dx = 0;
-            v.node.setTranslateX(0);
-            v.node.setVisible(withVillagers);
-            v.bang.setVisible(false);
-            v.bang.setTranslateX(0);
+    private void resetCell() {
+        cellKnightIn = false;
+        cellKnightLeaving = false;
+        greenOn = false;
+        melting = false;
+        cellPortalOn = false;
+        suckDone = false;
+        cellKnightAlpha = 0;
+        cellKnightSlide = 0;
+        greenT = 0;
+        meltT = 0;
+        cellPortalT = 0;
+        suckT = 0;
+        cellKnight.setOpacity(0);
+        cellKnight.setTranslateX(0);
+        cellKnightShadow.setOpacity(0);
+        cellKnightShadow.setTranslateX(0);
+        greenGlow.setOpacity(0);
+        greenTint.setOpacity(0);
+        cellPortal.setVisible(false);
+        cellPlayer.setVisible(true);
+        cellPlayer.setTranslateX(0);
+        cellPlayer.setTranslateY(0);
+        cellPlayer.setScaleX(1);
+        cellPlayer.setScaleY(1);
+        cellPlayer.setRotate(0);
+        bars.setVisible(true);
+        bars.setOpacity(1);
+        for (int i = 0; i < barRects.size(); i++) {
+            barRects.get(i).setHeight(330);
+            barRects.get(i).setFill(BAR);
+            shineRects.get(i).setHeight(330);
+            shineRects.get(i).setFill(SHINE);
         }
-    }
-
-    private void openPortal(double x, double y) {
-        portal.setTranslateX(x);
-        portal.setTranslateY(y);
-        portal.setVisible(true);
-        portalOn = true;
-        portalT = 0;
-        app.sfx(Sfx.MISSION);
+        for (Rectangle c : crossRects) c.setOpacity(1);
     }
 
     private void startPanic() {
@@ -327,28 +598,7 @@ public final class KnightCutsceneScreen extends Screen {
     private void startLeaves() {
         if (leavesStarted) return;
         leavesStarted = true;
-        cellFx.drift(14, () -> {
-            Polygon leaf = new Polygon(0, -4, 3, 0, 0, 4, -3, 0);
-            leaf.setFill(rng.nextBoolean() ? Color.web("#7cc79a", 0.9) : Color.web("#ff9fc4", 0.9));
-            return leaf;
-        }, 6, 20, 26);
-    }
-
-    private void dropMaze() {
-        for (int i = 0; i < 18; i++) {
-            double x;
-            do { x = rng.nextDouble() * (Ui.W - 48); } while (Math.abs(x + 24 - 190) < 90 || Math.abs(x + 24 - 520) < 100);
-            ImageView iv = Sprites.view("boss/junk_cube" + (i % 3) + ".png");
-            iv.setFitWidth(48);
-            iv.setFitHeight(48);
-            iv.setLayoutX(x);
-            iv.setTranslateY(-60);
-            Cube c = new Cube(iv, 130 + rng.nextDouble() * 170);
-            c.delay = i * 0.12 + rng.nextDouble() * 0.1;
-            cubes.add(c);
-        }
-        cubes.sort(Comparator.comparingDouble(c -> c.targetY));
-        for (Cube c : cubes) cubeLayer.getChildren().add(c.node);
+        cellFx.drift(14, this::leaf, 6, 20, 26);
     }
 
     @Override
@@ -356,8 +606,8 @@ public final class KnightCutsceneScreen extends Screen {
         t += tpf;
         beatT += tpf;
         box.update(tpf);
-        parkFx.update(tpf);
         cellFx.update(tpf);
+        fieldFx.update(tpf);
 
         if (trans == 1) {
             transT += tpf;
@@ -382,17 +632,22 @@ public final class KnightCutsceneScreen extends Screen {
             onPage(pg);
         }
 
-        if (parkWorld.isVisible()) animatePark(tpf);
+        if (park.world.isVisible()) {
+            park.update(tpf);
+            animateVillagers(tpf);
+        }
+        if (street.world.isVisible()) street.update(tpf);
         if (cellWorld.isVisible()) animateCell(tpf);
+        if (fieldWorld.isVisible()) animateField();
     }
 
     private void onPage(int pg) {
         switch (beat) {
             case PARK_PORTAL -> {
                 if (pg == 1) {
-                    openPortal(540, 215);
+                    park.openPortal(0.8);
                     startPanic();
-                    Audio.playMusic("chase.wav", 0.55);
+                    Audio.playMusic("knights_dialogue.wav", 0.5);       // the knight's own tense theme, until the chase starts
                 } else if (pg == 4) {
                     app.sfx(Sfx.BOOST);
                 }
@@ -402,11 +657,12 @@ public final class KnightCutsceneScreen extends Screen {
                 else if (pg == 2) cellKnightLeaving = true;
                 else if (pg == 3) {
                     greenOn = true;
+                    Audio.playMusic("title.wav", 0.45);                  // Mother Nature's theme, as in her grove later on
                     app.sfx(Sfx.MISSION);
                 } else if (pg == 4) {
                     melting = true;
                     startLeaves();
-                    cellFx.burst(190, FEET - 70, 14, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 90, 1.4, -30);
+                    cellFx.burst(360, FEET - 120, 16, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 110, 1.4, -30);
                     app.sfx(Sfx.BOOST);
                 }
             }
@@ -418,39 +674,28 @@ public final class KnightCutsceneScreen extends Screen {
                     shock.setVisible(false);
                 }
             }
-            case PARK_MAZE -> {
-                if (pg == 2) dropMaze();
+            case STREET -> {
+                if (pg == 2) street.dropMaze();
             }
             default -> { }
         }
     }
 
-    private void animatePark(double tpf) {
-        if (portalOn) {
-            portalT += tpf;
-            portal.update(portalT);
-        }
-        boolean knightOut = portalOn && portalT > 0.8;
-        double op = parkKnight.getOpacity();
-        if (knightOut && op < 1) {
-            op = Math.min(1, op + tpf / 0.6);
-            parkKnight.setOpacity(op);
-            parkKnightShadow.setOpacity(op);
-        }
-        parkKnight.setTranslateX(Math.round((1 - op) * 40));
-        parkKnight.setTranslateY(Math.round(Math.sin(t * 2.2) * 3));
-
+    private void animateVillagers(double tpf) {
         for (Villager v : villagers) {
             if (!v.node.isVisible()) continue;
             if (panic) {
                 v.dx += v.speed * tpf;
+                double hop = -Math.abs(Math.sin((panicT + v.homeX) * 14)) * 10;
                 v.node.setTranslateX(v.dx);
-                v.node.setTranslateY(-Math.abs(Math.sin((panicT + v.homeX) * 14)) * 10);
+                v.node.setTranslateY(hop);
+                v.shadow.setTranslateX(v.dx);
                 v.bang.setTranslateX(v.dx);
-                v.bang.setTranslateY(-Math.abs(Math.sin((panicT + v.homeX) * 14)) * 10);
+                v.bang.setTranslateY(hop);
                 double x = v.homeX + v.dx;
                 if (x < -60 || x > Ui.W + 60) {
                     v.node.setVisible(false);
+                    v.shadow.setVisible(false);
                     v.bang.setVisible(false);
                 }
             } else {
@@ -458,27 +703,21 @@ public final class KnightCutsceneScreen extends Screen {
             }
         }
         if (panic) panicT += tpf;
+    }
 
-        for (Cube c : cubes) {
-            if (c.landed) continue;
-            c.delay -= tpf;
-            if (c.delay > 0) continue;
-            c.vy += 1400 * tpf;
-            c.y += c.vy * tpf;
-            if (c.y >= c.targetY) {
-                c.y = c.targetY;
-                c.landed = true;
-                shakeT = 0.25;
-                parkFx.burst(c.node.getLayoutX() + 24, c.targetY + 48, 4, () -> StoryFx.dot(3, Color.web("#8a7a6a", 0.8)), 60, 0.6, 40);
-                if (landedCubes++ % 5 == 0) app.sfx(Sfx.DUMP);
-            }
-            c.node.setTranslateY(c.y);
+    private void animateField() {
+        for (Butterfly b : butterflies) {
+            b.node.setTranslateX(b.baseX + b.ax * Math.sin(b.w1 * t + b.phase));
+            b.node.setTranslateY(b.baseY + b.ay * Math.sin(b.w2 * t + b.phase * 1.7));
+            b.node.setScaleX(0.45 + 0.55 * Math.abs(Math.sin(t * 12 + b.phase)));
+            b.node.setRotate(14 * Math.cos(b.w1 * t + b.phase));
         }
-        if (shakeT > 0) {
-            shakeT -= tpf;
-            parkWorld.setTranslateX(shakeT > 0 ? (rng.nextDouble() - 0.5) * 8 : 0);
-            parkWorld.setTranslateY(shakeT > 0 ? (rng.nextDouble() - 0.5) * 8 : 0);
-        }
+        fieldPortal.update(1.0 + beatT);
+        double k = Math.min(1, beatT / 1.6);
+        fieldPortal.setScaleX(fieldPortal.getScaleX() * (1 - 0.85 * k));
+        fieldPortal.setScaleY(fieldPortal.getScaleY() * (1 - 0.85 * k));
+        fieldPortal.setOpacity(1 - k);
+        fieldPortal.setVisible(k < 1);
     }
 
     private void animateCell(double tpf) {
@@ -507,10 +746,49 @@ public final class KnightCutsceneScreen extends Screen {
             greenGlow.setOpacity(greenT * 0.8);
             greenTint.setOpacity(greenT * 0.22);
         }
+
         if (melting) {
-            meltT = Math.min(1, meltT + tpf / 1.2);
-            bars.setOpacity(1 - meltT);
-            bars.setTranslateY(-meltT * 20);
+            meltT = Math.min(1, meltT + tpf / 1.6);
+            for (int i = 0; i < barRects.size(); i++) {
+                Rectangle bar = barRects.get(i);
+                double p = Math.max(0, Math.min(1, meltT * 1.5 - (i % 5) * 0.08));
+                bar.setHeight(330 * (1 - p));
+                bar.setFill(BAR.interpolate(LEAF_DARK, p));
+                shineRects.get(i).setHeight(330 * (1 - p));
+                shineRects.get(i).setFill(SHINE.interpolate(LEAF_LIGHT, p));
+                if (p > 0 && p < 1 && rng.nextDouble() < 0.07) {
+                    cellFx.burst(bar.getX() + 5, bar.getHeight(), 2, this::leaf, 45, 1.0, 70);
+                }
+            }
+            for (Rectangle c : crossRects) c.setOpacity(1 - meltT);
+
+            if (meltT > 0.5 && !cellPortalOn) {
+                cellPortalOn = true;
+                cellPortalT = 0;
+                cellPortal.setVisible(true);
+                cellFx.converge(14, () -> StoryFx.sparkle(3, Color.web("#9fe0cf")), CELL_PORTAL_X, CELL_PORTAL_Y, 1.1, 60);
+                app.sfx(Sfx.MISSION);
+            }
+        }
+
+        if (cellPortalOn) {
+            cellPortalT += tpf;
+            cellPortal.update(cellPortalT);
+            if (cellPortalT > 1.2 && !suckDone) {
+                suckT = Math.min(1, suckT + tpf / 1.3);
+                double e = suckT * suckT;
+                cellPlayer.setTranslateX((CELL_PORTAL_X - 190) * e);
+                cellPlayer.setTranslateY(-18 * e);
+                cellPlayer.setScaleX(1 - 0.92 * suckT);
+                cellPlayer.setScaleY(1 - 0.92 * suckT);
+                cellPlayer.setRotate(suckT * 720);
+                if (suckT >= 1) {
+                    suckDone = true;
+                    cellPlayer.setVisible(false);
+                    cellFx.burst(CELL_PORTAL_X, CELL_PORTAL_Y, 16, () -> StoryFx.sparkle(3, Color.web("#c8ffd8", 0.9)), 120, 1.0, 0);
+                    app.sfx(Sfx.BOOST);
+                }
+            }
         }
     }
 
@@ -522,13 +800,13 @@ public final class KnightCutsceneScreen extends Screen {
     }
 
     private void endBeat() {
-        if (beat == Beat.PARK_MAZE) {
+        if (beat == Beat.STREET) {
             next.run();
             return;
         }
         Color c = switch (beat) {
             case CELL -> Color.web("#baf5c8");
-            case PARK_FREE -> Color.web("#0a0612");
+            case FIELD -> Color.web("#0a0612");
             default -> Color.web("#b070ff");
         };
         flash.setFill(c);
