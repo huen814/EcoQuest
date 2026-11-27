@@ -1291,18 +1291,42 @@ def muck_mound(mode="normal"):
 
 
 def stink_ghost():
-    """A small sad ghost, one of the maze spirits the Discarded Knight's lantern calls up (16x20 art, drawn at 3x)."""
+    """A ghost made out of plastic bags, one of the maze spirits the Discarded Knight's lantern calls up: a billowing
+    carrier bag with its tied handles for a tuft, layered translucent panels, crinkle folds, scrap-bag arms and a ragged
+    shredded hem, with a torn-open mouth and sad hollow eyes (16x20 art, drawn at 3x)."""
     im, d = canvas(16, 20)
-    body, tear = hx("#d6f2fa"), hx("#7ad0ee")
-    d.ellipse([5, 17, 12, 19], fill=(40, 30, 60, 60))
-    d.polygon([(2, 17), (2, 9), (4, 4), (8, 2), (12, 4), (14, 9), (14, 17), (11, 15), (8, 17), (5, 15)], fill=body, outline=INK)
-    for x in (5, 11):
-        d.ellipse([x - 2, 6, x + 2, 10], fill=hx("#ffffff"), outline=INK); d.point((x, 9), fill=INK)
-        d.line([(x - 2, 5), (x + 1, 4)] if x == 5 else [(x - 1, 4), (x + 2, 5)], fill=INK)   # brows slanting up in the middle
-        d.point((x + (1 if x == 11 else -1), 11), fill=tear); d.point((x + (1 if x == 11 else -1), 12), fill=tear)
-    d.line([(6, 14), (7, 13), (9, 13), (10, 14)], fill=INK)                                   # a small frown
-    for x in (4, 10):
-        rect(d, x, 17, x + 2, 19, body, INK)
+    film, film_b, film_g = (236, 244, 250, 226), (176, 208, 230, 232), (206, 214, 224, 232)
+    fold, glint, tear = hx("#8fa9bd"), hx("#ffffff"), hx("#7ad0ee")
+    d.ellipse([4, 17, 12, 19], fill=(40, 30, 60, 60))
+    # the tied handles: two loops and a knot sticking up from the head
+    d.ellipse([3, 0, 7, 4], fill=None, outline=INK)
+    d.ellipse([9, 0, 13, 4], fill=None, outline=INK)
+    # scrap-bag arms, flapping out to the sides
+    d.polygon([(3, 9), (0, 11), (1, 15), (4, 12)], fill=film_g, outline=INK)
+    d.polygon([(12, 9), (15, 11), (14, 15), (11, 12)], fill=film_g, outline=INK)
+    # the body: a bulging bag whose bottom is torn into ribbons
+    body = [(3, 15), (2, 10), (3, 6), (6, 3), (9, 3), (12, 6), (13, 10), (12, 15), (13, 18), (11, 16), (10, 19), (8, 16),
+            (6, 19), (5, 16), (3, 18)]
+    mask = Image.new("L", im.size, 0)
+    ImageDraw.Draw(mask).polygon(body, fill=255)
+    layer = Image.new("RGBA", im.size, film)
+    ld = ImageDraw.Draw(layer)
+    ld.polygon([(2, 8), (7, 6), (5, 20), (2, 20)], fill=film_b)                      # a second, blue-tinted bag showing through
+    ld.polygon([(9, 7), (14, 9), (14, 20), (9, 20)], fill=film_g)                    # and a grey one
+    for a, b in (((4, 7), (6, 9)), ((9, 6), (11, 8)), ((6, 15), (9, 13)), ((3, 12), (4, 14)), ((11, 13), (12, 15))):
+        ld.line([a, b], fill=fold)                                                   # crinkle folds
+    for p in ((5, 4), (10, 5), (3, 10), (11, 11), (7, 14)):
+        ld.point(p, fill=glint)                                                      # shine on the film
+    im.paste(layer, (0, 0), mask)
+    d.polygon(body, fill=None, outline=INK)
+    d.rectangle([6, 2, 9, 4], fill=film_b, outline=INK)                              # the knot
+    d.line([(7, 2), (8, 4)], fill=fold)
+    # a sad face: hollow eyes with a tear, and a ragged tear in the bag for a mouth
+    for x in (5, 10):
+        d.rectangle([x - 1, 7, x, 9], fill=hx("#2a2f3a")); d.point((x - 1, 7), fill=glint)
+        d.line([(x - 2, 5), (x + 1, 4)] if x == 5 else [(x - 1, 4), (x + 2, 5)], fill=fold)     # brows slanting up in the middle
+    d.point((4, 10), fill=tear); d.point((4, 11), fill=tear)
+    d.line([(6, 13), (7, 12), (8, 13), (9, 12)], fill=hx("#2a2f3a")); d.point((7, 14), fill=hx("#2a2f3a"))
     return im
 
 

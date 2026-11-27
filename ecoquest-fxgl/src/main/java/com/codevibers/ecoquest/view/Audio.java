@@ -71,8 +71,36 @@ public final class Audio {
         return buf;
     }
 
+    /** Thunder: one sharp crack, then low-passed noise that rolls and rumbles away. */
+    private static byte[] thunderSynth(Sfx sfx) {
+        int n = (int) (RATE * sfx.seconds);
+        double[] out = new double[n];
+        java.util.Random noiseSrc = new java.util.Random(11);
+        double lp1 = 0, lp2 = 0, peak = 0;
+        for (int i = 0; i < n; i++) {
+            double t = i / (double) RATE;
+            double noise = noiseSrc.nextDouble() * 2 - 1;
+            double k = 0.03 + 0.12 * Math.exp(-t / 0.2);        // the rumble darkens as it fades
+            lp1 += k * (noise - lp1);
+            lp2 += k * (lp1 - lp2);
+            double roll = 1 + 0.6 * Math.sin(2 * Math.PI * 6.5 * t + 2 * Math.sin(2 * Math.PI * 1.9 * t));
+            double rumble = lp2 * 14 * roll * Math.min(1, t / 0.03) * Math.exp(-t / 0.6);
+            double crack = noise * Math.exp(-t / 0.025);
+            out[i] = rumble + crack * 0.6;
+            peak = Math.max(peak, Math.abs(out[i]));
+        }
+        byte[] buf = new byte[n * 2];
+        for (int i = 0; i < n; i++) {
+            short v = (short) (out[i] / peak * .5 * 32767);
+            buf[i * 2] = (byte) v;
+            buf[i * 2 + 1] = (byte) (v >> 8);
+        }
+        return buf;
+    }
+
     private static byte[] synth(Sfx sfx) {
         if (sfx == Sfx.LAUGH) return laughSynth(sfx);
+        if (sfx == Sfx.THUNDER) return thunderSynth(sfx);
         int rate = RATE;
         int n = (int) (rate * sfx.seconds);
         byte[] buf = new byte[n * 2];

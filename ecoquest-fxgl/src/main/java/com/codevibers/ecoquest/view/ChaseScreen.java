@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -14,6 +16,9 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Ellipse;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Polyline;
 import javafx.scene.shape.Rectangle;
 
 /**
@@ -33,7 +38,7 @@ public final class ChaseScreen extends Screen {
     private static final int MAX_HP = 3;
     private static final double INVINCIBLE = 1.4;
     private static final double EXIT_X = WORLD_W - 120, EXIT_Y = 290;
-    private static final int CW = 96, CH = 96;                   // the knight's sprite (96x96 art, drawn 1:1): he stands ~82 px tall, the Guardian 72
+    private static final int KNIGHT_FEET = 11;                   // the knight's sprites (transparent, drawn 1:1, ~103 px tall with the staff, he stands ~83 px tall, the Guardian 72) end at his boots
     private static final String STUN = "boss/knight_stun.png";
 
     /** The street as a grid of junk cubes (# = a cube), 7 rows high (down to the bottom edge), 48 px per cell: start and exit areas are clear. */
@@ -164,6 +169,21 @@ public final class ChaseScreen extends Screen {
     private final StoryFx.Particles growFx = new StoryFx.Particles(WORLD_W, Ui.H);
     private double barrierT, barX;
 
+    // --- the storm-wrecked street (backdrop only: none of it blocks or hurts you)
+    private final Group ground = new Group();                  // litter, puddles and the dark side of the cracks
+    private final Group crackGlow = new Group();               // the violet light seeping out of the cracks
+    private final Group mist = new Group();
+    private final double[] mistX = new double[11];
+    private final Group bolt = new Group();
+    private final Group rain = new Group();
+    private final double[] dropV = new double[90];
+    private final Rectangle thunderRect = new Rectangle(Ui.W, Ui.H, Color.web("#e4d8ff"));
+    private final StoryFx.Particles debris = new StoryFx.Particles(WORLD_W, Ui.H);   // bags and paper blown along by the wind
+    private final StoryFx.Particles popFx = new StoryFx.Particles(WORLD_W, Ui.H);    // scraps shed by the ghosts, sparks of lightning
+    private final java.util.Random fxRng = new java.util.Random(42);
+    private double thunderCd = 2.5, strikeT = -1, rumbleT = -1;
+    private Rectangle streetDim;
+
     public ChaseScreen(EcoQuestApp app, BossDef def, Runnable onWin) {
         super(app);
         this.onWin = onWin;
@@ -176,6 +196,7 @@ public final class ChaseScreen extends Screen {
             world.getChildren().add(part);
         }
         Rectangle dim = new Rectangle(WORLD_W, Ui.H, Color.web("#1a0830", 0.3));
+        streetDim = dim;
         dim.setViewOrder(-0.5);
         world.getChildren().add(dim);
         violet = StoryFx.violetSky(WORLD_W);                      // the same violet storm sky as when the knight drops the maze
@@ -189,6 +210,8 @@ public final class ChaseScreen extends Screen {
                 if (MAZE[r].charAt(c) == '#') addCube(c, r);
             }
         }
+
+        buildStreetFx();
 
         for (int gx = 0; gx < GW; gx++) {                         // where the creature can stand
             for (int gy = 0; gy < GH; gy++) free[gx][gy] = !blocked(gx * G + G / 2.0, GY0 + gy * G + G / 2.0, 16, 8);
@@ -216,10 +239,13 @@ public final class ChaseScreen extends Screen {
         playerImg = new ImageView(Wardrobe.sheet(app.save(), app.save().sibling(), false));
         playerImg.setViewport(new Rectangle2D(0, 0, PX, SH));
         chaserImg = Sprites.view(def.normal());
-        chaserImg.setFitWidth(CW); chaserImg.setFitHeight(CH);
         world.getChildren().addAll(chaserGlow, chaserImg, playerImg);
         world.setMouseTransparent(true);
         root.getChildren().add(world);
+
+        buildRain();
+        thunderRect.setOpacity(0); thunderRect.setMouseTransparent(true);
+        root.getChildren().addAll(rain, thunderRect);
 
         flashRect.setOpacity(0); flashRect.setMouseTransparent(true);
         root.getChildren().add(flashRect);
@@ -312,6 +338,7 @@ public final class ChaseScreen extends Screen {
         spits.clear(); spitCd = 6.0;
         for (Ghost g : ghosts) if (!world.getChildren().contains(g.node)) world.getChildren().add(g.node);
         enraged = false;
+        resetStorm();
         resetBarrier();
         chaserImg.setImage(Sprites.get(def.normal()));
         say("RUN!", 1.4);
@@ -344,6 +371,7 @@ public final class ChaseScreen extends Screen {
 
     private void openPause() {
         up = down = left = right = false;
+        strikeT = -1; rumbleT = -1; bolt.setVisible(false); thunderRect.setOpacity(0);
         pause.open();
     }
 
@@ -366,6 +394,8 @@ public final class ChaseScreen extends Screen {
             flashRect.setOpacity(Math.max(0, Math.min(0.55, flash)));
         }
         updateRings(tpf);
+        updateStormFx(tpf);
+        if (wonT >= 0) calmStorm();
 
         if (wonT >= 0) {                                         // the seed grows a wall of living wood between you and the knight
             wonT -= tpf;
@@ -601,12 +631,18 @@ public final class ChaseScreen extends Screen {
     }
 
     private void updateGhosts() {
-        for (Ghost g : ghosts) g.y = g.baseY + Math.sin(clock * g.spd + g.phase) * g.amp;
+        for (Ghost g : ghosts) {
+            g.y = g.baseY + Math.sin(clock * g.spd + g.phase) * g.amp;
+            if (g.node.getParent() != null && fxRng.nextDouble() < 0.03) {          // scraps of bag flake off as it drifts
+                popFx.burst(g.x, g.y - 8, 1, () -> StoryFx.centeredItem("plastic_bag", 9), 28, 1.0, 45);
+            }
+        }
     }
 
     private void popGhost(Ghost g) {
         world.getChildren().remove(g.node);
         ring(g.x, g.y - 25, Color.web("#e4def0"));
+        popFx.burst(g.x, g.y - 25, 12, () -> StoryFx.centeredItem("plastic_bag", 12), 130, 0.9, 220);
         app.sfx(Sfx.DUMP);
     }
 
@@ -666,6 +702,212 @@ public final class ChaseScreen extends Screen {
             if (r.life <= 0) gone.add(r);
         }
         for (Ring r : gone) { rings.remove(r); world.getChildren().remove(r.node); }
+    }
+
+    // ------------------------------------------------------------------------------------------------
+    // The storm-wrecked street: litter, puddles, glowing cracks, mist, blowing bags, rain and lightning.
+    // It stays clear of the seed at the end of the street.
+
+    private static final String[] STREET_LITTER = {
+        "aluminum_can", "banana_peel", "bottle_cap", "cardboard_box", "food_container", "food_scraps", "glass_bottle",
+        "glass_jar", "newspaper", "notebook_paper", "plastic_bag", "plastic_bag", "plastic_bottle", "tin_can"
+    };
+
+    private void buildStreetFx() {
+        java.util.Random r = new java.util.Random(7);
+        double maxX = EXIT_X - 190;
+        for (int i = 0; i < 16; i++) addCrack(60 + r.nextDouble() * (maxX - 60), 175 + r.nextDouble() * 285, r);
+        for (int i = 0; i < 18; i++) {                            // puddles of sludge rainwater
+            double x = 80 + r.nextDouble() * (maxX - 80), y = 190 + r.nextDouble() * 270;
+            double rx = 18 + r.nextDouble() * 26, ry = 5 + r.nextDouble() * 6;
+            Ellipse puddle = new Ellipse(x, y, rx, ry);
+            puddle.setFill(Color.web("#150a28", 0.6));
+            puddle.setStroke(Color.web("#a070e0", 0.4));
+            puddle.setStrokeWidth(1.5);
+            Ellipse sheen = new Ellipse(x - rx * 0.25, y - ry * 0.3, rx * 0.45, ry * 0.3);
+            sheen.setFill(Color.web("#d8c0ff", 0.25));
+            ground.getChildren().addAll(puddle, sheen);
+        }
+        for (int i = 0; i < 90; i++) {                            // litter all over the street
+            double x = 30 + r.nextDouble() * (maxX - 30), y = 165 + r.nextDouble() * 295;
+            double size = 18 + r.nextDouble() * 16;
+            String name = STREET_LITTER[r.nextInt(STREET_LITTER.length)];
+            double rot = r.nextDouble() * 360;
+            if (blocked(x, y + size / 2, 12, 8)) continue;
+            Ellipse shade = new Ellipse(x, y + size * 0.42, size * 0.42, size * 0.14);
+            shade.setFill(Color.web("#0a0414", 0.35));
+            ImageView v = StoryFx.item(name, size);
+            v.setLayoutX(x - size / 2); v.setLayoutY(y - size / 2);
+            v.setRotate(rot);
+            ground.getChildren().addAll(shade, v);
+        }
+        ground.setViewOrder(-0.1);
+        crackGlow.setViewOrder(-0.55);
+        for (int i = 0; i < mistX.length; i++) {                  // low mist drifting over the street
+            Circle m = StoryFx.glow(120 + r.nextDouble() * 60, Color.web("#cdb8ff", 0.17));
+            mistX[i] = 100 + i * (WORLD_W - 200) / (mistX.length - 1) + (r.nextDouble() - 0.5) * 120;
+            m.setTranslateY(300 + r.nextDouble() * 170);
+            m.setScaleY(0.28);
+            mist.getChildren().add(m);
+        }
+        mist.setViewOrder(-0.55);
+        debris.drift(24, () -> StoryFx.centeredItem(fxRng.nextInt(3) == 0 ? "newspaper" : "plastic_bag", 14 + fxRng.nextInt(9)), -120, 10, 30);
+        debris.setViewOrder(-1000);                               // in front of the cubes, the ghosts and the characters, behind the wall of wood
+        bolt.setViewOrder(-0.8); bolt.setVisible(false); bolt.setMouseTransparent(true);
+        popFx.setViewOrder(-3000);
+        world.getChildren().addAll(ground, crackGlow, mist, debris, bolt, popFx);
+    }
+
+    /** A real-looking fissure: a long run that mostly crosses the street with sharp kinks, tapering to a hairline, with a few short forks. */
+    private void addCrack(double x, double y, java.util.Random r) {
+        double a = (r.nextBoolean() ? 0 : Math.PI) + (r.nextDouble() - 0.5) * 1.0;
+        java.util.List<double[]> pts = crackPath(x, y, a, 8 + r.nextInt(5), 0.45, 14, 28, r);
+        int n = pts.size() - 1;
+        drawCrack(pts, 0, n / 2, 4, 0.7);
+        drawCrack(pts, n / 2, n - 2, 3, 0.6);
+        drawCrack(pts, n - 2, n, 2, 0.4);
+        int forks = 2 + r.nextInt(2);
+        for (int f = 0; f < forks; f++) {
+            double[] p = pts.get(2 + r.nextInt(Math.max(1, n - 3)));
+            double ba = a + (r.nextBoolean() ? 1 : -1) * (0.6 + r.nextDouble() * 0.5);
+            java.util.List<double[]> br = crackPath(p[0], p[1], ba, 3 + r.nextInt(2), 0.5, 8, 16, r);
+            drawCrack(br, 0, br.size() - 2, 2, 0.5);
+        }
+    }
+
+    private static double snap(double v) { return Math.round(v / PS) * PS; }
+
+    private java.util.List<double[]> crackPath(double x, double y, double a, int segs, double wobble, double minLen, double maxLen, java.util.Random r) {
+        java.util.List<double[]> pts = new ArrayList<>();
+        double cx = snap(x), cy = snap(y);
+        for (int i = 0; i <= segs; i++) {
+            pts.add(new double[]{cx, cy});
+            a += (r.nextDouble() - 0.5) * wobble;
+            double len = minLen + r.nextDouble() * (maxLen - minLen);
+            cx = snap(cx + Math.cos(a) * len);
+            cy = snap(cy + Math.sin(a) * len * 0.55);               // the street is seen from a slant, so cracks run flatter
+        }
+        return pts;
+    }
+
+    /** One stretch of a crack: a dark fissure, a lighter lip on its lower edge for depth, and a thin violet glow inside. */
+    private void drawCrack(java.util.List<double[]> pts, int from, int to, double width, double glowAlpha) {
+        Polyline dark = new Polyline(), lip = new Polyline(), lit = new Polyline();
+        for (int i = from; i <= to; i++) {
+            double[] p = pts.get(i);
+            dark.getPoints().addAll(p[0], p[1]);
+            lip.getPoints().addAll(p[0], p[1] + width);
+            lit.getPoints().addAll(p[0], p[1]);
+        }
+        dark.setFill(null); lip.setFill(null); lit.setFill(null);
+        dark.setStroke(Color.web("#0b0514", 0.9)); dark.setStrokeWidth(width);
+        lip.setStroke(Color.web("#6a5a88", 0.35)); lip.setStrokeWidth(1);
+        lit.setStroke(Color.web("#b070ff", glowAlpha)); lit.setStrokeWidth(1);
+        lit.setBlendMode(BlendMode.ADD);
+        ground.getChildren().addAll(lip, dark);
+        crackGlow.getChildren().add(lit);
+    }
+
+    private void buildRain() {
+        for (int i = 0; i < dropV.length; i++) {
+            double len = 14 + fxRng.nextDouble() * 12;
+            Line l = new Line(0, 0, -0.28 * len, len);
+            l.setStroke(Color.web("#d4c8ff", 0.3 + fxRng.nextDouble() * 0.2));
+            l.setStrokeWidth(1.2);
+            l.setTranslateX(fxRng.nextDouble() * (Ui.W + 160));
+            l.setTranslateY(fxRng.nextDouble() * Ui.H);
+            dropV[i] = 620 + fxRng.nextDouble() * 320;
+            rain.getChildren().add(l);
+        }
+        rain.setMouseTransparent(true);
+    }
+
+    private void resetStorm() {
+        thunderCd = 2.5; strikeT = -1; rumbleT = -1;
+        rain.setOpacity(1); mist.setOpacity(1); debris.setOpacity(1); streetDim.setOpacity(1);
+        bolt.setVisible(false);
+        thunderRect.setOpacity(0);
+        popFx.clear();
+    }
+
+    /** Once the seed answers, the storm dies away with the wall of wood growing: the rain, mist, violet sky and cracks all fade out. */
+    private void calmStorm() {
+        double calm = Math.max(0, Math.min(1, (3.6 - wonT) / 2.8));
+        double keep = 1 - calm * calm * (3 - 2 * calm);
+        violet.setOpacity(violet.getOpacity() * keep);
+        streetDim.setOpacity(keep);
+        rain.setOpacity(keep); mist.setOpacity(keep); debris.setOpacity(keep);
+        crackGlow.setOpacity(crackGlow.getOpacity() * keep);
+    }
+
+    private void updateStormFx(double tpf) {
+        debris.update(tpf);
+        popFx.update(tpf);
+        for (int i = 0; i < mist.getChildren().size(); i++) {
+            mist.getChildren().get(i).setTranslateX(mistX[i] + Math.sin(clock * 0.25 + i * 1.7) * 70);
+        }
+        for (int i = 0; i < dropV.length; i++) {
+            Node l = rain.getChildren().get(i);
+            double nx = l.getTranslateX() - dropV[i] * 0.28 * tpf, ny = l.getTranslateY() + dropV[i] * tpf;
+            if (ny > Ui.H + 20 || nx < -30) { nx = fxRng.nextDouble() * (Ui.W + 160); ny = -30 - fxRng.nextDouble() * 40; }
+            l.setTranslateX(nx); l.setTranslateY(ny);
+        }
+        crackGlow.setOpacity(0.5 + 0.25 * Math.sin(clock * 2.2));
+
+        if (strikeT < 0 && wonT < 0) {
+            thunderCd -= tpf;
+            if (thunderCd <= 0) { strike(); thunderCd = 4 + fxRng.nextDouble() * 6; }
+        }
+        if (rumbleT >= 0) {
+            rumbleT -= tpf;
+            if (rumbleT < 0) app.sfx(Sfx.THUNDER);                 // the rumble arrives a moment after the flash
+        }
+        if (strikeT >= 0) {
+            strikeT += tpf;
+            double f = strikeT < 0.07 ? 1 : strikeT < 0.15 ? 0.2 : strikeT < 0.24 ? 0.85 : Math.max(0, 0.85 * (1 - (strikeT - 0.24) / 0.5));
+            thunderRect.setOpacity(0.34 * f);
+            bolt.setOpacity(strikeT < 0.35 ? (strikeT >= 0.07 && strikeT < 0.15 ? 0.3 : 1) : Math.max(0, 1 - (strikeT - 0.35) / 0.2));
+            crackGlow.setOpacity(Math.min(1, crackGlow.getOpacity() + 0.5 * f));
+            if (strikeT > 0.75) { strikeT = -1; bolt.setVisible(false); thunderRect.setOpacity(0); }
+        }
+    }
+
+    /** A flash of lightning somewhere in view: a forked bolt, a white-violet flash over the screen and, a moment later, the thunder. */
+    private void strike() {
+        double x = cameraX + 90 + fxRng.nextDouble() * (Ui.W - 180);
+        if (Math.abs(x - EXIT_X) < 150) x -= 220;                  // never right over the seed
+        double yEnd = 210 + fxRng.nextDouble() * 220;
+        java.util.List<Double> pts = new ArrayList<>();
+        double cx = x;
+        int segs = 9;
+        for (int i = 0; i <= segs; i++) {
+            pts.add(cx);
+            pts.add(-10 + (yEnd + 10) * i / segs);
+            cx += (fxRng.nextDouble() - 0.5) * 80;
+        }
+        double hitX = pts.get(segs * 2);
+        int k = 3 + fxRng.nextInt(3);
+        double fx = pts.get(k * 2), fy = pts.get(k * 2 + 1), dir = fxRng.nextBoolean() ? 1 : -1;
+        Polyline core = new Polyline(), halo = new Polyline();
+        Polyline fork = new Polyline(fx, fy, fx + dir * 30, fy + 45, fx + dir * 16, fy + 75, fx + dir * 50, fy + 115);
+        core.getPoints().addAll(pts);
+        halo.getPoints().addAll(pts);
+        halo.setFill(null); core.setFill(null); fork.setFill(null);
+        halo.setStroke(Color.web("#b080ff", 0.5)); halo.setStrokeWidth(10); halo.setBlendMode(BlendMode.ADD);
+        core.setStroke(Color.web("#fbf8ff")); core.setStrokeWidth(3);
+        fork.setStroke(Color.web("#e8dcff")); fork.setStrokeWidth(2);
+        Circle skyGlow = StoryFx.glow(190, Color.web("#d0b8ff", 0.5));
+        skyGlow.setTranslateX(x); skyGlow.setTranslateY(70);
+        Circle hitGlow = StoryFx.glow(95, Color.web("#ffffff", 0.55));
+        hitGlow.setTranslateX(hitX); hitGlow.setTranslateY(yEnd); hitGlow.setScaleY(0.35);
+        bolt.getChildren().setAll(skyGlow, hitGlow, halo, fork, core);
+        bolt.setOpacity(1);
+        bolt.setVisible(true);
+        strikeT = 0;
+        rumbleT = 0.3 + fxRng.nextDouble() * 0.5;
+        thunderRect.setOpacity(0.34);
+        ring(hitX, yEnd, Color.web("#e8dcff"));
+        popFx.burst(hitX, yEnd, 10, () -> StoryFx.sparkle(3, Color.web("#e0d0ff")), 170, 0.5, 320);
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -755,8 +997,9 @@ public final class ChaseScreen extends Screen {
         playerImg.setViewOrder(-pfy);
         playerImg.setOpacity(invincible > 0 && ((int) (clock * 12) % 2 == 0) ? 0.35 : 1);
         double shake = mode == Mode.TELEGRAPH ? (((int) (clock * 40) % 2) - 0.5) * 6 : 0;
-        chaserImg.setLayoutX(cfx - CW / 2.0 + shake);
-        chaserImg.setLayoutY(cfy - CH + 12 + Math.sin(clock * 6) * 2);   // his boots sit where the Guardian's do
+        double bob = mode == Mode.WAIT ? 0 : Math.sin(clock * 6) * 2;     // he stands perfectly still for the split second before the chase starts
+        chaserImg.setLayoutX(cfx - chaserImg.getImage().getWidth() / 2 + shake);
+        chaserImg.setLayoutY(cfy - chaserImg.getImage().getHeight() + KNIGHT_FEET + bob);   // his boots sit where the Guardian's do
         chaserImg.setViewOrder(-cfy);
         boolean angry = mode == Mode.TELEGRAPH || mode == Mode.LUNGE;
         chaserGlow.setLayoutX(cfx + shake);
@@ -769,6 +1012,11 @@ public final class ChaseScreen extends Screen {
             g.node.setLayoutX(g.x - 24);
             g.node.setLayoutY(g.y - 52);
             g.node.setViewOrder(-g.y);
+            double w = Math.sin(clock * 5 + g.phase);                       // the bags billow and rustle
+            g.node.setScaleX(1 + 0.05 * w);
+            g.node.setScaleY(1 - 0.04 * w);
+            g.node.setRotate(Math.sin(clock * 2.2 + g.phase) * 5);
+            g.node.setOpacity(0.88 + 0.1 * Math.sin(clock * 3 + g.phase * 2));
         }
         double target = Math.max(0, Math.min(WORLD_W - Ui.W, pfx - Ui.W * 0.38));
         cameraX += (target - cameraX) * 0.12;

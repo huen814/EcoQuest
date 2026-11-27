@@ -220,12 +220,13 @@ public final class BossFightScreen extends Screen {
         bossBar = new Rectangle[maxBossHp];
 
         // Arena background
-        Rectangle bg = new Rectangle(Ui.W, Ui.H, Color.web("#0d1a0f"));
+        boolean queenArena = def.kind() == BossDef.Kind.QUEEN;                 // Queen Muck fights in a purple hall, the others in the green arena
+        Rectangle bg = new Rectangle(Ui.W, Ui.H, Color.web(queenArena ? "#160a26" : "#0d1a0f"));
         root.getChildren().add(bg);
         root.getChildren().add(def.backdrop().startsWith("scene:")        // the boss's arena, dimmed
                 ? StoryFx.scene(def.backdrop().substring("scene:".length()))
                 : Sprites.view(def.backdrop()));
-        Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.web("#0d1a0f", 0.62));
+        Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.web(queenArena ? "#160a26" : "#0d1a0f", 0.62));
         root.getChildren().add(dim);
 
         // Floor grid pattern
@@ -244,7 +245,7 @@ public final class BossFightScreen extends Screen {
         Rectangle border = new Rectangle(ARENA_X2 - ARENA_X1, ARENA_Y2 - ARENA_Y1);
         border.setLayoutX(ARENA_X1); border.setLayoutY(ARENA_Y1);
         border.setFill(Color.TRANSPARENT);
-        border.setStroke(Color.web("#4a9a5a", 0.6)); border.setStrokeWidth(2);
+        border.setStroke(Color.web(queenArena ? "#a070e0" : "#4a9a5a", 0.6)); border.setStrokeWidth(2);
         root.getChildren().add(border);
 
         // Sprites

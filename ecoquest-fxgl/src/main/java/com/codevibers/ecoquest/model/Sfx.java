@@ -8,7 +8,9 @@ public enum Sfx {
     BUY(700, .20, 0, .05), DENY(140, .20, 2, .05), BOOST(990, .15, 1, .05), BOAT(400, .10, 0, .04),
     HONK(250, .35, 2, .05),
     // Queen Muck's "ho ho ho": Audio builds it as a voice (only the length is used here)
-    LAUGH(0, 1.2, 0, .05);
+    LAUGH(0, 1.2, 0, .05),
+    // thunder: Audio builds it from filtered noise (only the length is used here)
+    THUNDER(0, 1.8, 0, .05);
 
     public final double hz;
     public final double seconds;

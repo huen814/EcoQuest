@@ -5,10 +5,12 @@ import com.codevibers.ecoquest.model.Sfx;
 import com.codevibers.ecoquest.model.Sibling;
 import java.util.List;
 import java.util.Random;
+import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 
 /**
@@ -20,6 +22,7 @@ import javafx.scene.shape.Rectangle;
 public final class BossStoryScreen extends Screen {
 
     private static final int FEET = 340;
+    private static final int TREES_Y = 60;           // the park tree band (backdrop/park_trees.png) sits at the same height as in park_plaza.png
     private static final int ERUPT_PAGE = 2;           // the Muck Mound's page on which the ground suddenly erupts
 
     private final DialogBox box;
@@ -37,6 +40,9 @@ public final class BossStoryScreen extends Screen {
     private Rectangle dark, haze, warm, fade;
     private boolean erupted;
     private Circle vanishGlow;
+    private Rectangle calmTint, calmWarm;                // after the chase: the storm's violet hangs over the street, then clears
+    private Group calmRain;
+    private final double[] calmV = new double[50];
     private double t, mt, lastBurst, gloom;
 
     /** @param showBoss true before the fight (the boss looms), false after it (only the arena and the Guardian). */
@@ -53,7 +59,10 @@ public final class BossStoryScreen extends Screen {
                 ? StoryFx.scene(def.backdrop().substring("scene:".length()))
                 : Sprites.view(def.backdrop());
         if (mound) {
-            root.getChildren().add(StoryFx.scene("river", "river_story"));         // the clean world (trees instead of factories)
+            root.getChildren().add(StoryFx.scene("river", "river_story"));         // the clean world: sky and ground...
+            ImageView trees = Sprites.view("backdrop/park_trees.png");              // ...with the very same trees as the park in the knight's cutscene
+            trees.setLayoutY(TREES_Y);
+            root.getChildren().add(trees);
             if (!erupted) {                                         // the break: a bench in the golden evening light, until the ground erupts
                 ImageView bench = Sprites.view("world/rest_bench_story.png");
                 bench.setLayoutX(140 - bench.getImage().getWidth() / 2);
@@ -98,6 +107,24 @@ public final class BossStoryScreen extends Screen {
             root.getChildren().add(vanishGlow);
         }
         root.getChildren().addAll(playerImg, fx);
+        if (def.kind() == BossDef.Kind.CHASE && !showBoss) {      // the storm of the chase scene clears into a normal evening street
+            calmTint = new Rectangle(Ui.W, Ui.H, Color.web("#2a0c4a", 0.5));
+            calmWarm = new Rectangle(Ui.W, Ui.H, Color.web("#ffe9a8"));
+            calmWarm.setOpacity(0);
+            calmRain = new Group();
+            for (int i = 0; i < calmV.length; i++) {
+                double len = 14 + rng.nextDouble() * 12;
+                Line l = new Line(0, 0, -0.28 * len, len);
+                l.setStroke(Color.web("#d4c8ff", 0.3 + rng.nextDouble() * 0.2));
+                l.setStrokeWidth(1.2);
+                l.setTranslateX(rng.nextDouble() * (Ui.W + 160));
+                l.setTranslateY(rng.nextDouble() * Ui.H);
+                calmV[i] = 620 + rng.nextDouble() * 320;
+                calmRain.getChildren().add(l);
+            }
+            for (Node n : new Node[] {calmTint, calmWarm, calmRain}) n.setMouseTransparent(true);
+            root.getChildren().addAll(calmTint, calmWarm, calmRain);
+        }
         if (!erupted) {
             fade = new Rectangle(Ui.W, Ui.H, Color.BLACK);          // fades in from black after the villager's thank-you, then flashes when the ground erupts
             fade.setMouseTransparent(true);
@@ -131,6 +158,32 @@ public final class BossStoryScreen extends Screen {
         fx.update(tpf);
         if (mound) updateMound(tpf);
         else bossImg.setTranslateY(Math.round(Math.sin(t * 2.2) * 3));
+        if (calmTint != null) updateCalm(tpf);
+    }
+
+    /** The song of the title screen plays after the chase and carries on until the next level starts. */
+    @Override
+    public boolean titleMusic() { return def == BossDef.EXPERIMENT && !before; }
+
+    /** Storm to clear sky: the violet tint and rain fade away, a soft golden glow comes up and a few glints drift by. */
+    private void updateCalm(double tpf) {
+        double k = Math.max(0, Math.min(1, (t - 0.3) / 3.0));
+        double e = k * k * (3 - 2 * k);
+        calmTint.setOpacity(1 - e);
+        calmRain.setOpacity((1 - e) * 0.9);
+        calmWarm.setOpacity(0.14 * Math.sin(Math.PI * e));
+        if (e < 1) {
+            for (int i = 0; i < calmV.length; i++) {
+                Node l = calmRain.getChildren().get(i);
+                double nx = l.getTranslateX() - calmV[i] * 0.28 * tpf, ny = l.getTranslateY() + calmV[i] * tpf;
+                if (ny > Ui.H + 20 || nx < -30) { nx = rng.nextDouble() * (Ui.W + 160); ny = -30 - rng.nextDouble() * 40; }
+                l.setTranslateX(nx); l.setTranslateY(ny);
+            }
+        }
+        if (e > 0.3 && t - lastBurst > 0.35) {
+            lastBurst = t;
+            fx.burst(80 + rng.nextDouble() * 560, 150 + rng.nextDouble() * 180, 1, () -> StoryFx.sparkle(3, Color.web("#fff3b0")), 10, 2.2, -16);
+        }
     }
 
     private void updateMound(double tpf) {

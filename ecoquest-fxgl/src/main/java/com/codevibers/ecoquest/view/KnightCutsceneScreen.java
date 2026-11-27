@@ -10,13 +10,16 @@ import com.codevibers.ecoquest.model.Sfx;
 
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.effect.BlendMode;
 import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Polygon;
+import javafx.scene.shape.Polyline;
 import javafx.scene.shape.Rectangle;
 
 /**
@@ -133,6 +136,18 @@ public final class KnightCutsceneScreen extends Screen {
         double portalT, violetTarget, violetCur, stormTarget, stormCur, shakeT, flashLeft;
         int landed;
 
+        // The street's build-up to the chase: rain, mist, lightning, and every cube that lands cracks the ground and scatters litter.
+        boolean stormy;
+        final Group ground = new Group();
+        final Group crackGlow = new Group();
+        final Group rain = new Group();
+        final double[] dropV = new double[70];
+        final Group mist = new Group();
+        final double[] mistBase = new double[6];
+        final Group bolt = new Group();
+        final Rectangle dimRect = new Rectangle(Ui.W, Ui.H, Color.web("#1a0830", 0.3));
+        double strikeT = -1, rumbleT = -1, strikeCd = 1.2;
+
         Stage(Node scene, Node decor, double playerX, double knightX, double portalX, double portalY) {
             this.playerX = playerX;
             this.knightX = knightX;
@@ -161,7 +176,26 @@ public final class KnightCutsceneScreen extends Screen {
             knightShadow.setOpacity(0);
             player = Sprites.view(app.save().sibling().sheet(false));
             StoryFx.stand(player, playerX, FEET, SCALE);
-            world.getChildren().addAll(scene, decor, mid, violet, portalHolder, StoryFx.shadow(playerX, FEET, 36), knightShadow, knight, player, cubeLayer, fx, skyFlash);
+            for (int i = 0; i < dropV.length; i++) {
+                double len = 14 + rng.nextDouble() * 12;
+                Line l = new Line(0, 0, -0.28 * len, len);
+                l.setStroke(Color.web("#d4c8ff", 0.3 + rng.nextDouble() * 0.2));
+                l.setStrokeWidth(1.2);
+                l.setTranslateX(rng.nextDouble() * (Ui.W + 160));
+                l.setTranslateY(rng.nextDouble() * Ui.H);
+                dropV[i] = 620 + rng.nextDouble() * 320;
+                rain.getChildren().add(l);
+            }
+            for (int i = 0; i < mistBase.length; i++) {
+                Circle m = StoryFx.glow(120 + rng.nextDouble() * 60, Color.web("#cdb8ff", 0.17));
+                mistBase[i] = 60 + i * (Ui.W - 120) / (mistBase.length - 1.0);
+                m.setTranslateY(300 + rng.nextDouble() * 150);
+                m.setScaleY(0.28);
+                mist.getChildren().add(m);
+            }
+            dimRect.setOpacity(0); rain.setOpacity(0); mist.setOpacity(0); bolt.setVisible(false);
+            for (Node n : new Node[] {dimRect, rain, mist, bolt, ground, crackGlow}) n.setMouseTransparent(true);
+            world.getChildren().addAll(scene, decor, mid, violet, dimRect, mist, ground, crackGlow, portalHolder, StoryFx.shadow(playerX, FEET, 36), knightShadow, knight, player, cubeLayer, bolt, rain, fx, skyFlash);
             world.setVisible(false);
         }
 
@@ -186,6 +220,11 @@ public final class KnightCutsceneScreen extends Screen {
             cubeLayer.getChildren().clear();
             cubes.clear();
             landed = 0;
+            ground.getChildren().clear();
+            crackGlow.getChildren().clear();
+            bolt.setVisible(false);
+            dimRect.setOpacity(0); rain.setOpacity(0); mist.setOpacity(0);
+            strikeT = -1; rumbleT = -1; strikeCd = 1.2;
         }
 
         void openPortal(double violetLevel) {
@@ -251,6 +290,7 @@ public final class KnightCutsceneScreen extends Screen {
                     shakeT = 0.25;
                     fx.burst(c.node.getLayoutX() + 24, c.targetY + 48, 4, () -> StoryFx.dot(3, Color.web("#8a7a6a", 0.8)), 60, 0.6, 40);
                     landed++;
+                    if (stormy) landFx(c.node.getLayoutX() + 24, c.targetY + 48);
                     if (landed % 4 == 1) {
                         app.sfx(Sfx.DUMP);
                         flashLeft = 0.15;
@@ -263,6 +303,99 @@ public final class KnightCutsceneScreen extends Screen {
                 world.setTranslateX(shakeT > 0 ? (rng.nextDouble() - 0.5) * 8 : 0);
                 world.setTranslateY(shakeT > 0 ? (rng.nextDouble() - 0.5) * 8 : 0);
             }
+            if (stormy) updateStorm(tpf);
+        }
+
+        private final String[] litterNames = {"aluminum_can", "banana_peel", "bottle_cap", "cardboard_box", "food_container", "glass_bottle", "newspaper", "plastic_bag", "plastic_bag", "plastic_bottle", "tin_can"};
+
+        /** Where a cube lands the street splits, and a little trash is thrown out of the crack. */
+        void landFx(double x, double y) {
+            int arms = 3 + rng.nextInt(2);
+            for (int k = 0; k < arms; k++) {
+                double a = rng.nextDouble() * Math.PI * 2, cx = x, cy = y;
+                Polyline dark = new Polyline(), lit = new Polyline();
+                int segs = 3 + rng.nextInt(3);
+                for (int i = 0; i <= segs; i++) {
+                    dark.getPoints().addAll(cx, cy);
+                    lit.getPoints().addAll(cx, cy);
+                    a += (rng.nextDouble() - 0.5) * 0.7;
+                    double len = 12 + rng.nextDouble() * 16;
+                    cx = Math.round((cx + Math.cos(a) * len) / 3) * 3;
+                    cy = Math.round((cy + Math.sin(a) * len * 0.55) / 3) * 3;
+                }
+                dark.setFill(null); lit.setFill(null);
+                dark.setStroke(Color.web("#0b0514", 0.9)); dark.setStrokeWidth(3);
+                lit.setStroke(Color.web("#b070ff", 0.7)); lit.setStrokeWidth(1); lit.setBlendMode(BlendMode.ADD);
+                ground.getChildren().add(dark);
+                crackGlow.getChildren().add(lit);
+            }
+            for (int k = 0; k < 2; k++) {
+                double size = 18 + rng.nextDouble() * 14;
+                ImageView v = StoryFx.item(litterNames[rng.nextInt(litterNames.length)], size);
+                v.setLayoutX(x + (rng.nextDouble() - 0.5) * 90 - size / 2);
+                v.setLayoutY(y + (rng.nextDouble() - 0.3) * 30 - size / 2);
+                v.setRotate(rng.nextDouble() * 360);
+                ground.getChildren().add(v);
+            }
+        }
+
+        void updateStorm(double tpf) {
+            double build = Math.min(1, 0.2 * violetCur + stormCur);          // a hint of rain from the portal on, the full storm as the maze falls
+            dimRect.setOpacity(stormCur);
+            mist.setOpacity(stormCur);
+            rain.setOpacity(build);
+            crackGlow.setOpacity(0.5 + 0.25 * Math.sin(t * 2.2));
+            for (int i = 0; i < mist.getChildren().size(); i++) {
+                mist.getChildren().get(i).setTranslateX(mistBase[i] + Math.sin(t * 0.25 + i * 1.7) * 50);
+            }
+            if (build > 0.03) {
+                for (int i = 0; i < dropV.length; i++) {
+                    Node l = rain.getChildren().get(i);
+                    double nx = l.getTranslateX() - dropV[i] * 0.28 * tpf, ny = l.getTranslateY() + dropV[i] * tpf;
+                    if (ny > Ui.H + 20 || nx < -30) { nx = rng.nextDouble() * (Ui.W + 160); ny = -30 - rng.nextDouble() * 40; }
+                    l.setTranslateX(nx); l.setTranslateY(ny);
+                }
+            }
+            if (stormCur > 0.5 && strikeT < 0) {
+                strikeCd -= tpf;
+                if (strikeCd <= 0) { strike(); strikeCd = 2.2 + rng.nextDouble() * 2.5; }
+            }
+            if (rumbleT >= 0) {
+                rumbleT -= tpf;
+                if (rumbleT < 0) app.sfx(Sfx.THUNDER);
+            }
+            if (strikeT >= 0) {
+                strikeT += tpf;
+                double f = strikeT < 0.07 ? 1 : strikeT < 0.15 ? 0.2 : strikeT < 0.24 ? 0.85 : Math.max(0, 0.85 * (1 - (strikeT - 0.24) / 0.5));
+                skyFlash.setOpacity(0.8 * f);
+                bolt.setOpacity(strikeT < 0.35 ? (strikeT >= 0.07 && strikeT < 0.15 ? 0.3 : 1) : Math.max(0, 1 - (strikeT - 0.35) / 0.2));
+                crackGlow.setOpacity(Math.min(1, crackGlow.getOpacity() + 0.5 * f));
+                if (strikeT > 0.75) { strikeT = -1; bolt.setVisible(false); skyFlash.setOpacity(0); }
+            }
+        }
+
+        void strike() {
+            double x = 60 + rng.nextDouble() * (Ui.W - 120);
+            double yEnd = 210 + rng.nextDouble() * 120;
+            List<Double> pts = new ArrayList<>();
+            double cx = x;
+            int segs = 8;
+            for (int i = 0; i <= segs; i++) {
+                pts.add(cx);
+                pts.add(-10 + (yEnd + 10) * i / segs);
+                cx += (rng.nextDouble() - 0.5) * 70;
+            }
+            Polyline core = new Polyline(), halo = new Polyline();
+            core.getPoints().addAll(pts);
+            halo.getPoints().addAll(pts);
+            core.setFill(null); halo.setFill(null);
+            halo.setStroke(Color.web("#b080ff", 0.5)); halo.setStrokeWidth(10); halo.setBlendMode(BlendMode.ADD);
+            core.setStroke(Color.web("#fbf8ff")); core.setStrokeWidth(3);
+            bolt.getChildren().setAll(halo, core);
+            bolt.setOpacity(1);
+            bolt.setVisible(true);
+            strikeT = 0;
+            rumbleT = 0.3 + rng.nextDouble() * 0.5;
         }
     }
 
@@ -338,6 +471,7 @@ public final class KnightCutsceneScreen extends Screen {
         }
 
         street = new Stage(StoryFx.scene("city"), busStop(60, 290), 260, 500, 560, FEET - 62);
+        street.stormy = true;                                       // the street gets the chase scene's storm
 
         buildCell();
         buildField();
