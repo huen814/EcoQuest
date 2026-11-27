@@ -2,6 +2,7 @@ package com.codevibers.ecoquest.view;
 
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import com.codevibers.ecoquest.EcoQuestApp;
 import com.codevibers.ecoquest.model.Sfx;
@@ -16,21 +17,34 @@ public final class TransformationScreen extends Screen {
     private static final double CX = Ui.W / 2.0;
     private static final double QUEEN_FEET = 236, QUEEN_SCALE = 1.7;      // far away on her stage at the end of the long hall
     private static final double GUARDIAN_FEET = 342;                 // low on screen so Queen Muck stays visible above
-    private static final int CHANGE_PAGE = 2;
+    private static final int CHANGE_PAGE = 6;                 // the green-light transformation page (unchanged)
+    private static final Set<Integer> LAUGH_PAGES = Set.of(5);    // her last "OHOHOHO-" before the change
     private static final double CHANGE_TIME = 3.2;
 
     private static final List<String> PAGES = List.of(
-        "The last drop of the Spirit Bottle hits Queen Muck. Her gown of bags sags, her can-ring bows droop, " +
-        "and she sinks onto her throne with a long, quiet sigh.",
+        "The last drop of the Spirit Bottle's light hits Queen Bijou. Her gown of bags sags and her can-ring bows droop " +
+        "as she collapses onto the floor, surrounded by scattered bottle caps and tinsel. " +
+        "Her arrogant tone suddenly drops as she pieces together what happened.",
 
-        "Queen Muck: Why did I think burying everything in garbage would make anyone happy? I hated cleaning, " +
-        "so I made the whole world my dump... and now I can't even walk through my own palace. How illogical I have been!",
+        "Queen Bijou: I... I lost?! Impossible! My impeccable aura, ruined by a mere glowing bottle! " +
+        "Sir Filament actually had you, didn't he?!",
 
-        "A soft green light spills from the Spirit Bottle and wraps around her. The bags, cans and wrappers crumble " +
+        "Queen Bijou: He marched all the way to the village, summoned his ghosts and lightning, and followed my ridiculous " +
+        "orders to the letter... yet the only reason you slipped away was that Mother Nature's power overpowered him!",
+
+        "She stares down at the bent tin crown in her hands, the Spirit Bottle's glow still flickering across her gown.",
+
+        "Queen Bijou: Even the earth itself is trying to stop me... and all I did was sit up here hoarding garbage, " +
+        "plotting to smother the world in smog, and sending my loyal knight to terrorize the village. " +
+        "Well! If I am to rule, I suppose I must clean up this whole mess first!",
+
+        "Queen Bijou: Farewell! OHOHOHO\u2014",
+
+        "The Spirit Bottle's light, still soaking into her since that last drop, swells into a soft green glow and wraps around her. The bags, cans and wrappers crumble " +
         "into sparkles and the wind sorts them neatly away. The smog lifts, the walls shine, and the carpet blooms green.",
 
-        "Queen Muck: I feel... light. Clean! Guardian, I am so sorry. {sibling} is safe in the tower. " +
-        "Come, I will open the door myself, and help the village put everything right.");
+        "Queen Bijou: My apologies for the noise. It seems all that smog was clouding my heart as much as the sky. " +
+        "Go on now\u2014someone very important is waiting for you. Leave the cleanup to me.");
 
     private final Runnable next;
     private final DialogBox box = new DialogBox(6, Ui.H - 134, Ui.W - 12, 128);
@@ -43,6 +57,9 @@ public final class TransformationScreen extends Screen {
     private final Rectangle flash = new Rectangle(Ui.W, Ui.H, Color.WHITE);
     private double t;
     private double changeT = -1;
+    private final Ui.Label laughLabel = new Ui.Label("OHOHOHO!", 26, Color.web("#ff8fb8"));
+    private double laughT = -1;
+    private int lastPage = -1;
 
     public TransformationScreen(EcoQuestApp app, Runnable next) {
         super(app);
@@ -58,9 +75,9 @@ public final class TransformationScreen extends Screen {
         glow.setOpacity(0);
         root.getChildren().add(glow);
 
-        queen = Sprites.view("boss/queen_muck.png");
+        queen = Sprites.view("boss/queen_bijou.png");
         StoryFx.stand(queen, CX, QUEEN_FEET, QUEEN_SCALE);
-        cleanQueen = Sprites.view("boss/queen_muck_clean.png");
+        cleanQueen = Sprites.view("boss/queen_bijou_clean.png");
         StoryFx.stand(cleanQueen, CX, QUEEN_FEET, QUEEN_SCALE);
         cleanQueen.setOpacity(0);
 
@@ -74,9 +91,16 @@ public final class TransformationScreen extends Screen {
         root.getChildren().addAll(StoryFx.shadow(CX, QUEEN_FEET, 76), queen, cleanQueen,
                 StoryFx.shadow(CX, GUARDIAN_FEET, 90), guardian, fx);
 
+        laughLabel.shadow(Color.web("#2c2748"));
+        laughLabel.setLayoutX(CX + 70);
+        laughLabel.setLayoutY(60);
+        laughLabel.setRotate(-8);
+        laughLabel.setOpacity(0);
+        laughLabel.setMouseTransparent(true);
+
         flash.setOpacity(0);
         flash.setMouseTransparent(true);
-        root.getChildren().addAll(flash, box);
+        root.getChildren().addAll(laughLabel, flash, box);
     }
 
 
@@ -86,10 +110,32 @@ public final class TransformationScreen extends Screen {
         return pages.stream().map(p -> p.replace("{sibling}", n)).toList();
     }
 
+    /** Her last laugh, the same as in the kidnap cutscene: laughing sprite, "OHOHOHO!" bubble, sound and hearts. */
+    private void startLaugh() {
+        laughT = 0;
+        queen.setImage(Sprites.get("boss/queen_bijou_laugh.png"));
+        app.laugh();
+        fx.burst(CX, 150, 22, () -> StoryFx.heart(5 + rng.nextInt(5), rng.nextBoolean() ? Color.web("#ff8fb8") : Color.web("#ffd0e4")), 260, 1.3, 120);
+        fx.burst(CX, 150, 18, () -> StoryFx.sparkle(4 + rng.nextInt(3), rng.nextBoolean() ? Color.web("#fff6a0") : Color.WHITE), 320, 1.0, 0);
+    }
+
+    private void stopLaugh() {
+        laughT = -1;
+        laughLabel.setOpacity(0);
+        queen.setImage(Sprites.get("boss/queen_bijou.png"));
+    }
+
+    private static double easeOutBack(double x) {
+        double c1 = 1.70158, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
+
     @Override
     public void enter() {
         t = 0;
         changeT = -1;
+        laughT = -1;
+        lastPage = -1;
         box.show(named(PAGES));
         app.sfx(Sfx.MISSION);
         Audio.playMusic("queen_dialogue.wav", 0.4);
@@ -103,6 +149,21 @@ public final class TransformationScreen extends Screen {
         t += tpf;
         box.update(tpf);
         fx.update(tpf);
+
+        if (changeT < 0 && box.page() != lastPage) {
+            lastPage = box.page();
+            if (LAUGH_PAGES.contains(lastPage)) startLaugh();
+        }
+        if (laughT >= 0) {
+            laughT += tpf;
+            double pt = Math.min(1, laughT / 0.4);
+            double s = pt >= 1 ? 1 : easeOutBack(pt);
+            laughLabel.setScaleX(s);
+            laughLabel.setScaleY(s);
+            laughLabel.setOpacity(laughT < 2.0 ? 1 : Math.max(0, 1 - (laughT - 2.0) * 2));
+            laughLabel.setTranslateY(Math.round(Math.sin(laughT * 14) * 2));      // giggle
+            if (laughT > 2.5) stopLaugh();
+        }
 
         if (changeT < 0) {
             queen.setTranslateX(Math.round(Math.sin(t * 22) * 1.5));
@@ -125,6 +186,7 @@ public final class TransformationScreen extends Screen {
 
     private void startChange() {
         changeT = 0;
+        if (laughT >= 0) stopLaugh();
         app.sfx(Sfx.WIN);
         fx.converge(36, () -> StoryFx.sparkle(4, Color.web("#d8ffe0")), CX, 150, 1.4, 80);
         fx.burst(CX, 150, 50, () -> StoryFx.sparkle(3 + rng.nextInt(3), Color.web("#fff6a0")), 280, 1.6, 20);

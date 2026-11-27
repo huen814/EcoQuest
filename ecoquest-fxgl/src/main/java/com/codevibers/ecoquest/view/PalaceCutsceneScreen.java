@@ -2,6 +2,7 @@ package com.codevibers.ecoquest.view;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import com.codevibers.ecoquest.EcoQuestApp;
 import com.codevibers.ecoquest.model.Sfx;
@@ -25,20 +26,32 @@ public final class PalaceCutsceneScreen extends Screen {
 
     private static final List<String> INTRO_PAGES = List.of(
         "Mother Nature's light opens a spinning portal. It drops the Guardian onto the pink carpet in front of " +
-        "Queen Muck's palace, where the smog hangs thick and the great gate towers overhead.",
+        "Queen Bijou of the Grand Heap's palace, where the smog hangs thick and the great gate towers overhead.",
 
         "Narrator: {sibling} is somewhere inside, Guardian! Get through the gate, cross the great hall, " +
-        "and stop Queen Muck before she buries the whole country!");
+        "and stop Queen Bijou of the Grand Heap before she buries the whole country!");
 
     private static final List<String> TALK_PAGES = List.of(
         "The gate groans open. Beyond it is a long hall of cardboard walls and bottle-glass windows, " +
-        "and at the very end, on a throne heaped from garbage, sits Queen Muck.",
+        "and at the very end, on a throne of shiny junk, sits Queen Bijou of the Grand Heap.",
 
-        "Queen Muck: HO HO HO! So the little Guardian finally walked all the way here! Do you like my palace? " +
-        "Everything in it is something your village threw away!",
+        "Queen Bijou of the Grand Heap fans herself dramatically, completely stunned. " +
+        "The Guardian is standing right there... and not locked away in a cell!",
 
-        "Queen Muck: {sibling} is safe in my tower, with plenty of rubbish for company. " +
-        "You want {him} back? Then sort THIS!");
+        "Queen Bijou of the Grand Heap: OHOHOHO! Excuse me?! How dare you march into my palace uninvited! " +
+        "My brooding knight was supposed to have you locked away while I conquer the world!",
+
+        "Queen Bijou of the Grand Heap: I have not graced him with my presence yet, naturally. A queen's schedule is simply " +
+        "overflowing with grand plans to smother the entire world in glorious pollution! " +
+        "But I sent him a very regal letter with strict orders to capture you!",
+
+        "Queen Bijou of the Grand Heap: With that mysterious staff of his, he never fails! " +
+        "...Wait. Why aren't you captured?!",
+
+        "Queen Bijou of the Grand Heap: Hmph! No matter. {sibling} is locked in my tower, and if you want {him} back, " +
+        "you will have to get past me. Sort THIS!");
+
+    private static final Set<Integer> LAUGH_PAGES = Set.of(2);     // the page that opens with her OHOHOHO!
 
     private enum Phase { INTRO, WALK_GATE, FLASH, WALK_HALL, TALK }
 
@@ -55,6 +68,9 @@ public final class PalaceCutsceneScreen extends Screen {
     private final ImageView queen;
     private final Ellipse gateShadow = StoryFx.shadow(CX, GATE_START, 90);
     private final List<ImageView> imps = new ArrayList<>();
+    private final Ui.Label laughLabel = new Ui.Label("OHOHOHO!", 26, Color.web("#ff8fb8"));
+    private double laughT = -1;
+    private int lastPage = -1;
 
     private Phase phase = Phase.INTRO;
     private double t;
@@ -78,7 +94,7 @@ public final class PalaceCutsceneScreen extends Screen {
 
         hallWorld.getChildren().add(Sprites.view("backdrop/palace_hall.png"));
         // the hall's minions (the four sorting-room guards) are painted into the backdrop itself
-        queen = Sprites.view("boss/queen_muck.png");
+        queen = Sprites.view("boss/queen_bijou.png");
         StoryFx.stand(queen, CX, QUEEN_FEET, QUEEN_SCALE);
         hallPlayer = Sprites.view(sheet);
         place(hallPlayer, HALL_END, 2, 0);
@@ -86,10 +102,17 @@ public final class PalaceCutsceneScreen extends Screen {
         hallWorld.getChildren().addAll(StoryFx.shadow(CX, QUEEN_FEET, 76), queen, hallPlayer);
         hallWorld.setVisible(false);
 
+        laughLabel.shadow(Color.web("#2c2748"));
+        laughLabel.setLayoutX(CX + 70);
+        laughLabel.setLayoutY(60);
+        laughLabel.setRotate(-8);
+        laughLabel.setOpacity(0);
+        laughLabel.setMouseTransparent(true);
+
         fx.drift(14, () -> StoryFx.dot(1.5, Color.web("#d8c8d8", 0.6)), 0, -8, 14);
         flash.setOpacity(0);
         flash.setMouseTransparent(true);
-        root.getChildren().addAll(gateWorld, hallWorld, fx, flash, box);
+        root.getChildren().addAll(gateWorld, hallWorld, fx, laughLabel, flash, box);
     }
 
     private static void place(ImageView iv, double feet, double scale, int frame) {
@@ -109,9 +132,25 @@ public final class PalaceCutsceneScreen extends Screen {
         return pages.stream().map(p -> p.replace("{sibling}", n).replace("{him}", him)).toList();
     }
 
+    /** Her laugh, the same as in the kidnap cutscene: laughing sprite, "OHOHOHO!" bubble, sound and hearts. */
+    private void startLaugh() {
+        laughT = 0;
+        queen.setImage(Sprites.get("boss/queen_bijou_laugh.png"));
+        app.laugh();
+        fx.burst(CX, 150, 22, () -> StoryFx.heart(5 + (int) (Math.random() * 5), Math.random() < 0.5 ? Color.web("#ff8fb8") : Color.web("#ffd0e4")), 260, 1.3, 120);
+        fx.burst(CX, 150, 18, () -> StoryFx.sparkle(4 + (int) (Math.random() * 3), Math.random() < 0.5 ? Color.web("#fff6a0") : Color.WHITE), 320, 1.0, 0);
+    }
+
+    private static double easeOutBack(double x) {
+        double c1 = 1.70158, c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
+
     @Override
     public void enter() {
         t = 0;
+        laughT = -1;
+        lastPage = -1;
         box.show(named(INTRO_PAGES));
         app.sfx(Sfx.MISSION);
         fx.converge(12, () -> StoryFx.sparkle(3, Color.web("#9fe0cf")), CX, PORTAL_Y, 1.1, 60);
@@ -127,6 +166,23 @@ public final class PalaceCutsceneScreen extends Screen {
         box.update(tpf);
         fx.update(tpf);
         portalSprite.update(t);
+        if (phase == Phase.TALK && box.page() != lastPage) {
+            lastPage = box.page();
+            if (LAUGH_PAGES.contains(lastPage)) startLaugh();
+        }
+        if (laughT >= 0) {
+            laughT += tpf;
+            double pt = Math.min(1, laughT / 0.4);
+            double s = pt >= 1 ? 1 : easeOutBack(pt);
+            laughLabel.setScaleX(s);
+            laughLabel.setScaleY(s);
+            laughLabel.setOpacity(laughT < 2.0 ? 1 : Math.max(0, 1 - (laughT - 2.0) * 2));
+            laughLabel.setTranslateY(Math.round(Math.sin(laughT * 14) * 2));      // giggle
+            if (laughT > 2.5) {
+                laughT = -1;
+                queen.setImage(Sprites.get("boss/queen_bijou.png"));
+            }
+        }
         for (int i = 0; i < imps.size(); i++) imps.get(i).setTranslateY(-Math.round(Math.abs(Math.sin(t * 2 + i * 1.7)) * 4));
 
         switch (phase) {

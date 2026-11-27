@@ -18,7 +18,7 @@ import javafx.scene.shape.Rectangle;
 /**
  * Cutscene after the player picks their hero (and the intro):
  *   page 1 - the tidy sibling (you) finds the messy sibling's room buried in garbage
- *   page 2 - the garbage is sucked together, the screen shakes, flash! QUEEN MUCK bursts out laughing "HO HO HO!"
+ *   page 2 - the garbage is sucked together, the screen shakes, flash! QUEEN BIJOU OF THE GRAND HEAP bursts out laughing "OHOHOHO!"
  *   page 3 - she scoops up the messy sibling and you are left with a quest
  * Advances on confirm; skips on cancel. Either way it ends by running the callback it was given.
  */
@@ -46,7 +46,7 @@ public final class KidnapCutsceneScreen extends Screen {
     private final Group queenPile;                    // the heap she rises from
     private final Rectangle dark = new Rectangle(Ui.W, Ui.H, Color.web("#1e0f30"));
     private final Rectangle flash = new Rectangle(Ui.W, Ui.H, Color.WHITE);
-    private final Ui.Label laughLabel = new Ui.Label("HO HO HO!", 26, Color.web("#ff8fb8"));
+    private final Ui.Label laughLabel = new Ui.Label("OHOHOHO!", 26, Color.web("#ff8fb8"));
     private final Ui.Label exclaim = new Ui.Label("!", 22, Ui.BAD);
 
     private double t;
@@ -79,7 +79,7 @@ public final class KidnapCutsceneScreen extends Screen {
         aura.setOpacity(0);
         world.getChildren().add(aura);
 
-        queenImg = Sprites.view("boss/queen_muck.png");
+        queenImg = Sprites.view("boss/queen_bijou.png");
         queenImg.setSmooth(false);
         queenImg.setFitWidth(QUEEN_W);
         queenImg.setFitHeight(QUEEN_H);
@@ -151,11 +151,11 @@ public final class KidnapCutsceneScreen extends Screen {
                       "Pushing it open, " + tidyHe + " gasps - the room is ankle-deep in rotting garbage. " +
                       "Empty bottles, old takeaway boxes and banana peels are piled to the ceiling!";
             case 1 -> "The rubbish TREMBLES. Cans clatter, bags inflate, and from the heap " +
-                      "rises a glittering TRASH QUEEN - QUEEN MUCK! A crown of bottle caps, a gown of " +
-                      "garbage bags, and a hand over her grinning mouth. \"Ho ho ho ho~! You simply MUST " +
+                      "rises a glittering TRASH QUEEN - QUEEN BIJOU OF THE GRAND HEAP! A crown of bottle caps, a gown of " +
+                      "garbage bags, and a hand over her grinning mouth. \"Ohohoho~! You simply MUST " +
                       "stay with me, darling!\" She scoops up " + messy + " in a bouquet of tangled plastic!";
-            default -> "\"" + messy.toUpperCase() + "! NOOO!\" " + tidy + " shouts, but Queen Muck has already " +
-                       "pranced through the wall, laughing \"ho ho ho!\", toward her palace in the polluted outskirts. " +
+            default -> "\"" + messy.toUpperCase() + "! NOOO!\" " + tidy + " shouts, but Queen Bijou of the Grand Heap has already " +
+                       "pranced through the wall, laughing \"ohohoho!\", toward her palace in the polluted outskirts. " +
                        "Sort trash, earn the SPIRIT BOTTLE, and go rescue " + messy + "!";
         };
     }
@@ -192,7 +192,7 @@ public final class KidnapCutsceneScreen extends Screen {
 
     private void startLaugh() {
         laughT = 0;
-        queenImg.setImage(Sprites.get("boss/queen_muck_laugh.png"));
+        queenImg.setImage(Sprites.get("boss/queen_bijou_laugh.png"));
         app.laugh();
     }
 
@@ -264,7 +264,7 @@ public final class KidnapCutsceneScreen extends Screen {
             laughLabel.setTranslateY(Math.round(Math.sin(laughT * 14) * 2));   // giggle
             if (laughT > 2.5) {
                 laughT = -1;
-                queenImg.setImage(Sprites.get("boss/queen_muck.png"));
+                queenImg.setImage(Sprites.get("boss/queen_bijou.png"));
             }
         }
 

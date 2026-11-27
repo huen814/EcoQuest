@@ -3,7 +3,7 @@
 scaled to 96x96 so the sprite is shown 1:1 in the game (he stands about 83 px tall: the Guardian is 72).
 
 Usage:  python3 tools/gen_knight.py          (needs Pillow; gen_sprites.py also calls it)
-Output: src/main/resources/assets/textures/boss/knight.png, knight_rage.png, knight_stun.png
+Output: src/main/resources/assets/textures/boss/sir_filament.png, sir_filament_rage.png, sir_filament_stun.png
 """
 import os
 import math
@@ -192,7 +192,7 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "mai
 def main(out=OUT):
     folder = os.path.join(out, "boss")
     os.makedirs(folder, exist_ok=True)
-    for mode, name in (("normal", "knight"), ("rage", "knight_rage"), ("stun", "knight_stun")):
+    for mode, name in (("normal", "sir_filament"), ("rage", "sir_filament_rage"), ("stun", "sir_filament_stun")):
         build(mode).resize((96, 96), Image.BOX).save(os.path.join(folder, name + ".png"))
 
 

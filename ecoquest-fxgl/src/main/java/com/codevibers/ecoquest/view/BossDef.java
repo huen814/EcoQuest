@@ -30,20 +30,20 @@ public enum BossDef {
                 "The dark haze lifts and the air over the landfill turns clean again. Someone is still stirring up real trouble, " +
                 "though. Keep sorting, Guardian. The next level is waiting!")),
 
-    /** Boss 2: the Queen's Knight, sent by Queen Muck to capture the Guardian. He cannot be beaten, so this one is an escape. Fought after level 6. */
-    EXPERIMENT("THE QUEEN'S KNIGHT", 0, Kind.CHASE, "boss/knight.png", "boss/knight_rage.png", null, "HALT.",
+    /** Boss 2: the Queen's Knight, Sir Filament, sent by Queen Bijou of the Grand Heap to capture the Guardian. He cannot be beaten, so this one is an escape. Fought after level 6. */
+    EXPERIMENT("SIR FILAMENT", 0, Kind.CHASE, "boss/sir_filament.png", "boss/sir_filament_rage.png", null, "HALT.",
             "scene:city", 144, 144, 30, 0, 0,
             List.of(),
             List.of(
-                "A wall of living wood stands between you and the knight. He studies it for a long moment, then rests a gauntlet against the bark. " +
+                "A wall of living wood stands between you and Sir Filament. He studies it for a long moment, then rests a gauntlet against the bark. " +
                 "\"The Queen will hear of this,\" he says, calm as ever, and his portal swallows him.",
 
                 "The junk cubes crumble to dust. In the breeze, a faint voice drifts past your ear: \"Go on, little Guardian. " +
                 "The next area is waiting.\"")),
 
-    /** The final boss: Queen Muck, on her throne in the palace hall. Fought after the last level. */
-    QUEEN_MUCK("QUEEN MUCK", 50, Kind.QUEEN, "boss/queen_muck.png", "boss/queen_muck_rage.png", "boss/queen_muck_laugh.png",
-            "HO HO HO!", "backdrop/palace_hall.png", 144, 216, 65, 1.6, 0.9, List.of(), List.of());
+    /** The final boss: Queen Bijou of the Grand Heap, on her throne in the palace hall. Fought after the last level. */
+    QUEEN_MUCK("QUEEN BIJOU OF THE GRAND HEAP", 50, Kind.QUEEN, "boss/queen_bijou.png", "boss/queen_bijou_rage.png", "boss/queen_bijou_laugh.png",
+            "OHOHOHO!", "backdrop/palace_hall.png", 144, 216, 65, 1.6, 0.9, List.of(), List.of());
 
     /** Decides which attack patterns the boss uses. */
     public enum Kind { QUEEN, MOUND, CHASE }
@@ -73,7 +73,7 @@ public enum BossDef {
     public String normal()     { return normal; }
     public String rage()       { return rage; }
     /** Sprite shown in the story scenes before and after the fight (the Queen's Knight has a larger portrait than his chase sprite). */
-    public String story()      { return this == EXPERIMENT ? "boss/knight_story.png" : normal; }
+    public String story()      { return this == EXPERIMENT ? "boss/sir_filament_story.png" : normal; }
     /** Sprite used while the boss laughs, or null if it has none. */
     public String laugh()      { return laugh; }
     public String shout()      { return shout; }

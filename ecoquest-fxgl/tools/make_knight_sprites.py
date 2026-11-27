@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Builds the Discarded Knight's sprites from tools/knight_source.png (the approved knight artwork):
-  knight.png, knight_rage.png, knight_stun.png  - the chase poses, 96x96, shown 1:1 (he stands ~82 px tall, the Guardian 72)
-  knight_story.png                              - the larger portrait for the dialogue before the chase (200x200)
+  sir_filament.png, sir_filament_rage.png, sir_filament_stun.png  - the chase poses, 96x96, shown 1:1 (he stands ~82 px tall, the Guardian 72)
+  sir_filament_story.png                              - the larger portrait for the dialogue before the chase (200x200)
 The artwork is first reduced to a clean pixel grid, then the crown, the pink heart emblem and the magenta cape are painted in,
 and the rage and stunned poses are made from the same drawing.
 
@@ -133,11 +133,11 @@ def finish(q, canvas, scale=None, pos=None):
 
 def main():
     S = 0.52
-    variants = {"knight": common(), "knight_rage": rage(common()), "knight_stun": stun(common())}
+    variants = {"sir_filament": common(), "sir_filament_rage": rage(common()), "sir_filament_stun": stun(common())}
     os.makedirs(OUT, exist_ok=True)
     for name, q in variants.items():
         finish(q, (96, 96), S, (11, 96 - round(H * S) - 1)).save(os.path.join(OUT, name + ".png"))
-    finish(variants["knight"], (200, 200), None, (26, 200 - 4 - H)).save(os.path.join(OUT, "knight_story.png"))
+    finish(variants["sir_filament"], (200, 200), None, (26, 200 - 4 - H)).save(os.path.join(OUT, "sir_filament_story.png"))
 
 
 if __name__ == "__main__":

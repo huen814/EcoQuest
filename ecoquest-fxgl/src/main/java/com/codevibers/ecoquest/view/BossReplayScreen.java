@@ -304,7 +304,8 @@ public final class BossReplayScreen extends Screen {
             getChildren().add(face);
 
             // portrait (the boss sprite): full colour when unlocked, a dark silhouette with a padlock when locked
-            ImageView portrait = Sprites.view(spec.boss().normal());
+            BossDef b = spec.boss();      // Sir Filament shows his story portrait, Queen Bijou her laughing sprite
+            ImageView portrait = Sprites.view(b == BossDef.EXPERIMENT ? b.story() : b == BossDef.QUEEN_MUCK ? b.laugh() : b.normal());
             portrait.setPreserveRatio(true);
             portrait.setFitWidth(150);
             portrait.setFitHeight(100);
@@ -319,7 +320,7 @@ public final class BossReplayScreen extends Screen {
             getChildren().add(portrait);
             if (!unlocked) getChildren().add(padlock(CARD_W / 2, 84));
 
-            Ui.Label name = label(spec.boss().label(), 11, unlocked ? NAME : MUTED, DARK_SHADOW);
+            Ui.Label name = label(spec.boss() == BossDef.QUEEN_MUCK ? "QUEEN BIJOU" : spec.boss().label(), 11, unlocked ? NAME : MUTED, DARK_SHADOW);
             name.setLayoutX((CARD_W - name.textWidth()) / 2);
             name.setLayoutY(142);
             getChildren().add(name);

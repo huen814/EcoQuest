@@ -1055,9 +1055,14 @@ public final class BossFightScreen extends Screen {
         }
         for (int i = 0; i < maxBossHp; i++) {
             boolean alive = i < bossHP;
-            Color c = phase == Phase.RAGE
-                ? (alive ? Color.web("#e03030") : Color.web("#4a2a2a"))
-                : (alive ? Color.web("#4a9a5a") : Color.web("#2a4a2a"));
+            boolean rage = phase == Phase.RAGE;
+            Color c;
+            if (def.kind() == BossDef.Kind.QUEEN)       // Queen Bijou: pink bar, light blue in rage
+                c = rage ? (alive ? Color.web("#8fd8ff") : Color.web("#2a3a4a"))
+                         : (alive ? Color.web("#ff7fb8") : Color.web("#4a2a3a"));
+            else
+                c = rage ? (alive ? Color.web("#e03030") : Color.web("#4a2a2a"))
+                         : (alive ? Color.web("#4a9a5a") : Color.web("#2a4a2a"));
             bossBar[i].setFill(c);
             bossBar[i].setStroke(Color.web("#ffffff", 0.25)); bossBar[i].setStrokeWidth(1);
         }

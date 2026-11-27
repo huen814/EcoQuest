@@ -2444,14 +2444,14 @@ def story_sprites():
     npc_sprites(); weapon_sprites()
     save("npc/mother_nature.png", mother_nature())
     save("npc/grove_guard.png", grove_guard())
-    save("boss/queen_muck.png", queen_muck("normal"))
-    save("boss/queen_muck_laugh.png", queen_muck("laugh"))
-    save("boss/queen_muck_rage.png", queen_muck("rage"))
-    save("boss/queen_muck_sad.png", queen_muck("sad"))
-    save("boss/queen_muck_clean.png", queen_muck("clean"))
+    save("boss/queen_bijou.png", queen_muck("normal"))
+    save("boss/queen_bijou_laugh.png", queen_muck("laugh"))
+    save("boss/queen_bijou_rage.png", queen_muck("rage"))
+    save("boss/queen_bijou_sad.png", queen_muck("sad"))
+    save("boss/queen_bijou_clean.png", queen_muck("clean"))
     save("boss/mound.png", muck_mound("normal"), 4)
     save("boss/mound_rage.png", muck_mound("rage"), 4)
-    # the Discarded Knight (knight*.png) is built by tools/gen_knight_sprites.py from tools/knight_source.png
+    # the Discarded Knight (sir_filament*.png) is built by tools/gen_knight_sprites.py from tools/knight_source.png
     save("boss/ghost.png", stink_ghost())
     for v in range(3):
         save("boss/junk_cube%d.png" % v, junk_cube(v))

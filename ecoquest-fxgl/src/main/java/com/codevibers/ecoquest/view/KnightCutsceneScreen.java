@@ -51,15 +51,15 @@ public final class KnightCutsceneScreen extends Screen {
             "Then the air above the path crackles and tears open. A ring of violet light spins wide, and a knight in dark armor strides " +
             "out of a purple portal. The whole park screams and scatters!",
 
-            "Knight: Guardian. I am the Queen's knight, sent by Queen Muck. Your work has been causing Her Majesty great discomfort. It ends today.",
+            "Sir Filament: Guardian. I am Sir Filament, the Queen's knight, sent by Queen Bijou of the Grand Heap. Your work has been causing Her Majesty great discomfort. It ends today.",
 
-            "Knight: You will come with me. Resistance would be unwise.",
+            "Sir Filament: You will come with me. Resistance would be unwise.",
 
             "Before you can run, violet light swallows the park, and the ground drops out from under your feet."),
         List.of(
             "You wake up in a cold stone cell, lit by one flickering purple lamp. Iron bars stand between you and a long, dark hall.",
 
-            "Knight: Remain here. Her Majesty will decide your fate. I will return within the hour.",
+            "Sir Filament: Remain here. Her Majesty will decide your fate. I will return within the hour.",
 
             "An hour crawls by. You rattle the bars, shove the lock and search every crack, but there is no way out. " +
             "Then something warm brushes your mind.",
@@ -69,23 +69,23 @@ public final class KnightCutsceneScreen extends Screen {
             "A soft green light seeps through the stone. The lock clicks, the bars wither into leaves, and a swirling green portal opens " +
             "in the middle of the cell. You do not hesitate. You step through!"),
         List.of(
-            "An hour after the knight locked you away, a kind and unseen hand has carried you out. You land softly in a wide grassfield " +
+            "An hour after Sir Filament locked you away, a kind and unseen hand has carried you out. You land softly in a wide grassfield " +
             "full of flowers, with butterflies drifting all around you.",
 
-            "You spot a bus stop down the road. That knight will be back soon, so you hurry to catch the next bus into town."),
+            "You spot a bus stop down the road. Sir Filament will be back soon, so you hurry to catch the next bus into town."),
         List.of(
-            "Meanwhile, back in the dungeon, the knight returns to check on his prisoner.",
+            "Meanwhile, back in the dungeon, Sir Filament returns to check on his prisoner.",
 
-            "Knight: ...The cell is empty. The lock is covered in flowers. This was no ordinary escape.",
+            "Sir Filament: ...The cell is empty. The lock is covered in flowers. This was no ordinary escape.",
 
-            "Knight: Queen Muck will nag me for days over this. No matter. The Guardian will be found."),
+            "Sir Filament: Queen Bijou of the Grand Heap will nag me for days over this. No matter. The Guardian will be found."),
         List.of(
             "You found the nearest bus stop and rode all the way back to town. Now you hurry down the street toward the next area, " +
-            "when the air behind you tears open again, and the knight's own portal spits him out right in your way!",
+            "when the air behind you tears open again, and Sir Filament's own portal spits him out right in your way!",
 
-            "Knight: Found you. A few flowers will not save you from the Queen's will.",
+            "Sir Filament: Found you. A few flowers will not save you from the Queen's will.",
 
-            "Knight: Rise, maze of rubbish. Close every path.",
+            "Sir Filament: Rise, maze of rubbish. Close every path.",
 
             "Junk walls rise on every side! Run for the end of the maze! Move with the arrow keys or WASD. " +
             "You cannot fight him, so use the junk cubes to throw him off your trail, stay out of his sludge, it slows you down, " +
@@ -123,7 +123,7 @@ public final class KnightCutsceneScreen extends Screen {
         final StoryFx.Particles fx = new StoryFx.Particles(Ui.W, Ui.H);
         final PortalView portal = new PortalView(PURPLE, PURPLE_HUE);
         final Group portalHolder;
-        final ImageView knight = Sprites.view("boss/knight_story.png");
+        final ImageView knight = Sprites.view("boss/sir_filament_story.png");
         final Node knightShadow;
         final ImageView player;
         final Group cubeLayer = new Group();
@@ -411,7 +411,7 @@ public final class KnightCutsceneScreen extends Screen {
     private final Group cellWorld = new Group();
     private final StoryFx.Particles cellFx = new StoryFx.Particles(Ui.W, Ui.H);
     private ImageView cellPlayer;
-    private final ImageView cellKnight = Sprites.view("boss/knight_story.png");
+    private final ImageView cellKnight = Sprites.view("boss/sir_filament_story.png");
     private final Node cellKnightShadow = StoryFx.shadow(520, CELL_KNIGHT_FEET, 56);
     private final Group bars = new Group();
     private final List<Rectangle> barRects = new ArrayList<>();

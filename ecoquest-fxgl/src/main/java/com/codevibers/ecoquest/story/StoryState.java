@@ -10,7 +10,7 @@ import com.codevibers.ecoquest.model.Sibling;
 public final class StoryState {
     private StoryState() { }
 
-    public static final String BOSS = "QUEEN MUCK";
+    public static final String BOSS = "QUEEN BIJOU OF THE GRAND HEAP";
 
     /** The sibling you play. */
     public static final String TIDY = "the tidy sibling";

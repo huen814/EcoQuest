@@ -42,7 +42,7 @@ public final class GroveCutsceneScreen extends Screen {
 
         "Mother Nature: For so many good deeds, I name you a trusted Guardian of the Green City.",
 
-        "Mother Nature: Queen Muck's power has grown wild, and your sibling is locked inside her palace. " +
+        "Mother Nature: Queen Bijou of the Grand Heap's power has grown wild, and your sibling is locked inside her palace. " +
         "But the palace hides in the smog now, and no road leads there anymore.",
 
         "Mother Nature: I will open a portal to her gate. Go, Guardian, and bring your sibling home!");

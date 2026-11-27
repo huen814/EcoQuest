@@ -97,7 +97,7 @@ public final class VillagerRewardScreen extends Screen {
             return List.of(
                 npc + ": \"You have sorted trash across all our lands! " +
                 "The Spirit Bottle is fully charged with the pure energy of recycling! " +
-                "Now go - Queen Muck's palace is just ahead!\"",
+                "Now go - Queen Bijou of the Grand Heap's palace is just ahead!\"",
                 "The bottle glows a brilliant green and blue. " +
                 "You raise it high and run toward the final level, " +
                 "determined to rescue " + messy + " once and for all!"
@@ -110,7 +110,7 @@ public final class VillagerRewardScreen extends Screen {
             messy + " is counting on you - keep going!\"",
             "The bottle absorbs another flash of recycled energy. " +
             "You nod and head to the next area. " +
-            (levelIndex < 8 ? "There are still more people who need help!" : "Queen Muck's palace is almost in reach!")
+            (levelIndex < 8 ? "There are still more people who need help!" : "Queen Bijou of the Grand Heap's palace is almost in reach!")
         );
     }
 

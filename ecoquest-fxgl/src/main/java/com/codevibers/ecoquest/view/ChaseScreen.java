@@ -39,7 +39,7 @@ public final class ChaseScreen extends Screen {
     private static final double INVINCIBLE = 1.4;
     private static final double EXIT_X = WORLD_W - 120, EXIT_Y = 290;
     private static final int KNIGHT_FEET = 11;                   // the knight's sprites (transparent, drawn 1:1, ~103 px tall with the staff, he stands ~83 px tall, the Guardian 72) end at his boots
-    private static final String STUN = "boss/knight_stun.png";
+    private static final String STUN = "boss/sir_filament_stun.png";
 
     /** The street as a grid of junk cubes (# = a cube), 7 rows high (down to the bottom edge), 48 px per cell: start and exit areas are clear. */
     private static final int CELL = 48, MAZE_TOP = 134;     // the cubes cover every height the Guardian can walk at, right down to the bottom of the screen
@@ -144,6 +144,9 @@ public final class ChaseScreen extends Screen {
     private boolean retryActive, enraged;
     private PauseOverlay pause;
     private boolean up, down, left, right;
+    private int walkRow;                     // which row of the sprite sheet: 0 down, 1 left, 2 right, 3 up (same as the normal levels)
+    private double walkT;                    // time spent walking; 0 while standing still
+    private static final double WALK_FRAME = 0.09;   // 4 frames per 0.36 s walk cycle, like the normal levels
 
     private final BossDef def;
     private Group violet;
@@ -333,6 +336,7 @@ public final class ChaseScreen extends Screen {
         mode = Mode.ENTER; modeT = 0; lungeCd = 3.5; cloudT = 0; flowT = 0;
         invincible = 0; flash = 0; wonT = -1; retryActive = false; retryAlpha = 0; clock = 0;
         faceX = 1; faceY = 0;
+        walkRow = 0; walkT = 0;
         retryLabel.setOpacity(0); retryPrompt.setOpacity(0); flashRect.setOpacity(0);
         up = down = left = right = false;
         for (Cloud c : clouds) world.getChildren().remove(c.node);
@@ -453,14 +457,21 @@ public final class ChaseScreen extends Screen {
 
     private void movePlayer(double tpf) {
         double dx = (right ? 1 : 0) - (left ? 1 : 0), dy = (down ? 1 : 0) - (up ? 1 : 0);
-        if (dx != 0 || dy != 0) {
+        boolean pressing = dx != 0 || dy != 0;
+        if (pressing) {
             double len = Math.hypot(dx, dy);
             faceX = dx / len; faceY = dy / len;
+            walkRow = dy > 0 ? 0 : dy < 0 ? 3 : dx < 0 ? 1 : 2;      // diagonals face up or down, exactly like the normal levels
         }
         double speed = PLAYER_SPEED;
         for (Cloud c : clouds) if (Math.hypot(pfx - c.x, pfy - c.y) < 38) { speed *= STINK_SLOW; break; }
-        stepPlayer(dx == 0 && dy == 0 ? 0 : dx / Math.hypot(dx, dy) * speed * tpf,
-                   dx == 0 && dy == 0 ? 0 : dy / Math.hypot(dx, dy) * speed * tpf);
+        double bx = pfx, by = pfy;
+        if (pressing) {
+            double len = Math.hypot(dx, dy);
+            stepPlayer(dx / len * speed * tpf, dy / len * speed * tpf);
+        }
+        boolean moved = Math.abs(pfx - bx) + Math.abs(pfy - by) > 0.01;     // pushing against a cube is not walking
+        walkT = moved ? walkT + tpf * speed / PLAYER_SPEED : 0;             // wading through sludge slows the stride too
     }
 
     private void stepPlayer(double mx, double my) {
@@ -997,6 +1008,9 @@ public final class ChaseScreen extends Screen {
     }
 
     private void placeNodes() {
+        boolean standing = retryActive || wonT >= 0;                          // caught, or the seed has answered: stand still
+        int frame = standing ? 0 : (int) (walkT / WALK_FRAME) % 4;
+        playerImg.setViewport(new Rectangle2D(frame * PX, walkRow * SH, PX, SH));
         playerImg.setLayoutX(pfx - PX / 2.0);
         playerImg.setLayoutY(pfy - SH + 10);
         playerImg.setViewOrder(-pfy);

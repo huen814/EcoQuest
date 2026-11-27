@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the Discarded Knight sprites (knight, knight_rage, knight_stun, knight_story) from tools/knight_source.png.
+"""Builds the Discarded Knight sprites (sir_filament, sir_filament_rage, sir_filament_stun, sir_filament_story) from tools/knight_source.png.
 
 Usage:  python3 tools/gen_knight_sprites.py      (needs Pillow and numpy)
 """
@@ -133,11 +133,11 @@ def finish(q, canvas, scale=None, pos=None, outline=False):
 
 def main():
     S = 0.52
-    variants = {"knight": common(), "knight_rage": rage(common()), "knight_stun": stun(common())}
+    variants = {"sir_filament": common(), "sir_filament_rage": rage(common()), "sir_filament_stun": stun(common())}
     os.makedirs(OUT, exist_ok=True)
     for name, q in variants.items():
         finish(q, (96, 96), S, (11, 96 - round(H * S) - 1)).save(os.path.join(OUT, name + ".png"))
-    finish(variants["knight"], (200, 200), None, (26, 200 - 4 - H), outline=True).save(os.path.join(OUT, "knight_story.png"))
+    finish(variants["sir_filament"], (200, 200), None, (26, 200 - 4 - H), outline=True).save(os.path.join(OUT, "sir_filament_story.png"))
 
 
 if __name__ == "__main__":
