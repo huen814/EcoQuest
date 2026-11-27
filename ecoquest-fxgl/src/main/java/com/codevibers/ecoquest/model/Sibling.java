@@ -23,6 +23,11 @@ public enum Sibling {
         this.name = name;
     }
 
+    /** Pronouns for the story text: Lena is "she / her", Adam is "he / him / his". */
+    public String subj() { return this == SISTER ? "she" : "he"; }
+    public String obj() { return this == SISTER ? "her" : "him"; }
+    public String poss() { return this == SISTER ? "her" : "his"; }
+
     /** The sibling the player did not pick. */
     public Sibling other() { return this == SISTER ? BROTHER : SISTER; }
 

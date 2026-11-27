@@ -145,9 +145,10 @@ public final class KidnapCutsceneScreen extends Screen {
 
     private String getPage(int i) {
         String tidy = app.save().sibling().name, messy = app.save().sibling().other().name;
+        String tidyHe = app.save().sibling().subj();
         return switch (i) {
             case 0 -> tidy + " knocks on " + messy + "'s door. No answer. " +
-                      "Pushing it open, they gasp - the room is ankle-deep in rotting garbage. " +
+                      "Pushing it open, " + tidyHe + " gasps - the room is ankle-deep in rotting garbage. " +
                       "Empty bottles, old takeaway boxes and banana peels are piled to the ceiling!";
             case 1 -> "The rubbish TREMBLES. Cans clatter, bags inflate, and from the heap " +
                       "rises a glittering TRASH QUEEN - QUEEN MUCK! A crown of bottle caps, a gown of " +

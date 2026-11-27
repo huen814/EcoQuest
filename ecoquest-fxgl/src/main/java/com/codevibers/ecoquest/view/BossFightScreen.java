@@ -204,6 +204,7 @@ public final class BossFightScreen extends Screen {
         HitFx(double x, double y, Color col) {
             this.x = x; this.y = y;
             node = new Circle(10, Color.TRANSPARENT);
+            node.setCenterX(x); node.setCenterY(y);     // was left at (0,0): every ring flashed in the top-left corner
             node.setStroke(col); node.setStrokeWidth(2.5);
         }
     }

@@ -16,14 +16,14 @@ import javafx.scene.paint.Color;
  */
 public final class VictoryScreen extends Screen {
 
-    private static final double FEET = 318;
+    private static final double FEET = 336, SCALE = 2.0 / 3, GAP = 20;       // the siblings are small next to the palace; 2/3 keeps every art pixel an even 2 px
     private static final String[] CONFETTI = {"#9fe0cf", "#f4a6c8", "#f7d88a", "#7fb2f2", "#d9566f", "#86dba6"};
 
     private final DialogBox box;
     private final ImageView playerImg;
     private final ImageView friendImg;
     private final ImageView weaponImg;
-    private final javafx.scene.shape.Circle glow = StoryFx.glow(150, Color.web("#9fe0cf", 0.8));
+    private final javafx.scene.shape.Circle glow = StoryFx.glow(100, Color.web("#9fe0cf", 0.8));
     private final StoryFx.Particles fx = new StoryFx.Particles(Ui.W, Ui.H);
     private final Random rng = new Random();
     private double t;
@@ -34,7 +34,7 @@ public final class VictoryScreen extends Screen {
     public VictoryScreen(EcoQuestApp app) {
         super(app);
 
-        root.getChildren().add(Sprites.view("backdrop/palace.png"));
+        root.getChildren().add(Sprites.view("backdrop/palace_clean.png"));
         var sun = StoryFx.glow(240, Color.web("#fff3b0", 0.7));
         sun.setTranslateX(Ui.W - 110);
         sun.setTranslateY(40);
@@ -46,16 +46,16 @@ public final class VictoryScreen extends Screen {
         Sibling me = app.save().sibling();
         playerImg = Sprites.view(me.sheet(false));   // plain sheet: cutscenes never show shop cosmetics
         friendImg = Sprites.view(me.other().sheet(false));
-        StoryFx.stand(playerImg, Ui.W / 2.0 - 70, FEET, 2);
-        StoryFx.stand(friendImg, Ui.W / 2.0 + 70, FEET, 2);
+        StoryFx.stand(playerImg, Ui.W / 2.0 - GAP, FEET, SCALE);
+        StoryFx.stand(friendImg, Ui.W / 2.0 + GAP, FEET, SCALE);
         weaponImg = Sprites.view("weapon/bottle.png");
-        weaponImg.setFitWidth(72);
-        weaponImg.setFitHeight(72);
-        weaponImg.setLayoutX((Ui.W - 72) / 2.0);
-        weaponImg.setLayoutY(150);
+        weaponImg.setFitWidth(44);
+        weaponImg.setFitHeight(44);
+        weaponImg.setLayoutX((Ui.W - 44) / 2.0);
+        weaponImg.setLayoutY(232);
         glow.setTranslateX(Ui.W / 2.0);
-        glow.setTranslateY(186);
-        root.getChildren().addAll(glow, StoryFx.shadow(Ui.W / 2.0 - 70, FEET, 90), StoryFx.shadow(Ui.W / 2.0 + 70, FEET, 90),
+        glow.setTranslateY(262);
+        root.getChildren().addAll(glow, StoryFx.shadow(Ui.W / 2.0 - GAP, FEET, 36), StoryFx.shadow(Ui.W / 2.0 + GAP, FEET, 36),
                 playerImg, friendImg, weaponImg);
 
         // Confetti rains down, sparkles and hearts float up.
@@ -74,15 +74,18 @@ public final class VictoryScreen extends Screen {
         root.getChildren().add(box);
     }
 
+    private static String cap(String s) { return Character.toUpperCase(s.charAt(0)) + s.substring(1); }
+
     private List<String> buildPages() {
         String tidy = app.save().sibling().name, messy = app.save().sibling().other().name;
+        String messyHe = cap(app.save().sibling().other().subj()), messyHis = app.save().sibling().other().poss();
         return List.of(
             "Queen Muck keeps her promise and throws open the tower door herself. " +
             "Outside, the smog is gone for good, and cans, bottles and wrappers lie sorted neatly " +
             "by colour all across the palace grounds!",
 
             "\"" + tidy.toUpperCase() + "!\" " + messy + " cried, racing out of the tower. " +
-            "They threw their arms around " + tidy + " and laughed and laughed. " +
+            messyHe + " threw " + messyHis + " arms around " + tidy + " and laughed and laughed. " +
             "\"You sorted all that garbage... just for me?\"",
 
             "\"Every single piece,\" " + tidy + " grinned, holding up the now-empty bottle. " +
@@ -119,8 +122,8 @@ public final class VictoryScreen extends Screen {
             bloomT += tpf;
             bloom.setOpacity(Math.min(1, bloomT / 1.6));
         }
-        playerImg.setTranslateY(-Math.round(Math.abs(Math.sin(t * 2.6)) * 6));
-        friendImg.setTranslateY(-Math.round(Math.abs(Math.sin(t * 2.6 + 1)) * 6));
+        playerImg.setTranslateY(-Math.round(Math.abs(Math.sin(t * 2.6)) * 4));
+        friendImg.setTranslateY(-Math.round(Math.abs(Math.sin(t * 2.6 + 1)) * 4));
         weaponImg.setTranslateY(Math.round(Math.sin(t * 3) * 4));
         weaponImg.setOpacity(0.7 + 0.3 * Math.abs(Math.sin(t * 2)));
         double pulse = 1 + 0.08 * Math.sin(t * 3);
@@ -142,7 +145,7 @@ public final class VictoryScreen extends Screen {
         boolean done = box.advance();
         if (box.page() != before) {
             // the reunion: a burst of hearts between the siblings
-            if (box.page() == 1) fx.burst(Ui.W / 2.0, 210, 26, () -> StoryFx.heart(5 + rng.nextInt(4), Color.web("#ff8fb8")), 200, 1.4, -30);
+            if (box.page() == 1) fx.burst(Ui.W / 2.0, FEET - 36, 26, () -> StoryFx.heart(5 + rng.nextInt(4), Color.web("#ff8fb8")), 200, 1.4, -30);
             if (box.page() == 2) { bloomT = 0; firework(Ui.W / 2.0 - 150, 120); firework(Ui.W / 2.0 + 150, 120); }
         }
         if (done) app.showMainMenu();

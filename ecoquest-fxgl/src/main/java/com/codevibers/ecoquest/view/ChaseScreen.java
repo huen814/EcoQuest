@@ -14,10 +14,7 @@ import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.RadialGradient;
 import javafx.scene.paint.Stop;
 import javafx.scene.shape.Circle;
-import javafx.scene.shape.Ellipse;
-import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.transform.Scale;
 
 /**
  * Boss 2, "the escape": the Queen's Knight hunts the Guardian down a long, scrolling junkyard maze.
@@ -143,20 +140,25 @@ public final class ChaseScreen extends Screen {
     private final BossDef def;
     private Group violet;
 
-    /** One trunk of the wall of living wood Mother Nature grows from the seed: it climbs out of the ground, then its leaves open. */
+    private static final int PS = 3;                           // screen pixels per art pixel, like the rest of the game's art
+
+    /** One pixel-art trunk of the wall of living wood Mother Nature grows from the seed: rows of bark climb out of the ground, then the crown opens. */
     private static final class Trunk {
         final Group box;
-        final Scale grow;
-        final Circle[] leaves;
-        final double delay, height;
+        final ImageView body, crown;
+        final int rows, crownRows;
+        final double delay;
+        int up = -1, open = -1;
         boolean started;
-        Trunk(Group box, Scale grow, Circle[] leaves, double delay, double height) {
-            this.box = box; this.grow = grow; this.leaves = leaves; this.delay = delay; this.height = height;
+        Trunk(Group box, ImageView body, ImageView crown, double delay) {
+            this.box = box; this.body = body; this.crown = crown; this.delay = delay;
+            this.rows = (int) (body.getImage().getHeight() / PS);
+            this.crownRows = (int) (crown.getImage().getHeight() / PS);
         }
     }
 
-    private final Group seed = new Group();
-    private final Circle seedGlow = StoryFx.glow(70, Color.web("#9fffc0", 0.7));
+    private final ImageView seed = Sprites.view("world/seed.png");
+    private final ImageView seedGlow = Sprites.view("world/seed_glow.png");
     private final Group barrier = new Group();
     private final List<Trunk> trunks = new ArrayList<>();
     private final StoryFx.Particles growFx = new StoryFx.Particles(WORLD_W, Ui.H);
@@ -200,18 +202,9 @@ public final class ChaseScreen extends Screen {
             world.getChildren().add(g.node);
         }
 
-        seedGlow.setLayoutX(EXIT_X); seedGlow.setLayoutY(EXIT_Y);
+        seedGlow.setLayoutX(EXIT_X - seedGlow.getImage().getWidth() / 2); seedGlow.setLayoutY(EXIT_Y - seedGlow.getImage().getHeight() / 2);
         seedGlow.setViewOrder(-1);
-        Ellipse seedBody = new Ellipse(0, 0, 9, 13);
-        seedBody.setFill(Color.web("#8a5a32")); seedBody.setStroke(Color.web("#4a2e18")); seedBody.setStrokeWidth(2); seedBody.setRotate(24);
-        Ellipse seedShine = new Ellipse(-3, -4, 2.5, 4.5);
-        seedShine.setFill(Color.web("#d9a86c")); seedShine.setRotate(24);
-        Polygon leafA = new Polygon(0, -12, 7, -22, 2, -10);
-        leafA.setFill(Color.web("#6fd08a"));
-        Polygon leafB = new Polygon(0, -12, -7, -20, -2, -9);
-        leafB.setFill(Color.web("#4fbf6e"));
-        seed.getChildren().addAll(seedBody, seedShine, leafA, leafB);
-        seed.setLayoutX(EXIT_X); seed.setLayoutY(EXIT_Y);
+        seed.setLayoutX(EXIT_X - seed.getImage().getWidth() / 2); seed.setLayoutY(EXIT_Y - 13 * PS);
         seed.setViewOrder(-1);
         Ui.Label exitLabel = new Ui.Label("A SEED", 12, Ui.GOOD);
         exitLabel.setLayoutX(EXIT_X - exitLabel.textWidth() / 2.0);
@@ -676,38 +669,24 @@ public final class ChaseScreen extends Screen {
     }
 
     // ------------------------------------------------------------------------------------------------
-    /** A trunk outline with gently wavy sides, drawn from its base (0, 0) upward. */
-    private static Polygon woodPolygon(double h, double phase) {
-        Polygon p = new Polygon();
-        int n = 10;
-        for (int k = 0; k <= n; k++) p.getPoints().addAll(-(10 - 4.0 * k / n) + 3 * Math.sin(k * 0.9 + phase), -h * k / n);
-        for (int k = n; k >= 0; k--) p.getPoints().addAll((10 - 4.0 * k / n) + 3 * Math.sin(k * 0.9 + phase + 1.2), -h * k / n);
-        return p;
-    }
+    /** One square wood chip, so the dust the trunks kick up is made of pixels too. */
+    private static Rectangle chip(Color c) { return new Rectangle(PS, PS, c); }
 
-    /** The wall of living wood: seven trunks standing one above the other, so together they close the whole street. */
+    /** The wall of living wood: seven pixel trunks standing one above the other, so together they close the whole street. */
     private void buildBarrier() {
         java.util.Random r = new java.util.Random(3);
         for (int i = 0; i < 7; i++) {
-            double baseY = Math.min(Y2 - 2, 118 + i * 62), h = 150 + r.nextInt(40);
-            Polygon wood = woodPolygon(h, r.nextDouble() * 6);
-            wood.setFill(Color.web(i % 2 == 0 ? "#7a5232" : "#6b4829"));
-            wood.setStroke(Color.web("#3d2614")); wood.setStrokeWidth(2);
-            Scale grow = new Scale(1, 0, 0, 0);
-            wood.getTransforms().add(grow);
-            Group box = new Group(wood);
-            Circle[] leaves = new Circle[7];
-            for (int k = 0; k < leaves.length; k++) {
-                double a = k * 1.05;
-                leaves[k] = new Circle(Math.cos(a) * 17, -h + Math.sin(a) * 11 + (k > 4 ? 46 : 0), 15 + r.nextInt(6), Color.web(k % 2 == 0 ? "#5fcf7a" : "#3fae62"));
-                leaves[k].setOpacity(0);
-                box.getChildren().add(leaves[k]);
-            }
-            box.setLayoutX((i % 2) * 14 - 7 + r.nextDouble() * 8);
+            double baseY = Math.min(Y2 - 2, 118 + i * 62);
+            ImageView body = Sprites.view("world/wood_trunk_" + i + ".png");
+            ImageView crown = Sprites.view("world/wood_crown_" + i + ".png");
+            body.setVisible(false);
+            crown.setVisible(false);
+            Group box = new Group(body, crown);
+            box.setLayoutX(Math.round(((i % 2) * 14 - 7 + r.nextDouble() * 8) / PS) * PS);
             box.setLayoutY(baseY);
             box.setViewOrder(-baseY);
             barrier.getChildren().add(box);
-            trunks.add(new Trunk(box, grow, leaves, i * 0.16 + r.nextDouble() * 0.1, h));
+            trunks.add(new Trunk(box, body, crown, i * 0.16 + r.nextDouble() * 0.1));
         }
         barrier.setVisible(false);
         barrier.setViewOrder(-1500);
@@ -721,8 +700,9 @@ public final class ChaseScreen extends Screen {
         seedGlow.setScaleX(1); seedGlow.setScaleY(1); seedGlow.setOpacity(1);
         for (Trunk t : trunks) {
             t.started = false;
-            t.grow.setY(0);
-            for (Circle c : t.leaves) { c.setOpacity(0); c.setTranslateY(0); }
+            t.up = t.open = -1;
+            t.body.setVisible(false);
+            t.crown.setVisible(false);
         }
         growFx.getChildren().clear();
     }
@@ -736,12 +716,27 @@ public final class ChaseScreen extends Screen {
             double g = u * u * (3 - 2 * u);
             if (g > 0 && !t.started) {
                 t.started = true;
-                growFx.burst(barX + t.box.getLayoutX(), t.box.getLayoutY(), 8, () -> StoryFx.dot(3, Color.web("#7a5232")), 90, 0.7, 260);
+                growFx.burst(barX + t.box.getLayoutX(), t.box.getLayoutY(), 8, () -> chip(Color.web("#7a5232")), 90, 0.7, 260);
                 app.sfx(Sfx.DUMP);
             }
-            t.grow.setY(g);
-            double leafOpacity = Math.max(0, Math.min(1, (g - 0.6) / 0.4));
-            for (Circle c : t.leaves) { c.setOpacity(leafOpacity); c.setTranslateY(t.height * (1 - g)); }
+            int up = Math.min(t.rows, ((int) (g * t.rows) + 1) / 2 * 2);                                    // the bark rises two pixel rows at a time
+            int open = Math.min(t.crownRows, (int) Math.ceil(Math.max(0, g - 0.6) / 0.4 * t.crownRows / 4) * 4);   // then the crown opens from the bottom up
+            if (up == t.up && open == t.open) continue;           // nothing changed this frame, so nothing to redraw
+            t.up = up;
+            t.open = open;
+            double bw = t.body.getImage().getWidth(), bh = t.body.getImage().getHeight(), cw = t.crown.getImage().getWidth(), ch = t.crown.getImage().getHeight();
+            t.body.setVisible(up > 0);
+            if (up > 0) {
+                t.body.setViewport(new Rectangle2D(0, bh - up * PS, bw, up * PS));
+                t.body.setLayoutX(-bw / 2);
+                t.body.setLayoutY(-up * PS);
+            }
+            t.crown.setVisible(open > 0);
+            if (open > 0) {
+                t.crown.setViewport(new Rectangle2D(0, ch - open * PS, cw, open * PS));
+                t.crown.setLayoutX(-cw / 2);
+                t.crown.setLayoutY((9 - up - open) * PS);
+            }
         }
         growFx.update(tpf);
         double stop = barX - 34;

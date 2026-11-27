@@ -27,7 +27,7 @@ public final class PalaceCutsceneScreen extends Screen {
         "Mother Nature's light opens a spinning portal. It drops the Guardian onto the pink carpet in front of " +
         "Queen Muck's palace, where the smog hangs thick and the great gate towers overhead.",
 
-        "Sprout: {sibling} is somewhere inside, Guardian! Get through the gate, cross the great hall, " +
+        "Narrator: {sibling} is somewhere inside, Guardian! Get through the gate, cross the great hall, " +
         "and stop Queen Muck before she buries the whole country!");
 
     private static final List<String> TALK_PAGES = List.of(
@@ -38,7 +38,7 @@ public final class PalaceCutsceneScreen extends Screen {
         "Everything in it is something your village threw away!",
 
         "Queen Muck: {sibling} is safe in my tower, with plenty of rubbish for company. " +
-        "You want them back? Then sort THIS!");
+        "You want {him} back? Then sort THIS!");
 
     private enum Phase { INTRO, WALK_GATE, FLASH, WALK_HALL, TALK }
 
@@ -105,7 +105,8 @@ public final class PalaceCutsceneScreen extends Screen {
     /** Fills in the kidnapped sibling's name (Lena or Adam, whichever was not picked). */
     private List<String> named(List<String> pages) {
         String n = app.save().sibling().other().name;
-        return pages.stream().map(p -> p.replace("{sibling}", n)).toList();
+        String him = app.save().sibling().other().obj();
+        return pages.stream().map(p -> p.replace("{sibling}", n).replace("{him}", him)).toList();
     }
 
     @Override

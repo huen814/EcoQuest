@@ -161,7 +161,7 @@ public final class KnightCutsceneScreen extends Screen {
             knightShadow.setOpacity(0);
             player = Sprites.view(app.save().sibling().sheet(false));
             StoryFx.stand(player, playerX, FEET, SCALE);
-            world.getChildren().addAll(scene, decor, violet, portalHolder, mid, StoryFx.shadow(playerX, FEET, 36), knightShadow, knight, player, cubeLayer, fx, skyFlash);
+            world.getChildren().addAll(scene, decor, mid, violet, portalHolder, StoryFx.shadow(playerX, FEET, 36), knightShadow, knight, player, cubeLayer, fx, skyFlash);
             world.setVisible(false);
         }
 
@@ -320,7 +320,7 @@ public final class KnightCutsceneScreen extends Screen {
         double[] xs = {125, 270, 330, 385, 585};
         for (int i = 0; i < xs.length; i++) {
             double feet = 304 + (i % 3) * 11;
-            ImageView v = Sprites.view("npc/npc_" + i + ".png");
+            ImageView v = Sprites.view("npc/park_" + i + ".png");
             StoryFx.stand(v, xs[i], feet, 1);
             Node shadow = StoryFx.shadow(xs[i], feet, 30);
             Ui.Label bang = new Ui.Label("!", 20, Color.web("#ff4d6d"));
@@ -329,6 +329,12 @@ public final class KnightCutsceneScreen extends Screen {
             bang.setVisible(false);
             villagers.add(new Villager(v, shadow, bang, xs[i]));
             park.mid.getChildren().addAll(shadow, v, bang);
+        }
+        for (String side : new String[] {"left", "right"}) {                             // the two big front trees, redrawn over the villagers so they run behind them
+            ImageView tree = Sprites.view("backdrop/park_front_" + side + ".png");
+            tree.setLayoutX(side.equals("left") ? 0 : 626);
+            tree.setLayoutY(side.equals("left") ? 204 : 208);
+            park.mid.getChildren().add(tree);
         }
 
         street = new Stage(StoryFx.scene("city"), busStop(60, 290), 260, 500, 560, FEET - 62);

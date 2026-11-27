@@ -27,7 +27,7 @@ public final class GroveCutsceneScreen extends Screen {
         "The last street of Mega City sparkles clean. Then the air over the old fountain begins to hum, " +
         "and a ring of green light spins wide open. It is a portal!",
 
-        "Sprout: News of your good deeds has travelled to every town, river and rooftop, Guardian. " +
+        "Narrator: News of your good deeds has travelled to every town, river and rooftop, Guardian. " +
         "Someone very beautiful and very kind wants to meet you. Step through!");
 
     private static final List<String> GROVE_PAGES = List.of(

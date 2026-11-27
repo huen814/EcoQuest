@@ -38,9 +38,12 @@ public final class StoryFx {
     // ------------------------------------------------------------------ scenery
 
     /** A whole 720x480 scene: skyline strip on top, ground tiles below with a road along row 6. */
-    public static Group scene(String name) {
+    public static Group scene(String name) { return scene(name, name); }
+
+    /** Same, but with a different skyline strip ({@code backdrop/<strip>.png}) over the {@code name} ground tiles. */
+    public static Group scene(String name, String strip) {
         Group g = new Group();
-        g.getChildren().add(Sprites.view("backdrop/" + name + ".png"));
+        g.getChildren().add(Sprites.view("backdrop/" + strip + ".png"));
         for (int c = 0; c < TileMap.COLS; c++) {
             for (int r = 3; r < TileMap.ROWS; r++) {
                 String tex = r == 6 ? "tiles/road_" + name + ".png"

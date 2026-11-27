@@ -13,12 +13,14 @@ import javafx.scene.shape.Rectangle;
 
 /**
  * Story lines before or after a boss fight: the boss's arena, the Guardian, the boss, and a dialogue box.
- * The Muck Mound gets extra effects: before the fight the trash erupts from the ground, the mound drags itself up and the
- * world turns gloomy; after it, the light fades the mound out of existence and the world returns to normal.
+ * The Muck Mound gets extra scenes. Before the fight the Guardian takes a break on a bench at golden hour; then, suddenly, trash
+ * bursts out of the ground, the mound drags itself up and the world turns gloomy into its own landfill arena. After the fight the
+ * light fades the mound out of existence and the world returns to normal.
  */
 public final class BossStoryScreen extends Screen {
 
     private static final int FEET = 340;
+    private static final int ERUPT_PAGE = 2;           // the Muck Mound's page on which the ground suddenly erupts
 
     private final DialogBox box;
     private final List<String> pages;
@@ -32,7 +34,8 @@ public final class BossStoryScreen extends Screen {
     private final StoryFx.Particles fx = new StoryFx.Particles(Ui.W, Ui.H);
     private final Rectangle bossClip = new Rectangle();
     private Node gloomScene, vignette;
-    private Rectangle dark, haze;
+    private Rectangle dark, haze, warm, fade;
+    private boolean erupted;
     private Circle vanishGlow;
     private double t, mt, lastBurst, gloom;
 
@@ -44,12 +47,21 @@ public final class BossStoryScreen extends Screen {
         this.def = def;
         this.before = showBoss;
         this.mound = def.kind() == BossDef.Kind.MOUND;
+        this.erupted = !(mound && showBoss) || pages.size() <= ERUPT_PAGE;
 
         Node arena = def.backdrop().startsWith("scene:")
                 ? StoryFx.scene(def.backdrop().substring("scene:".length()))
                 : Sprites.view(def.backdrop());
         if (mound) {
-            root.getChildren().add(StoryFx.scene("river"));         // the clean world
+            root.getChildren().add(StoryFx.scene("river", "river_story"));         // the clean world (trees instead of factories)
+            if (!erupted) {                                         // the break: a bench in the golden evening light, until the ground erupts
+                ImageView bench = Sprites.view("world/rest_bench_story.png");
+                bench.setLayoutX(140 - bench.getImage().getWidth() / 2);
+                bench.setLayoutY(FEET - 3 - bench.getImage().getHeight());
+                warm = new Rectangle(Ui.W, Ui.H, Color.web("#ff9f4a"));
+                warm.setOpacity(0);
+                root.getChildren().addAll(bench, warm);
+            }
             gloomScene = arena;
             root.getChildren().add(gloomScene);                     // the trash-choked arena fades in over it
         } else {
@@ -74,7 +86,7 @@ public final class BossStoryScreen extends Screen {
         bossImg.setFitHeight(def.height() * 1.4);
         bossImg.setLayoutX(Ui.W - bossImg.getFitWidth() - 40);
         bossImg.setLayoutY(FEET - bossImg.getFitHeight() + 10);
-        bossImg.setVisible(showBoss || mound);          // the mound is still there at the start of its farewell scene
+        bossImg.setVisible(mound ? !showBoss || erupted : showBoss);      // the mound is still there at the start of its farewell scene
         if (mound && showBoss) bossImg.setClip(bossClip);
         root.getChildren().add(bossImg);
 
@@ -86,6 +98,11 @@ public final class BossStoryScreen extends Screen {
             root.getChildren().add(vanishGlow);
         }
         root.getChildren().addAll(playerImg, fx);
+        if (!erupted) {
+            fade = new Rectangle(Ui.W, Ui.H, Color.BLACK);          // fades in from black after the villager's thank-you, then flashes when the ground erupts
+            fade.setMouseTransparent(true);
+            root.getChildren().add(fade);
+        }
 
         box = new DialogBox(6, Ui.H - 134, Ui.W - 12, 128);
         root.getChildren().add(box);
@@ -97,10 +114,10 @@ public final class BossStoryScreen extends Screen {
         mt = 0;
         lastBurst = 0;
         box.show(pages);
-        app.sfx(before ? Sfx.FULL : Sfx.MISSION);
+        if (erupted) app.sfx(before ? Sfx.FULL : Sfx.MISSION);       // the Muck Mound's break is quiet; its eruption plays the sound
         if (before) {                         // before the fight: its battle music starts now and carries on into the fight
             switch (def.kind()) {
-                case MOUND -> Audio.playMusic("boss_mound.wav", 0.5);
+                case MOUND -> { if (erupted) Audio.playMusic("boss_mound.wav", 0.5); }
                 case CHASE -> Audio.playMusic("chase.wav", 0.55);
                 default -> { }
             }
@@ -120,8 +137,18 @@ public final class BossStoryScreen extends Screen {
         mt += tpf;
         double bossX = bossImg.getLayoutX() + bossImg.getFitWidth() / 2, ground = FEET + 10, h = bossImg.getFitHeight();
         if (before) {
-            gloom = Math.min(1, Math.max(0, (mt - 0.3) / 2.6));
-            double k = Math.max(0, Math.min(1, (mt - 0.2) / 2.6)), e = 1 - Math.pow(1 - k, 3);
+            if (!erupted && box.page() >= ERUPT_PAGE) erupt();
+            if (!erupted) {
+                updateBreak();
+                return;
+            }
+            gloom = Math.min(1, Math.max(0, (mt - 0.9) / 2.6));
+            double k = Math.max(0, Math.min(1, (mt - 1.1) / 2.6)), e = 1 - Math.pow(1 - k, 3);
+            if (fade != null) {
+                fade.setOpacity(Math.max(0, 1 - mt / 0.35) * 0.6);          // a flash as the ground erupts
+                warm.setOpacity(0.16 * Math.max(0, 1 - mt / 0.8));
+                playerImg.setTranslateY(-Math.sin(Math.PI * Math.min(1, mt / 0.5)) * 26);     // the Guardian leaps up, startled
+            }
             double sink = (1 - e) * (h + 24);
             bossImg.setTranslateY(sink + (k >= 1 ? Math.round(Math.sin(t * 2.2) * 3) : 0));
             bossClip.setX(0);
@@ -129,13 +156,16 @@ public final class BossStoryScreen extends Screen {
             bossClip.setWidth(bossImg.getFitWidth());
             bossClip.setHeight(Math.max(0, h - sink + 12));
             if (k < 1) {
-                if (mt - lastBurst > 0.09) {
+                if (mt - lastBurst > 0.07) {
                     lastBurst = mt;
-                    fx.burst(bossX + (rng.nextDouble() - 0.5) * 120, ground, 3, () -> StoryFx.randomLitter(rng, 20), 150, 0.9, 520);
+                    boolean surge = mt < 1.6;         // first trash bursts out of the ground all over the clearing, then it piles up around the mound
+                    double x = surge ? 30 + rng.nextDouble() * (Ui.W - 60) : bossX + (rng.nextDouble() - 0.5) * 120;
+                    fx.burst(x, ground + (surge ? rng.nextDouble() * 60 - 20 : 0), surge ? 5 : 3, () -> StoryFx.randomLitter(rng, 20), surge ? 260 : 150, 0.9, 520);
                     if (rng.nextDouble() < 0.4) app.sfx(Sfx.DUMP);
                 }
-                root.setTranslateX((rng.nextDouble() - 0.5) * 6);
-                root.setTranslateY((rng.nextDouble() - 0.5) * 4);
+                double shake = mt < 0.8 ? 10 : 6;
+                root.setTranslateX((rng.nextDouble() - 0.5) * shake);
+                root.setTranslateY((rng.nextDouble() - 0.5) * shake * 0.65);
             } else {
                 root.setTranslateX(0);
                 root.setTranslateY(0);
@@ -154,6 +184,31 @@ public final class BossStoryScreen extends Screen {
             if (k >= 1) bossImg.setVisible(false);
         }
         applyGloom();
+    }
+
+    /** The calm before the eruption: a fade in from black, a warm evening glow, the Guardian breathing slowly and a few drifting glints. */
+    private void updateBreak() {
+        fade.setOpacity(Math.max(0, 1 - t / 1.0));
+        warm.setOpacity(0.16 * Math.min(1, t / 1.5));
+        playerImg.setTranslateY(Math.round(Math.sin(t * 1.6)));
+        if (t - lastBurst > 0.8) {
+            lastBurst = t;
+            fx.burst(300 + rng.nextDouble() * 380, 170 + rng.nextDouble() * 120, 1, () -> StoryFx.sparkle(3, Color.web("#fff3b0")), 10, 2.2, -16);
+        }
+    }
+
+    /** The ground suddenly bursts: a flash, a rumble, trash flying out of the earth and the battle music kicking in. */
+    private void erupt() {
+        erupted = true;
+        mt = 0;
+        lastBurst = 0;
+        bossImg.setVisible(true);
+        fade.setFill(Color.web("#fff6d8"));
+        app.sfx(Sfx.FULL);
+        Audio.playMusic("boss_mound.wav", 0.5);
+        for (int i = 0; i < 6; i++) {
+            fx.burst(60 + i * 120, FEET + 10, 8, () -> StoryFx.randomLitter(rng, 20), 300, 1.0, 520);
+        }
     }
 
     private void applyGloom() {

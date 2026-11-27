@@ -10,10 +10,15 @@ public enum BossDef {
 
     /** Boss 1: a heap of unsorted trash that came to life. Fought after level 3. */
     MUCK_MOUND("MUCK MOUND", 30, Kind.MOUND, "boss/mound.png", "boss/mound_rage.png", null, "GLORP!",
-            "scene:dump", 160, 128, 56, 1.5, 0.85,
+            "backdrop/mound_arena.png", 160, 128, 56, 1.5, 0.85,
             List.of(
-                "The river runs clear again, but the ground beneath the old landfill starts to shake. " +
-                "Every bottle, can and wrapper that people never sorted properly has dragged itself " +
+                "The river runs clear again and the day is finally quiet. You sit down on a bench in the golden evening light, " +
+                "set your bag beside you, and let out a long, well-earned breath.",
+
+                "Birds are singing. The air smells clean for the first time in ages. Maybe, just maybe, the worst is over...",
+
+                "Then the ground beneath the old landfill starts to shake. Trash bursts out of the earth! " +
+                "Every bottle, can and wrapper that people never sorted properly drags itself " +
                 "into one hulking, dripping heap with two googly eyes. The corruption of nature has taken shape!",
 
                 "This is the Muck Mound, born from all the trash nobody sorted. " +
