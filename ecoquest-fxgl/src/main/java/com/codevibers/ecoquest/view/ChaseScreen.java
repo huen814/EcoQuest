@@ -326,6 +326,7 @@ public final class ChaseScreen extends Screen {
         hp = MAX_HP;
         pfx = 130; pfy = 270;
         cfx = 30; cfy = 270;
+        cameraX = 0; world.setTranslateX(0);                     // the camera starts back at the beginning of the street, not wherever you were caught
         mode = Mode.WAIT; modeT = 1.0; lungeCd = 3.5; cloudT = 0; flowT = 0;
         invincible = 0; flash = 0; wonT = -1; retryActive = false; retryAlpha = 0; clock = 0;
         faceX = 1; faceY = 0;
