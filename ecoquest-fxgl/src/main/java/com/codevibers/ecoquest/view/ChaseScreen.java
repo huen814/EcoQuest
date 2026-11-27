@@ -53,7 +53,10 @@ public final class ChaseScreen extends Screen {
         "...........#..#.....#.....#.......##....#.....#........"
     };
 
-    private enum Mode { WAIT, CHASE, TELEGRAPH, LUNGE, STUN }
+    /** The knight runs in from just off the left edge of the screen at his chase speed, then the chase proper begins where he used to stand. */
+    private static final double ENTER_FROM_X = -80, ENTER_TO_X = 30, ENTER_SPEED = 158;
+
+    private enum Mode { ENTER, CHASE, TELEGRAPH, LUNGE, STUN }
 
     private static final class Block {
         final double x, y, w, h;
@@ -134,7 +137,7 @@ public final class ChaseScreen extends Screen {
     private double pfx, pfy;                 // the Guardian's feet (world coordinates)
     private double cfx, cfy;                 // the creature's feet
     private double faceX = 1, faceY = 0;
-    private Mode mode = Mode.WAIT;
+    private Mode mode = Mode.ENTER;
     private double modeT, lungeCd, lungeDx, lungeDy, cloudT;
     private double cameraX, clock, invincible, flash, shoutT, wonT = -1, retryAlpha;
     private int hp = MAX_HP;
@@ -325,9 +328,9 @@ public final class ChaseScreen extends Screen {
     public void enter() {
         hp = MAX_HP;
         pfx = 130; pfy = 270;
-        cfx = 30; cfy = 270;
+        cfx = ENTER_FROM_X; cfy = 270;                           // off-screen to the left: he runs into the scene instead of waiting behind you
         cameraX = 0; world.setTranslateX(0);                     // the camera starts back at the beginning of the street, not wherever you were caught
-        mode = Mode.WAIT; modeT = 1.0; lungeCd = 3.5; cloudT = 0; flowT = 0;
+        mode = Mode.ENTER; modeT = 0; lungeCd = 3.5; cloudT = 0; flowT = 0;
         invincible = 0; flash = 0; wonT = -1; retryActive = false; retryAlpha = 0; clock = 0;
         faceX = 1; faceY = 0;
         retryLabel.setOpacity(0); retryPrompt.setOpacity(0); flashRect.setOpacity(0);
@@ -479,8 +482,9 @@ public final class ChaseScreen extends Screen {
         double dx = pfx - cfx, dy = pfy - cfy, dist = Math.max(1, Math.hypot(dx, dy));
         modeT -= tpf;
         switch (mode) {
-            case WAIT -> {
-                if (modeT <= 0) { mode = Mode.CHASE; say("HALT.", 1.6); app.sfx(Sfx.FULL); }
+            case ENTER -> {
+                cfx = Math.min(ENTER_TO_X, cfx + ENTER_SPEED * tpf);
+                if (cfx >= ENTER_TO_X) { mode = Mode.CHASE; say("HALT.", 1.6); app.sfx(Sfx.FULL); }
             }
             case CHASE -> {
                 if (!enraged && progress >= 0.5) {                 // phase 2: he snaps
@@ -659,7 +663,7 @@ public final class ChaseScreen extends Screen {
 
     private void checkContacts() {
         if (invincible > 0) return;
-        if (mode != Mode.STUN && mode != Mode.WAIT && Math.hypot(pfx - cfx, pfy - cfy) < 30) {
+        if (mode != Mode.STUN && mode != Mode.ENTER && Math.hypot(pfx - cfx, pfy - cfy) < 30) {
             hurt(cfx, cfy);
             if (!retryActive) {
                 mode = Mode.STUN; modeT = 0.9;                   // it staggers, giving you a moment to get away
@@ -998,7 +1002,7 @@ public final class ChaseScreen extends Screen {
         playerImg.setViewOrder(-pfy);
         playerImg.setOpacity(invincible > 0 && ((int) (clock * 12) % 2 == 0) ? 0.35 : 1);
         double shake = mode == Mode.TELEGRAPH ? (((int) (clock * 40) % 2) - 0.5) * 6 : 0;
-        double bob = mode == Mode.WAIT ? 0 : Math.sin(clock * 6) * 2;     // he stands perfectly still for the split second before the chase starts
+        double bob = Math.sin(clock * 6) * 2;                              // he is running from the very first frame, even while entering
         chaserImg.setLayoutX(cfx - chaserImg.getImage().getWidth() / 2 + shake);
         chaserImg.setLayoutY(cfy - chaserImg.getImage().getHeight() + KNIGHT_FEET + bob);   // his boots sit where the Guardian's do
         chaserImg.setViewOrder(-cfy);
