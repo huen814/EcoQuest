@@ -28,7 +28,7 @@ public enum BossDef {
                 "until nothing is left, as if it had never existed.",
 
                 "The dark haze lifts and the air over the landfill turns clean again. Someone is still stirring up real trouble, " +
-                "though. Keep sorting, Guardian. The next level is waiting!")),
+                "though. Keep sorting, {kid}. The next level is waiting!")),
 
     /** Boss 2: the Queen's Knight, Sir Filament, sent by Queen Bijou of the Grand Heap to capture the Guardian. He cannot be beaten, so this one is an escape. Fought after level 6. */
     EXPERIMENT("SIR FILAMENT", 0, Kind.CHASE, "boss/sir_filament.png", "boss/sir_filament_rage.png", null, "HALT.",
@@ -38,7 +38,7 @@ public enum BossDef {
                 "A wall of living wood stands between you and Sir Filament. He studies it for a long moment, then rests a gauntlet against the bark. " +
                 "\"The Queen will hear of this,\" he says, calm as ever, and his portal swallows him.",
 
-                "The junk cubes crumble to dust. In the breeze, a faint voice drifts past your ear: \"Go on, little Guardian. " +
+                "The junk cubes crumble to dust. In the breeze, a faint voice drifts past your ear: \"Go on, {kid}. " +
                 "The next area is waiting.\"")),
 
     /** The final boss: Queen Bijou of the Grand Heap, on her throne in the palace hall. Fought after the last level. */

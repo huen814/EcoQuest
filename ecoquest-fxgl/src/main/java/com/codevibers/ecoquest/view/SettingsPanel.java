@@ -22,7 +22,9 @@ import javafx.scene.shape.Rectangle;
  */
 final class SettingsPanel extends Group {
     static final double WIDTH = 580, HEIGHT = 340;
-    private static final double PAD = 26, TOP = 96, ROW = 30;
+    private static final double PAD = 26, TOP = 96, MAX_ROW = 30;
+    private static final double BOTTOM_RESERVED = 48;   // space kept free under the last row for the hint line
+    private double ROW = MAX_ROW;                      // shrinks on tabs with many rows (CONTROLS) so they clear the hint
     private static final String[] TABS = {"AUDIO", "DISPLAY", "CONTROLS", "GAMEPLAY", "DATA"};
     private static final Color GREY = Color.web("#9a9a98");
 
@@ -113,6 +115,7 @@ final class SettingsPanel extends Group {
                         () -> "", d -> { if (!inGame) app.showConfirmNewGame(); }, !inGame));
             }
         }
+        ROW = Math.min(MAX_ROW, Math.floor((HEIGHT - BOTTOM_RESERVED - TOP) / rows.size()));
         int sel = 0;
         for (int i = 0; i < rows.size(); i++) {
             Row r = rows.get(i);

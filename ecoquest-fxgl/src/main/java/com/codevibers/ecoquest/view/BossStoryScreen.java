@@ -48,7 +48,9 @@ public final class BossStoryScreen extends Screen {
     /** @param showBoss true before the fight (the boss looms), false after it (only the arena and the Guardian). */
     public BossStoryScreen(EcoQuestApp app, BossDef def, List<String> pages, Runnable next, boolean showBoss) {
         super(app);
-        this.pages = pages;
+        // {kid} becomes "little girl" or "little boy", depending on which sibling the player picked.
+        String kid = app.save().sibling() == Sibling.SISTER ? "little girl" : "little boy";
+        this.pages = pages.stream().map(p -> p.replace("{kid}", kid).replace("{Kid}", Character.toUpperCase(kid.charAt(0)) + kid.substring(1))).toList();
         this.next = next;
         this.def = def;
         this.before = showBoss;

@@ -97,9 +97,9 @@ public final class VillagerRewardScreen extends Screen {
             return List.of(
                 npc + ": \"You have sorted trash across all our lands! " +
                 "The Spirit Bottle is fully charged with the pure energy of recycling! " +
-                "Now go - Queen Bijou of the Grand Heap's palace is just ahead!\"",
+                "Now go - Queen Bijou of the Grand Heap must be stopped!\"",
                 "The bottle glows a brilliant green and blue. " +
-                "You raise it high and run toward the final level, " +
+                "You raise it high and run on, " +
                 "determined to rescue " + messy + " once and for all!"
             );
         }

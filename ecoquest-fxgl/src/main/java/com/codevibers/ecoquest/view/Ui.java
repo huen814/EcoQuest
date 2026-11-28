@@ -26,14 +26,14 @@ public final class Ui {
     public static final Color ACCENT = Color.web("#d98a4a");
     public static final Color WHITE = Color.WHITE;
 
-    private static final String FONT_RESOURCE = "/assets/ui/fonts/PressStart2P.ttf";
+    private static final String FONT_RESOURCE = "/assets/ui/fonts/Silkscreen-Regular.ttf";
     private static final java.util.Map<Double, Font> FONTS = new java.util.HashMap<>();
     private static String family;
     private static boolean fontTried;
 
     private Ui() { }
 
-    /** Pixel font if assets/ui/fonts/PressStart2P.ttf exists (drop it in), bold monospace otherwise. */
+    /** Silkscreen pixel font if assets/ui/fonts/Silkscreen-Regular.ttf exists (drop it in), bold monospace otherwise. */
     public static Font font(double size) {
         if (!fontTried) {
             fontTried = true;

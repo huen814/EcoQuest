@@ -80,7 +80,7 @@ public final class VictoryScreen extends Screen {
         String tidy = app.save().sibling().name, messy = app.save().sibling().other().name;
         String messyHe = cap(app.save().sibling().other().subj()), messyHis = app.save().sibling().other().poss();
         return List.of(
-            "Queen Muck keeps her promise and throws open the tower door herself. " +
+            "Queen Bijou throws open the tower door herself. " +
             "Outside, the smog is gone for good, and cans, bottles and wrappers lie sorted neatly " +
             "by colour all across the palace grounds!",
 

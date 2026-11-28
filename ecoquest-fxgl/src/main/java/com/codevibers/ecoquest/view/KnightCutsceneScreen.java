@@ -7,6 +7,7 @@ import java.util.Random;
 
 import com.codevibers.ecoquest.EcoQuestApp;
 import com.codevibers.ecoquest.model.Sfx;
+import com.codevibers.ecoquest.model.Sibling;
 
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -51,7 +52,7 @@ public final class KnightCutsceneScreen extends Screen {
             "Then the air above the path crackles and tears open. A ring of violet light spins wide, and a knight in dark armor strides " +
             "out of a purple portal. The whole park screams and scatters!",
 
-            "Sir Filament: Guardian. I am Sir Filament, the Queen's knight, sent by Queen Bijou of the Grand Heap. Your work has been causing Her Majesty great discomfort. It ends today.",
+            "Sir Filament: {Kid}. I am Sir Filament, the Queen's knight, sent by Queen Bijou of the Grand Heap. Your work has been causing Her Majesty great discomfort. It ends today.",
 
             "Sir Filament: You will come with me. Resistance would be unwise.",
 
@@ -64,7 +65,7 @@ public final class KnightCutsceneScreen extends Screen {
             "An hour crawls by. You rattle the bars, shove the lock and search every crack, but there is no way out. " +
             "Then something warm brushes your mind.",
 
-            "???: Do not be afraid, little Guardian. I shall lend you my assistance.",
+            "???: Do not be afraid, {kid}. I shall lend you my assistance.",
 
             "A soft green light seeps through the stone. The lock clicks, the bars wither into leaves, and a swirling green portal opens " +
             "in the middle of the cell. You do not hesitate. You step through!"),
@@ -78,7 +79,7 @@ public final class KnightCutsceneScreen extends Screen {
 
             "Sir Filament: ...The cell is empty. The lock is covered in flowers. This was no ordinary escape.",
 
-            "Sir Filament: Queen Bijou of the Grand Heap will nag me for days over this. No matter. The Guardian will be found."),
+            "Sir Filament: Queen Bijou of the Grand Heap will nag me for days over this. No matter. The {kid} will be found."),
         List.of(
             "You found the nearest bus stop and rode all the way back to town. Now you hurry down the street toward the next area, " +
             "when the air behind you tears open again, and Sir Filament's own portal spits him out right in your way!",
@@ -687,7 +688,9 @@ public final class KnightCutsceneScreen extends Screen {
             }
             default -> { }
         }
-        box.show(PAGES.get(b.ordinal()));
+        String kid = app.save().sibling() == Sibling.SISTER ? "little girl" : "little boy";   // the Guardian title is only given later, by Mother Nature
+        String kidCap = Character.toUpperCase(kid.charAt(0)) + kid.substring(1);
+        box.show(PAGES.get(b.ordinal()).stream().map(p -> p.replace("{kid}", kid).replace("{Kid}", kidCap)).toList());
         lastPage = -1;
     }
 

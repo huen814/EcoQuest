@@ -11,25 +11,34 @@ import javafx.scene.shape.Rectangle;
 
 /** Shared layout for level select, game modes and the shop: titled list on top, description box below. */
 abstract class ListScreen extends Screen {
-    private static final double ROW = 31;
+    private static final double MAX_ROW = 31;
+    private static final double ROWS_Y = 52;                   // where the first row starts on screen
+    private static final double PANEL_Y = 10;
+    private static final double BOX_Y = Ui.H - 98;             // top of the description box
+    private static final double PANEL_MAX_BOTTOM = BOX_Y - 6;  // keep a small gap above the description box
+    private static final double PANEL_PAD_BOTTOM = 12;
 
     private final Group rows = new Group();
     private final Ui.Label detail = new Ui.Label("", 10, Ui.INK);
     private final Ui.Label heading;
+    private final double ROW;   // row height: 31, or smaller when there are too many rows to fit above the description box
     protected int index;
 
     ListScreen(EcoQuestApp app, String title) {
         super(app);
         root.getChildren().add(Sprites.view("backdrop/title.png"));
         Rectangle dim = new Rectangle(Ui.W, Ui.H, Color.rgb(0, 0, 0, 0.35));
-        Group list = Ui.panel(Ui.W - 24, 30 + count0() * ROW);
+        int n = Math.max(1, count0());
+        ROW = Math.min(MAX_ROW, Math.floor((PANEL_MAX_BOTTOM - PANEL_PAD_BOTTOM - ROWS_Y) / n));
+        // The panel reaches from the top edge down past the last row, so rows never spill over the frame.
+        Group list = Ui.panel(Ui.W - 24, ROWS_Y - PANEL_Y + n * ROW + PANEL_PAD_BOTTOM - 2);
         list.setLayoutX(12);
-        list.setLayoutY(10);
+        list.setLayoutY(PANEL_Y);
         heading = new Ui.Label(title, 13, Ui.FRAME_OUT);
         heading.setLayoutX(36);
         heading.setLayoutY(24);
         rows.setLayoutX(12);
-        rows.setLayoutY(52);
+        rows.setLayoutY(ROWS_Y);
         Group box = Ui.panel(Ui.W - 12, 92);
         box.setLayoutX(6);
         box.setLayoutY(Ui.H - 98);
