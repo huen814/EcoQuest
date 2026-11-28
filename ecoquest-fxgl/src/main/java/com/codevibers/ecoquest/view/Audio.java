@@ -4,7 +4,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineEvent;
@@ -124,6 +126,7 @@ public final class Audio {
     public static void setMuted(boolean m) {
         muted = m;
         if (music != null) music.setMute(m);
+        applyClipVolume();
     }
     public static boolean muted() { return muted; }
 
@@ -143,9 +146,25 @@ public final class Audio {
     public static void setMusicScale(double s) {
         musicScale = s;
         if (music != null) music.setVolume(musicBase * s);
+        applyClipVolume();
     }
 
     public static void setSfxScale(double s) { sfxScale = s; }
+
+    /** Prepares a track ahead of time (reads it off the render thread) so a later playMusic starts without a gap. */
+    public static void preload(String file) {
+        if (URLS.containsKey(file)) return;
+        MUSIC_PREP.submit(() -> {
+            try {
+                if (!URLS.containsKey(file)) {
+                    String url = musicUrl(file);
+                    if (url != null) URLS.put(file, url);
+                }
+            } catch (Throwable t) {
+                System.err.println("Could not preload music " + file + ": " + t);
+            }
+        });
+    }
 
     /** Starts a looping track (call from the JavaFX thread). Does nothing if it is already playing. */
     public static void playMusic(String file, double volume) {
@@ -220,6 +239,97 @@ public final class Audio {
         return url.toExternalForm();
     }
 
+    // ------------------------------------------------------------------ intro + loop in one gapless piece (a Clip with loop points)
+    private static final class LoopData {
+        final AudioFormat format; final byte[] data; final int introFrames;
+        LoopData(AudioFormat format, byte[] data, int introFrames) { this.format = format; this.data = data; this.introFrames = introFrames; }
+    }
+    private static final java.util.Map<String, LoopData> LOOPS = new java.util.concurrent.ConcurrentHashMap<>();
+    private static Clip musicClip;
+
+    private static byte[] readPcm(String file, AudioFormat[] formatOut) throws Exception {
+        try (java.io.InputStream raw = Audio.class.getResourceAsStream("/assets/music/" + file);
+             AudioInputStream in = AudioSystem.getAudioInputStream(new java.io.BufferedInputStream(raw))) {
+            formatOut[0] = in.getFormat();
+            return in.readAllBytes();
+        }
+    }
+
+    /** Reads the intro and the loop (same format) and joins them; the loop starts where the intro ends. Never on the JavaFX thread. */
+    private static LoopData loopData(String introFile, String loopFile) throws Exception {
+        String key = introFile + "+" + loopFile;
+        LoopData cached = LOOPS.get(key);
+        if (cached != null) return cached;
+        AudioFormat[] fa = new AudioFormat[1], fb = new AudioFormat[1];
+        byte[] a = readPcm(introFile, fa), b = readPcm(loopFile, fb);
+        if (!fa[0].matches(fb[0])) throw new IllegalStateException(introFile + " and " + loopFile + " differ in format");
+        byte[] all = new byte[a.length + b.length];
+        System.arraycopy(a, 0, all, 0, a.length);
+        System.arraycopy(b, 0, all, a.length, b.length);
+        LoopData d = new LoopData(fa[0], all, a.length / fa[0].getFrameSize());
+        LOOPS.put(key, d);
+        return d;
+    }
+
+    /** Reads both files ahead of time so playMusicLoop starts without a gap. */
+    public static void preloadLoop(String introFile, String loopFile) {
+        MUSIC_PREP.submit(() -> {
+            try { loopData(introFile, loopFile); }
+            catch (Throwable t) { System.err.println("Could not preload music " + introFile + ": " + t); }
+        });
+    }
+
+    /**
+     * Plays the intro once, then repeats only the loop for as long as the music runs (gapless: the loop points are
+     * inside one Clip). If a Clip cannot be opened, the loop alone is played through the normal player instead.
+     */
+    public static void playMusicLoop(String introFile, String loopFile, double volume) {
+        String key = introFile + "+" + loopFile;
+        if (key.equals(musicName)) return;
+        stopMusic();
+        musicName = key;
+        musicBase = volume;
+        MUSIC_PREP.submit(() -> {
+            LoopData d = null;
+            try { d = loopData(introFile, loopFile); }
+            catch (Throwable t) { System.err.println("Could not prepare music " + key + ": " + t); }
+            final LoopData ready = d;
+            javafx.application.Platform.runLater(() -> {
+                if (!key.equals(musicName) || music != null || musicClip != null) return;   // changed our mind while loading
+                if (ready != null) {
+                    try {
+                        Clip c = AudioSystem.getClip();
+                        c.open(ready.format, ready.data, 0, ready.data.length);
+                        c.setLoopPoints(ready.introFrames, c.getFrameLength() - 1);
+                        musicClip = c;
+                        applyClipVolume();
+                        c.setFramePosition(0);
+                        c.loop(Clip.LOOP_CONTINUOUSLY);
+                        return;
+                    } catch (Throwable t) {
+                        System.err.println("Could not play music " + key + ": " + t);
+                        if (musicClip != null) { try { musicClip.close(); } catch (Throwable ignored) { } musicClip = null; }
+                    }
+                }
+                musicName = null;
+                playMusic(loopFile, musicBase);
+            });
+        });
+    }
+
+    private static void applyClipVolume() {
+        Clip c = musicClip;
+        if (c == null) return;
+        try {
+            if (c.isControlSupported(BooleanControl.Type.MUTE)) ((BooleanControl) c.getControl(BooleanControl.Type.MUTE)).setValue(muted);
+            if (c.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+                FloatControl gain = (FloatControl) c.getControl(FloatControl.Type.MASTER_GAIN);
+                double linear = muted ? 0.0001 : Math.max(0.0001, musicBase * musicScale);
+                gain.setValue((float) Math.max(gain.getMinimum(), Math.min(gain.getMaximum(), 20 * Math.log10(linear))));
+            }
+        } catch (Throwable ignored) { }
+    }
+
     /** Stops the music only if this track is the one playing. */
     public static void stopMusicIf(String file) {
         if (file.equals(musicName)) stopMusic();
@@ -230,6 +340,10 @@ public final class Audio {
             try { music.stop(); music.dispose(); } catch (Throwable ignored) { }
         }
         music = null;
+        if (musicClip != null) {
+            try { musicClip.stop(); musicClip.close(); } catch (Throwable ignored) { }
+        }
+        musicClip = null;
         musicName = null;
     }
 
